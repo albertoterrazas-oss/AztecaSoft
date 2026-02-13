@@ -177,8 +177,7 @@ const LeftMenu = ({ auth }) => {
             paddingBottom: isOpen ? '5px' : '0',
         };
 
-        // Ajustamos el padding para sub-submenús si los tuvieras.
-        // Nivel 1 (menu_idPadre === '0'): 20px
+     
         // Nivel 2+ (menu_idPadre !== '0'): 35px (abierto) o 15px (colapsado)
         const effectivePadding = menu.menu_idPadre !== '0' ?
             { paddingLeft: showMenu ? '35px' : '15px' } :
