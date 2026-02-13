@@ -9,10 +9,11 @@ class Departamento extends Model
 {
     use HasFactory;
     public $timestamps = false;
-    protected $table = 'dbo.Departamentos';
-    protected $primaryKey = 'Departamentos_id';
+    protected $table = 'dbo.Departamento';
+    protected $primaryKey = 'IdDepartamento';
     protected $fillable = [
-        'Departamentos_nombre',
-        'Departamentos_estatus',
+        'nombre',
+        'estatus',
+        'departamentoPadre'
     ];
 }

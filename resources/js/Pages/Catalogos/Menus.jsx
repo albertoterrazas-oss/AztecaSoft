@@ -268,7 +268,7 @@ function MenuFormDialog({ isOpen, closeModal, onSubmit, menuToEdit, action, erro
                     ...menuToEdit,
                     menu_nombre: menuToEdit.menu_nombre || "",
                     // Asegura que sea null o un número. No debe ser el string '0' de 'Raiz'.
-                    menu_idPadre: menuToEdit.menu_idPadre ? Number(menuToEdit.menu_idPadre) : null, 
+                    menu_idPadre: menuToEdit.menu_idPadre ? Number(menuToEdit.menu_idPadre) : null,
                     menu_url: menuToEdit.menu_url || "",
                     // Mapea el ícono, usando menu_tooltip si existe, sino el obsoleto menu_icono, sino "Home"
                     menu_tooltip: menuToEdit.menu_tooltip || menuToEdit.menu_icono || "Home",
@@ -582,7 +582,9 @@ export default function Menus() {
                 <h2 className="text-3xl font-bold text-gray-800">Gestión de Menús </h2>
                 <button
                     onClick={openCreateModal}
-                    className="flex items-center px-4 py-2 text-base font-semibold text-white bg-green-600 rounded-lg shadow-md hover:bg-green-700 transition duration-150 ease-in-out"
+                    className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
+                    style={{ backgroundColor: '#A61A18' }}
+
                 >
                     + Nuevo Menú
                 </button>
@@ -606,7 +608,7 @@ export default function Menus() {
                                     : "bg-red-500"; // Color más fuerte para inactivo
 
                                 return (
-                                    <span 
+                                    <span
                                         className={`inline-flex items-center justify-center rounded-full ${color} w-3 h-3 mx-auto`}
                                         title={isActive ? "Activo" : "Inactivo"}
                                     />

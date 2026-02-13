@@ -4,6 +4,7 @@
 
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RolesController;
+// use App\Http\Controllers\Catalogos\ProductosController;
 // use App\Http\Controllers\Catalogos\AsuntosController;
 use App\Http\Controllers\Catalogs\CodigosController;
 use App\Http\Controllers\Catalogs\CorreosController;
@@ -17,6 +18,8 @@ use App\Http\Controllers\Catalogs\RegistroEntradaController;
 use App\Http\Controllers\Catalogs\UnidadesController;
 use App\Http\Controllers\Catalogs\AsuntosController;
 use App\Http\Controllers\Catalogs\PersonasController;
+use App\Http\Controllers\Catalogs\ProductosController;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -106,7 +109,12 @@ Route::get('user/menus/{id}', [UserController::class, 'menus'])->name('user.menu
         'update'
     ]);
 
-    
+     Route::resource('productos', controller: ProductosController::class)->only([
+        'index',
+        'store',
+        'update'
+    ]);
+
 
 
     

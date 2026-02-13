@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";import { Dialog, DialogPanel, DialogTitle, Transition } from '@headlessui/react';
+import React, { useEffect, useState } from "react"; import { Dialog, DialogPanel, DialogTitle, Transition } from '@headlessui/react';
 import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
@@ -492,7 +492,7 @@ export default function Correos() {
                 puerto: String(result.puerto || "587"),
                 seguridadSSL: result.seguridadSSL || "ssl",
             });
-            
+
         } catch (error) {
             console.error('Error al obtener la configuración SMTP:', error);
             // Si no se pudo cargar, se mantiene el initialSMTPConfig
@@ -567,7 +567,7 @@ export default function Correos() {
             };
 
 
-            
+
 
             // Usamos la función 'request'
             await request(ruta, method, payload);
@@ -599,8 +599,8 @@ export default function Correos() {
                 <h2 className="text-3xl font-bold text-gray-800">Correos Electrónicos de Notificación</h2>
                 <button
                     onClick={openCreateModal}
-                    className="flex items-center px-4 py-2 text-base font-semibold text-white bg-green-600 rounded-lg shadow-md hover:bg-green-700 transition duration-150 ease-in-out"
-                >
+                    className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
+                    style={{ backgroundColor: '#A61A18' }}                >
                     + Nuevo Correo
                 </button>
             </div>

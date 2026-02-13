@@ -222,8 +222,8 @@ export default function Roles() {
                 <h2 className="text-3xl font-bold text-gray-800">Gestión de Roles </h2>
                 <button
                     onClick={openCreateModal}
-                    className="flex items-center px-4 py-2 text-base font-semibold text-white bg-green-600 rounded-lg shadow-md hover:bg-green-700 transition duration-150 ease-in-out"
-                >
+                    className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
+                    style={{ backgroundColor: '#A61A18' }}                >
                     + Nuevo Rol
                 </button>
             </div>
@@ -246,11 +246,11 @@ export default function Roles() {
                         virtual={true}
                         data={roles}
                         columns={[
-                            { header: "Nombre",Width:'80%', accessor: "roles_descripcion", type: 'text' },
+                            { header: "Nombre", Width: '80%', accessor: "roles_descripcion", type: 'text' },
                             {
                                 header: "Acciones",
                                 accessor: "Acciones",
-                                Width:'80%',
+                                Width: '80%',
                                 cell: (eprops) => (
                                     <div className="flex space-x-2"> {/* Contenedor div con espacio entre elementos */}
                                         <button

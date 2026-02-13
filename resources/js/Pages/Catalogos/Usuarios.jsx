@@ -35,7 +35,7 @@ const validateInputs = (data, action) => {
 };
 
 const initialPersonData = {
-    IdUsuario: "", 
+    IdUsuario: "",
     Username: "",
     Password: "",
     IdRol: "",
@@ -55,7 +55,7 @@ function PersonFormDialog({ isOpen, closeModal, onSubmit, personToEdit, action, 
                 setPersonData({
                     IdUsuario: personToEdit.IdUsuario || personToEdit.id,
                     Username: personToEdit.Username || "",
-                    Password: "", 
+                    Password: "",
                     IdRol: personToEdit.IdRol || "",
                     IdPersona: personToEdit.IdPersona || "",
                 });
@@ -234,8 +234,8 @@ export default function Usuarios() {
         try {
             const res = await fetch(route("users.index")).then(r => r.json());
             setUsers(Array.isArray(res) ? res : (res.data || []));
-        } catch (error) { 
-            toast.error("Error al obtener usuarios"); 
+        } catch (error) {
+            toast.error("Error al obtener usuarios");
         }
     };
 
@@ -272,7 +272,10 @@ export default function Usuarios() {
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-3xl font-bold text-gray-800">Gestión de Usuarios</h2>
-                <button onClick={openCreateModal} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <button onClick={openCreateModal}
+                    className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
+                    style={{ backgroundColor: '#A61A18' }}
+                >
                     + Nuevo Usuario
                 </button>
             </div>
@@ -285,10 +288,10 @@ export default function Usuarios() {
                     { header: 'Nombre Completo', accessor: 'nombre_completo' },
                     { header: 'Rol', accessor: 'rol.roles_descripcion' },
                     {
-                        header: "Acciones", 
+                        header: "Acciones",
                         cell: (props) => (
-                            <button 
-                                onClick={() => openEditModal(props.item)} 
+                            <button
+                                onClick={() => openEditModal(props.item)}
                                 className="text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded transition-colors"
                             >
                                 Editar

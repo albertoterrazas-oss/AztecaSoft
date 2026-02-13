@@ -11,7 +11,7 @@ const route = (name, params = {}) => {
     const routeMap = {
         "asuntos.index": "/api/asuntos",
         "asuntos.store": "/api/asuntos",
-        "asuntos.update": `/api/asuntos/${params.id}`, 
+        "asuntos.update": `/api/asuntos/${params.id}`,
     };
     return routeMap[name] || `/${name}`;
 };
@@ -153,7 +153,7 @@ export default function Asuntos() {
             await request(url, method, {
                 Descripcion: data.Descripcion
             });
-            
+
             await getAsuntos();
             setIsDialogOpen(false); // Cerramos el modal solo si la petición fue exitosa
             toast.success(isEdit ? "Actualizado correctamente" : "Creado correctamente");
@@ -167,7 +167,14 @@ export default function Asuntos() {
         <div className="p-4 h-full overflow-auto">
             <div className="flex justify-between items-center mb-6 border-b pb-4">
                 <h2 className="text-3xl font-bold text-gray-800">Gestión de Asuntos</h2>
-                <button onClick={openCreateModal} className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700">
+                <button onClick={openCreateModal}
+                    // className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700"
+
+              
+
+                          className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
+                    style={{ backgroundColor: '#A61A18' }}
+                >
                     + Nuevo Asunto
                 </button>
             </div>
@@ -183,8 +190,8 @@ export default function Asuntos() {
                         {
                             header: "Acciones",
                             cell: (props) => (
-                                <button 
-                                    onClick={() => openEditModal(props.item)} 
+                                <button
+                                    onClick={() => openEditModal(props.item)}
                                     className="text-blue-600 bg-blue-50 px-3 py-1 rounded hover:bg-blue-100 transition-colors"
                                 >
                                     Editar
