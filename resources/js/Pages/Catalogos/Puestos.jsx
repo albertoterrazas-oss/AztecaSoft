@@ -307,7 +307,7 @@ export default function Puestos() {
                 <button
                     onClick={openCreateModal}
                     className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
-                    style={{ backgroundColor: '#A61A18' }}                >
+                    style={{ backgroundColor: '#A61A18' }}>
                     + Nuevo Puesto
                 </button>
             </div>

@@ -28,7 +28,7 @@ const validateInputs = (data) => {
 const initialDepartmentData = {
     IdDepartamento: null,
     nombre: "",
-    estatus: 1, 
+    estatus: 1,
     departamentoPadre: 0
 };
 
@@ -55,7 +55,7 @@ function DepartmentFormDialog({ isOpen, closeModal, onSubmit, departmentToEdit, 
         const { name, value, type, checked } = e.target;
         // Convertimos el checkbox a 1 o 0 para que Laravel lo procese correctamente como tinyInt/int
         const finalValue = type === 'checkbox' ? (checked ? 1 : 0) : value;
-        
+
         setDepartmentData(prev => ({
             ...prev,
             [name]: finalValue,
@@ -88,7 +88,7 @@ function DepartmentFormDialog({ isOpen, closeModal, onSubmit, departmentToEdit, 
                 <div className="fixed inset-0 flex items-center justify-center p-4">
                     <DialogPanel className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl relative">
                         {loading && <LoadingDiv />}
-                        
+
                         <DialogTitle className="text-2xl font-bold mb-4 text-gray-900 border-b pb-2">
                             {action === 'create' ? 'Crear Nuevo Departamento' : 'Editar Departamento'}
                         </DialogTitle>
@@ -104,11 +104,10 @@ function DepartmentFormDialog({ isOpen, closeModal, onSubmit, departmentToEdit, 
                                     name="nombre"
                                     value={departmentData.nombre}
                                     onChange={handleChange}
-                                    className={`mt-1 block w-full rounded-md border p-2 text-sm focus:ring-2 outline-none transition-all ${
-                                        errors.nombre 
-                                        ? 'border-red-500 focus:ring-red-200' 
+                                    className={`mt-1 block w-full rounded-md border p-2 text-sm focus:ring-2 outline-none transition-all ${errors.nombre
+                                        ? 'border-red-500 focus:ring-red-200'
                                         : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200'
-                                    }`}
+                                        }`}
                                 />
                                 {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
                             </label>
@@ -219,7 +218,7 @@ export default function Departamentos() {
         try {
             // Enviamos el objeto tal cual, ya que las llaves coinciden con el Model de Laravel
             await request(ruta, method, formData);
-            
+
             toast.success(isEdit ? "Actualizado correctamente" : "Creado correctamente");
             await getDepartments(); // Refrescar tabla
             closeModal();
@@ -236,7 +235,8 @@ export default function Departamentos() {
                 <h2 className="text-3xl font-bold text-gray-800">Gestión de Departamentos</h2>
                 <button
                     onClick={openCreateModal}
-                    className="flex items-center px-4 py-2 text-base font-semibold text-white bg-green-600 rounded-lg shadow-md hover:bg-green-700 transition duration-150 ease-in-out"
+                    className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
+                    style={{ backgroundColor: '#A61A18' }}
                 >
                     + Nuevo Departamento
                 </button>
@@ -255,19 +255,18 @@ export default function Departamentos() {
                             width: '10%',
                             cell: ({ item: { estatus } }) => (
                                 <div className="flex justify-center">
-                                    <span className={`inline-flex items-center justify-center rounded-full w-4 h-4 shadow-sm ${
-                                        Number(estatus) === 1 ? "bg-green-400" : "bg-red-400"
-                                    }`} />
+                                    <span className={`inline-flex items-center justify-center rounded-full w-4 h-4 shadow-sm ${Number(estatus) === 1 ? "bg-green-400" : "bg-red-400"
+                                        }`} />
                                 </div>
                             ),
                         },
-                        { 
-                            header: 'Nombre', 
+                        {
+                            header: 'Nombre',
                             accessor: 'nombre',
                             cell: ({ item }) => <span className="font-medium text-gray-700">{item.nombre}</span>
                         },
                         {
-                            header: "Acciones", 
+                            header: "Acciones",
                             accessor: "actions",
                             width: '15%',
                             cell: (props) => (

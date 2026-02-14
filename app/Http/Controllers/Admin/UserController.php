@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Menu;
+use App\Models\RH\Persona;
 use App\Models\Roles;
 use App\Models\User;
 use App\Models\UserxMenu;
@@ -17,7 +18,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with('persona','rol')->get()->map(function ($user) {
+        $users = User::with('persona', 'rol')->get()->map(function ($user) {
             // Creamos un campo nuevo combinando los datos de la relación persona
             $user->nombre_completo = "{$user->persona->Nombres} {$user->persona->ApePat} {$user->persona->ApeMat}";
             return $user;
@@ -202,5 +203,78 @@ class UserController extends Controller
         }
 
         return response()->json($menus, 200);
+    }
+
+
+    public function Perfil(Request $request, $id)
+    {
+        // 1. Buscamos al usuario con sus menús
+        $user = User::where('IdUsuario', $id)
+            ->with('menus')
+            ->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        // 2. Buscamos a la persona relacionada cargando la relación 'foto'
+        // Asumiendo que la relación se llama 'foto' en tu modelo Persona
+        $persona = Persona::with('foto')->find($user->IdPersona);
+
+        if ($persona) {
+            // 3. Aplicamos la lógica de Base64 directamente al objeto (sin transform)
+            if ($persona->foto && $persona->foto->archivo) {
+                $binario = $persona->foto->archivo;
+
+                // Verificamos si es un recurso (Resource) de SQL Server o string
+                $data = is_resource($binario) ? stream_get_contents($binario) : $binario;
+
+                $persona->PathFotoEmpleado = 'data:image/jpeg;base64,' . base64_encode($data);
+            } else {
+                $persona->PathFotoEmpleado = null;
+            }
+
+            // Limpiamos la relación para no enviar el binario pesado dos veces
+            unset($persona->foto);
+        }
+
+        $menusData = $user->menus()
+            ->orderBy('menu_nombre')
+            ->get()
+            ->map(fn($menu) => $menu->toArray());
+
+        $menus = [];
+        $menusMap = [];
+        $processedMenus = []; // Array para controlar menús procesados y evitar duplicados
+
+        // Crear un mapa de menús
+        foreach ($menusData as $menu) {
+            $menu['childs'] = []; // Ahora sí podemos modificarlo porque es un array
+            $menusMap[$menu['menu_id']] = $menu;
+        }
+
+        // Construir jerarquía de menús
+        foreach ($menusData as $menu) {
+            // Verificar si el menú ya ha sido procesado para evitar duplicados
+            if (in_array($menu['menu_id'], $processedMenus)) {
+                continue; // Si ya fue procesado, lo saltamos
+            }
+
+            if ($menu['menu_idPadre'] == 0) {
+                $menus[] = &$menusMap[$menu['menu_id']];
+            } else {
+                $menusMap[$menu['menu_idPadre']]['childs'][] = &$menusMap[$menu['menu_id']];
+            }
+
+            // Marcar el menú como procesado
+            $processedMenus[] = $menu['menu_id'];
+        }
+
+        // 4. Retornamos toda la información necesaria
+        return response()->json([
+            'user'    => $user,
+            'persona' => $persona,
+            'menus'   => $menus // Si necesitas los menús por separado
+        ], 200);
     }
 }

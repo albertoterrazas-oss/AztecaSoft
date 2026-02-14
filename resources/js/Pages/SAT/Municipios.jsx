@@ -141,9 +141,9 @@ export default function Municipios() {
             ]);
             const dataMun = await resMun.json();
             const dataEst = await resEst.json();
-            
+
             // Nota: Tu controlador de Laravel usa paginate(), por lo que la data real está en dataMun.data
-            setMunicipios(dataMun.data || dataMun); 
+            setMunicipios(dataMun.data || dataMun);
             setEstados(dataEst);
         } catch (error) {
             toast.error("Error al cargar datos.");
@@ -188,7 +188,12 @@ export default function Municipios() {
         <div className="relative h-full pb-4 px-3 overflow-auto">
             <div className="flex justify-between items-center p-3 border-b mb-4 bg-white sticky top-0 z-10">
                 <h2 className="text-3xl font-bold text-gray-800">Catálogo de Municipios</h2>
-                <button onClick={openCreateModal} className="px-4 py-2 bg-green-600 text-white rounded-lg">+ Nuevo Municipio</button>
+                <button onClick={openCreateModal}
+                    // className="px-4 py-2 bg-green-600 text-white rounded-lg"
+                    className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
+                    style={{ backgroundColor: '#A61A18' }}
+
+                >+ Nuevo Municipio</button>
             </div>
 
             {isLoading ? (

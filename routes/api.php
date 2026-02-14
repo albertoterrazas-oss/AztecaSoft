@@ -42,6 +42,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::get('user/menus/{id}', [UserController::class, 'menus'])->name('user.menus');
 
+Route::get('user/Perfil/{id}', [UserController::class, 'Perfil'])->name('user.Perfil');
+
+
+
 
 Route::resource('destinos', DestinosController::class)->only([
     'index',
@@ -136,7 +140,7 @@ Route::resource('almacenes', AlmacenesController::class)->only([
 ]);
 
 
-
+Route::get('archivo/{id}', [App\Http\Controllers\Catalogs\PersonasController::class, 'verFoto']);
 Route::get('user/menus/{id}', [UserController::class, 'menus'])->name('user.menus');
 
 Route::get('CondicionesUnidad', [ListaVerificacionController::class, 'CondicionesUnidad'])->name('CondicionesUnidad');

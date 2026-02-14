@@ -2,6 +2,7 @@
 
 namespace App\Models\RH;
 
+use App\Models\Catalogos\Archivo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -35,5 +36,12 @@ class Persona extends Model
         'EsEmpleado',
         'PathFotoEmpleado',
     ];
-   
+
+
+    public function foto()
+    {
+        // PathFotoEmpleado es la FK en tu tabla personas
+        // archivo_idarchivo es la PK en tu tabla archivo
+        return $this->belongsTo(Archivo::class, 'PathFotoEmpleado', 'IdArchivo');
+    }
 }

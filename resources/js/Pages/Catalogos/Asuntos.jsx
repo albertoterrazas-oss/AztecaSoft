@@ -168,11 +168,7 @@ export default function Asuntos() {
             <div className="flex justify-between items-center mb-6 border-b pb-4">
                 <h2 className="text-3xl font-bold text-gray-800">Gestión de Asuntos</h2>
                 <button onClick={openCreateModal}
-                    // className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700"
-
-              
-
-                          className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
+                    className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
                     style={{ backgroundColor: '#A61A18' }}
                 >
                     + Nuevo Asunto

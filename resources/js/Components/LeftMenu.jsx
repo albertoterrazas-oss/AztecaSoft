@@ -110,7 +110,7 @@ const LeftMenu = ({ auth }) => {
 
     // Efecto para cargar los menús al montar el componente
     useEffect(() => {
-        getMenus();
+        getPerfil()
     }, []);
 
     // 💡 EFECTO CLAVE: Se ejecuta con cada cambio de ruta para mantener el acordeón abierto.
@@ -120,23 +120,25 @@ const LeftMenu = ({ auth }) => {
         }
     }, [location.pathname, userMenus]);
 
-    // Función asíncrona para obtener los menús del backend
-    const getMenus = async () => {
+    const getPerfil = async () => {
         try {
             localStorage.setItem('user', JSON.stringify(auth));
 
-            const response = await fetch(window.route("user.menus", auth.IdUsuario));
+            const response = await fetch(window.route("user.Perfil", auth.IdUsuario));
             if (!response.ok) {
                 throw new Error('Error al cargar menús del usuario');
             }
             const data = await response.json();
             // Asegura que la data sea un array para el mapeo, incluso si la API devuelve un solo objeto
-            const menuArray = Array.isArray(data) ? data : (data ? [data] : []);
+            const menuArray = Array.isArray(data.menus) ? data.menus : (data.menus ? [data.menus] : []);
             setUserMenus(menuArray);
+            localStorage.setItem('perfil', JSON.stringify(data.persona));
+
         } catch (error) {
             console.error('Error en getMenus:', error.message);
         }
     };
+
 
     // --- Estilos Base ---
 
@@ -177,7 +179,7 @@ const LeftMenu = ({ auth }) => {
             paddingBottom: isOpen ? '5px' : '0',
         };
 
-     
+
         // Nivel 2+ (menu_idPadre !== '0'): 35px (abierto) o 15px (colapsado)
         const effectivePadding = menu.menu_idPadre !== '0' ?
             { paddingLeft: showMenu ? '35px' : '15px' } :
@@ -250,32 +252,7 @@ const LeftMenu = ({ auth }) => {
         <div id="left-menu" className="leftmenu" style={sideMenuStyle} >
             <div className="flex flex-col h-[100svh]" style={{ background: '#1B2654' }}>
 
-                {/* Encabezado del Menú */}
                 <div className={`headerMenu pt-4 pl-7 ${showMenu ? 'pr-7' : 'pr-1'} border-b-2 flex justify-between items-center`} style={{ borderColor: '#d1d1d117' }}>
-                    {/* {showMenu && (
-                        <div className="user-info">
-                            <div className="flex items-center ">
-                                <div>
-                                    <h3
-                                        className="text-[11px] w-24 overflow-hidden text-ellipsis whitespace-nowrap text-white"
-                                        title="Panel de administracion"
-                                    >
-                                        Delfin Tecnologias
-                                    </h3>
-                                    <div className="flow-root">
-                                        <ul className="-m-1 flex flex-wrap">
-                                            <li className="p-1 leading-none">
-                                                <a className="text-[#fcfcfc] text-[14px] truncate font-bold">
-                                                    Panel de administracion
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )} */}
-
                     {showMenu && (
                         <div className="user-info w-full px-2">
                             <div className="flex items-center justify-start gap-2">
