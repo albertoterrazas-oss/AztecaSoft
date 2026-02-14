@@ -24,7 +24,7 @@ const initialColoniaData = {
     Colonia_IdMunicipio: "",
     c_CodigoPostal: "",
     Colonia_cveSAT: "",
-    idEstado: "", 
+    idEstado: "",
 };
 
 // --- Componente del Formulario Modal ---
@@ -59,18 +59,18 @@ function ColoniaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        try { 
+        try {
             const isEdit = !!formData.Colonia_Id;
             const method = isEdit ? "PUT" : "POST";
             const url = isEdit ? route("colonias.update", { Colonia_Id: formData.Colonia_Id }) : route("colonias.store");
-            
+
             await request(url, method, formData);
             toast.success("Guardado exitosamente");
             onSubmit(); // Recarga la tabla
             closeModal();
-        } catch (err) { 
+        } catch (err) {
             toast.error("Error al guardar");
-            setErrors(err.response?.data || {}); 
+            setErrors(err.response?.data || {});
         } finally { setLoading(false); }
     };
 
@@ -132,11 +132,11 @@ export default function Colonias() {
     const [colonias, setColonias] = useState([]);
     const [estados, setEstados] = useState([]);
     const [municipios, setMunicipios] = useState([]);
-    
+
     // Estos guardan los IDs (ej: "2901")
     const [filterEstado, setFilterEstado] = useState("");
     const [filterMunicipio, setFilterMunicipio] = useState("");
-    
+
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [action, setAction] = useState('create');
     const [currentCol, setCurrentCol] = useState(initialColoniaData);
@@ -152,7 +152,7 @@ export default function Colonias() {
             }
             const res = await fetch(url);
             const data = await res.json();
-            setColonias(data.data || data); 
+            setColonias(data.data || data);
         } catch (error) { toast.error("Error al cargar colonias."); }
         finally { setIsLoading(false); }
     };
@@ -168,30 +168,30 @@ export default function Colonias() {
     }, []);
 
     // Escucha cambios en el ID del municipio para filtrar automáticamente
-    useEffect(() => { 
-        getColonias(); 
+    useEffect(() => {
+        getColonias();
     }, [filterMunicipio]);
 
     return (
         <div className="relative h-full pb-4 px-3 overflow-auto">
             <div className="sticky top-0 z-10 bg-white border-b pb-4 pt-2">
-                <div className="flex justify-between items-center mb-4">
+                {/* <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold text-gray-800">Catálogo de Colonias</h2>
-                    <button 
-                        onClick={() => { setAction('create'); setCurrentCol(initialColoniaData); setIsDialogOpen(true); }} 
+                    <button
+                        onClick={() => { setAction('create'); setCurrentCol(initialColoniaData); setIsDialogOpen(true); }}
                         className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                     >
                         + Nueva Colonia
                     </button>
-                </div>
+                </div> */}
 
                 {/* FILTROS CABECERA */}
                 <div className="flex gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <div className="flex-1">
                         <label className="text-[10px] font-bold uppercase text-gray-500">1. Estado</label>
-                        <select 
-                            className="w-full border border-gray-300 rounded mt-1 p-2 text-sm" 
-                            value={filterEstado} 
+                        <select
+                            className="w-full border border-gray-300 rounded mt-1 p-2 text-sm"
+                            value={filterEstado}
                             onChange={(e) => { setFilterEstado(e.target.value); setFilterMunicipio(""); }}
                         >
                             <option value="">Todos los estados</option>
@@ -200,10 +200,10 @@ export default function Colonias() {
                     </div>
                     <div className="flex-1">
                         <label className="text-[10px] font-bold uppercase text-gray-500">2. Municipio</label>
-                        <select 
-                            className="w-full border border-gray-300 rounded mt-1 p-2 text-sm" 
-                            value={filterMunicipio} 
-                            onChange={(e) => setFilterMunicipio(e.target.value)} 
+                        <select
+                            className="w-full border border-gray-300 rounded mt-1 p-2 text-sm"
+                            value={filterMunicipio}
+                            onChange={(e) => setFilterMunicipio(e.target.value)}
                             disabled={!filterEstado}
                         >
                             <option value="">Todos los municipios</option>
@@ -224,6 +224,11 @@ export default function Colonias() {
                 <Datatable
                     data={colonias}
                     virtual={true}
+                    add={() => {
+                        // openCreateModal()
+                        // setModal({ open: true, action: 'create', item: null })
+                        setAction('create'); setCurrentCol(initialColoniaData); setIsDialogOpen(true);
+                    }}
                     columns={[
                         { header: 'CP', accessor: 'c_CodigoPostal', width: '15%' },
                         { header: 'Nombre', accessor: 'Colonia_Nombre' },
@@ -244,12 +249,12 @@ export default function Colonias() {
             )}
 
             <ColoniaFormDialog
-                isOpen={isDialogOpen} 
+                isOpen={isDialogOpen}
                 closeModal={() => setIsDialogOpen(false)}
                 onSubmit={getColonias} // Al guardar, refresca la tabla
-                dataToEdit={currentCol} 
+                dataToEdit={currentCol}
                 action={action}
-                estados={estados} 
+                estados={estados}
                 municipios={municipios}
             />
         </div>

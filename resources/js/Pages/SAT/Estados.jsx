@@ -199,21 +199,16 @@ export default function Estados() {
 
     return (
         <div className="relative h-full pb-4 px-3 overflow-auto">
-            <div className="flex justify-between items-center p-3 border-b mb-4 bg-white sticky top-0 z-10">
-                <h2 className="text-3xl font-bold text-gray-800">Catálogo de Estados</h2>
-                <button onClick={openCreateModal}
-                    // className="px-4 py-2 bg-green-600 text-white rounded-lg"
-                    className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
-                    style={{ backgroundColor: '#A61A18' }}
-                >+ Nuevo Estado</button>
-            </div>
-
+          
             {isLoading ? (
                 <div className='flex items-center justify-center h-64'> <LoadingDiv /> </div>
             ) : (
                 <Datatable
                     data={estados}
                     virtual={true}
+                    add={() => {
+                        openCreateModal()
+                    }}
                     columns={[
                         { header: 'Clave', accessor: 'cveEstado' },
                         { header: 'Descripción', accessor: 'descripcionEstado' },

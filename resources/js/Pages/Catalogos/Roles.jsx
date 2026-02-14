@@ -218,7 +218,7 @@ export default function Roles() {
         <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
             {loading && <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>}
 
-            <div className="flex justify-between items-center p-3 border-b mb-4">
+            {/* <div className="flex justify-between items-center p-3 border-b mb-4">
                 <h2 className="text-3xl font-bold text-gray-800">Gestión de Roles </h2>
                 <button
                     onClick={openCreateModal}
@@ -226,7 +226,7 @@ export default function Roles() {
                     style={{ backgroundColor: '#A61A18' }}                >
                     + Nuevo Rol
                 </button>
-            </div>
+            </div> */}
 
             <RoleFormDialog
                 isOpen={isDialogOpen}
@@ -245,6 +245,10 @@ export default function Roles() {
                         add={openCreateModal} // Usamos la nueva función para agregar
                         virtual={true}
                         data={roles}
+                        // add={() => {
+                        //     openCreateModal()
+                        // }}
+
                         columns={[
                             { header: "Nombre", Width: '80%', accessor: "roles_descripcion", type: 'text' },
                             {

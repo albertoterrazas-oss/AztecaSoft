@@ -165,7 +165,7 @@ export default function Asuntos() {
 
     return (
         <div className="p-4 h-full overflow-auto">
-            <div className="flex justify-between items-center mb-6 border-b pb-4">
+            {/* <div className="flex justify-between items-center mb-6 border-b pb-4">
                 <h2 className="text-3xl font-bold text-gray-800">Gestión de Asuntos</h2>
                 <button onClick={openCreateModal}
                     className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
@@ -173,7 +173,7 @@ export default function Asuntos() {
                 >
                     + Nuevo Asunto
                 </button>
-            </div>
+            </div> */}
 
             {isLoading ? (
                 <LoadingDiv />
@@ -181,6 +181,10 @@ export default function Asuntos() {
                 <Datatable
                     data={asuntos}
                     virtual={true}
+
+                    add={() => {
+                        openCreateModal()
+                    }}
                     columns={[
                         { header: 'Nombre', accessor: 'Descripcion' },
                         {

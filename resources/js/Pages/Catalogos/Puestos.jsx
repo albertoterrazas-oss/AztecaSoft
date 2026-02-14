@@ -302,7 +302,7 @@ export default function Puestos() {
 
     return (
         <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
-            <div className="flex justify-between items-center p-3 border-b mb-4">
+            {/* <div className="flex justify-between items-center p-3 border-b mb-4">
                 <h2 className="text-3xl font-bold text-gray-800">Gestión de Puestos</h2>
                 <button
                     onClick={openCreateModal}
@@ -310,7 +310,7 @@ export default function Puestos() {
                     style={{ backgroundColor: '#A61A18' }}>
                     + Nuevo Puesto
                 </button>
-            </div>
+            </div> */}
 
             {isLoading ? (
                 <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>
@@ -318,6 +318,9 @@ export default function Puestos() {
             ) : (
                 <Datatable
                     data={positions}
+                    add={() => {
+                        openCreateModal()
+                    }}
                     virtual={true}
                     columns={columns}
                 />

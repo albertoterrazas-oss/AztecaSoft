@@ -231,7 +231,7 @@ export default function Departamentos() {
 
     return (
         <div className="relative h-full pb-4 px-3 overflow-auto blue-scroll">
-            <div className="flex justify-between items-center p-3 border-b mb-4 bg-white sticky top-0 z-10">
+            {/* <div className="flex justify-between items-center p-3 border-b mb-4 bg-white sticky top-0 z-10">
                 <h2 className="text-3xl font-bold text-gray-800">Gestión de Departamentos</h2>
                 <button
                     onClick={openCreateModal}
@@ -240,7 +240,7 @@ export default function Departamentos() {
                 >
                     + Nuevo Departamento
                 </button>
-            </div>
+            </div> */}
 
             {isLoading ? (
                 <div className='flex items-center justify-center h-64'> <LoadingDiv /> </div>
@@ -248,6 +248,9 @@ export default function Departamentos() {
                 <Datatable
                     data={departments}
                     virtual={true}
+                     add={() => {
+                        openCreateModal()
+                    }}
                     columns={[
                         {
                             header: "Estatus",

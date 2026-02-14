@@ -33,7 +33,8 @@ const routes = [
     { path: "/municipios", import: lazy(() => import('./SAT/Municipios')) },
     { path: "/colonias", import: lazy(() => import('./SAT/Colonias')) },
     { path: "/personas", import: lazy(() => import('./Catalogos/Personas')) },
-
+    { path: "/provedores", import: lazy(() => import('./Catalogos/Provedores')) },
+    { path: "/clientes", import: lazy(() => import('./Catalogos/Clientes')) },
 ];
 
 export default function Home({ auth }) {
@@ -56,13 +57,13 @@ export default function Home({ auth }) {
 
     return (
         <div id="page-container" className="flex h-screen w-screen overflow-hidden">
-            
+
             <div className="flex-shrink-0 h-full min-w-[50px]">
                 <LeftMenu auth={usuario} />
             </div>
 
             <div className="content bg-gray-100 font-sans flex-1 min-w-0">
-              
+
                 <Header />
 
                 <div className="scrollable-content px-4">

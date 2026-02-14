@@ -270,7 +270,7 @@ export default function Usuarios() {
 
     return (
         <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
+            {/* <div className="flex justify-between items-center mb-6">
                 <h2 className="text-3xl font-bold text-gray-800">Gestión de Usuarios</h2>
                 <button onClick={openCreateModal}
                     className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
@@ -278,11 +278,15 @@ export default function Usuarios() {
                 >
                     + Nuevo Usuario
                 </button>
-            </div>
+            </div> */}
 
             <Datatable
                 data={users}
                 virtual={true}
+                add={() => {
+                    openCreateModal()
+                    // setModal({ open: true, action: 'create', item: null })
+                }}
                 columns={[
                     { header: 'Username', accessor: 'Username' },
                     { header: 'Nombre Completo', accessor: 'nombre_completo' },

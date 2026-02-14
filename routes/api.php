@@ -16,12 +16,13 @@ use App\Http\Controllers\Catalogs\PuestosController;
 use App\Http\Controllers\Catalogs\RegistroEntradaController;
 use App\Http\Controllers\Catalogs\UnidadesController;
 use App\Http\Controllers\Catalogs\AsuntosController;
+use App\Http\Controllers\Catalogs\ClientesController;
 use App\Http\Controllers\Catalogs\ColoniasController;
 use App\Http\Controllers\Catalogs\EstadosController;
 use App\Http\Controllers\Catalogs\MunicipiosController;
 use App\Http\Controllers\Catalogs\PersonasController;
 use App\Http\Controllers\Catalogs\ProductosController;
-
+use App\Http\Controllers\Catalogs\ProvedoresController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -134,6 +135,19 @@ Route::resource('municipios', MunicipiosController::class)->only([
 Route::apiResource('colonias', ColoniasController::class);
 
 Route::resource('almacenes', AlmacenesController::class)->only([
+    'index',
+    'store',
+    'update'
+]);
+
+
+Route::resource('provedores', ProvedoresController::class)->only([
+    'index',
+    'store',
+    'update'
+]);
+
+Route::resource('clientes', ClientesController::class)->only([
     'index',
     'store',
     'update'

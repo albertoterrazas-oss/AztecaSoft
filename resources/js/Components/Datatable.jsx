@@ -398,9 +398,10 @@ const Datatable = (props) => {
                             <div id='topTableActions' className='relative grid justify-between grid-cols-2 m-3'>
                                 <>
                                     <div className='flex items-center' >
-                                        {(postPermission && props.add && empresa) &&
-                                            <button className={`btnAgregar `} style={{ backgroundColor: empresa.color }} onClick={props.add}>Agregar</button>
-                                        }
+                                        {/* {(postPermission && props.add && empresa) && */}
+                                        <button className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
+                                            style={{ backgroundColor: '#A61A18' }} onClick={props.add}>Agregar</button>
+                                        {/* // } */}
                                     </div>
                                     <div className='flex justify-end'>
                                         {props.columnChooser &&

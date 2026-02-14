@@ -197,7 +197,7 @@ export default function Productos() {
 
     return (
         <div className="p-4">
-            <div className="flex justify-between items-center mb-6 border-b pb-4">
+            {/* <div className="flex justify-between items-center mb-6 border-b pb-4">
                 <h2 className="text-2xl font-bold text-gray-800">Catálogo de Productos</h2>
                 <button onClick={openCreate}
                     className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
@@ -205,7 +205,7 @@ export default function Productos() {
                 >
                     + Nuevo Producto
                 </button>
-            </div>
+            </div> */}
 
             {isLoading ? (
                 <div className="flex justify-center py-10"><LoadingDiv /></div>
@@ -213,6 +213,10 @@ export default function Productos() {
                 <Datatable
                     data={products}
                     virtual={true}
+                    add={() => {
+                        openCreate()
+                        // setModal({ open: true, action: 'create', item: null })
+                    }}
                     columns={[
                         { header: 'Nombre', accessor: 'Nombre' },
                         { header: 'U. Medida', accessor: 'UnidadMedida' },

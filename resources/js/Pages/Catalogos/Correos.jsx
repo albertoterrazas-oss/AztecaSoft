@@ -595,7 +595,7 @@ export default function Correos() {
                 reloadConfig={getSmtpConfig}
             />
 
-            <div className="flex justify-between items-center p-3 border-b mb-4">
+            {/* <div className="flex justify-between items-center p-3 border-b mb-4">
                 <h2 className="text-3xl font-bold text-gray-800">Correos Electrónicos de Notificación</h2>
                 <button
                     onClick={openCreateModal}
@@ -603,7 +603,7 @@ export default function Correos() {
                     style={{ backgroundColor: '#A61A18' }}                >
                     + Nuevo Correo
                 </button>
-            </div>
+            </div> */}
 
             {/* Sección de Gestión de Correos de Notificación (Datatable) */}
             {isLoading ? (
@@ -613,6 +613,10 @@ export default function Correos() {
                 <Datatable
                     data={correos}
                     virtual={true}
+
+                    add={() => {
+                        openCreateModal()
+                    }}
                     columns={[
                         {
                             header: "Estatus",

@@ -53,7 +53,7 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
         const { name, value, type, checked } = e.target;
         const val = type === 'checkbox' ? checked : value;
         setFormData(prev => ({ ...prev, [name]: val }));
-        
+
         if (name === 'IdEstado') setFormData(p => ({ ...p, IdMunicipio: "", IdColonia: "", CodigoPostal: "" }));
         if (name === 'IdMunicipio') setFormData(p => ({ ...p, IdColonia: "", CodigoPostal: "" }));
         if (name === 'IdColonia') {
@@ -65,8 +65,8 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        try { await onSubmit(formData); } 
-        catch (err) { setErrors(err.response?.data?.errors || {}); toast.error("Error de validación."); } 
+        try { await onSubmit(formData); }
+        catch (err) { setErrors(err.response?.data?.errors || {}); toast.error("Error de validación."); }
         finally { setLoading(false); }
     };
 
@@ -174,7 +174,7 @@ export default function Personas() {
             const [p, e, m, c, pue] = await Promise.all([resP.json(), resE.json(), resM.json(), resC.json(), resPue.json()]);
             setData(p.data || []);
             setCats({ est: e, mun: m.data || m, col: c.data || c, pue: pue.data || pue });
-        } catch (e) { toast.error("Error al cargar datos."); } 
+        } catch (e) { toast.error("Error al cargar datos."); }
         finally { setLoading(false); }
     };
 
@@ -191,21 +191,29 @@ export default function Personas() {
 
     return (
         <div className="relative h-full pb-4 px-3 overflow-auto bg-gray-50">
-            <div className="flex justify-between items-center p-4 border-b mb-6 bg-white sticky top-0 z-10 shadow-sm rounded-b-xl">
+            {/* <div className="flex justify-between items-center p-4 border-b mb-6 bg-white sticky top-0 z-10 shadow-sm rounded-b-xl">
                 <h2 className="text-2xl font-extrabold text-indigo-900">Catálogo de RH</h2>
                 <button onClick={() => setModal({ open: true, action: 'create', item: null })} className="px-4 py-2 bg-[#A61A18] text-white rounded-lg font-bold shadow-md hover:opacity-90 transition-all">+ Nueva Persona</button>
-            </div>
+            </div> */}
 
             {loading ? <div className="flex justify-center mt-20"><LoadingDiv /></div> : (
                 <div className="bg-white rounded-xl shadow-md p-2">
-                    <Datatable data={data} virtual={true} columns={[
-                    
-                        { header: 'Nombre Completo', cell: (p) => <span className="font-bold text-gray-700">{`${p.item.Nombres} ${p.item.ApePat}`}</span> },
-                        { header: 'RFC', accessor: 'RFC' },
-                        { header: 'Acciones', cell: (p) => (
-                            <button onClick={() => setModal({ open: true, action: 'edit', item: p.item })} className="bg-indigo-500 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-bold transition-all">Editar</button>
-                        )}
-                    ]} />
+                    <Datatable data={data} virtual={true}
+
+                        add={() => {
+                            // openCreateModal()
+                            setModal({ open: true, action: 'create', item: null })
+                        }}
+                        columns={[
+
+                            { header: 'Nombre Completo', cell: (p) => <span className="font-bold text-gray-700">{`${p.item.Nombres} ${p.item.ApePat}`}</span> },
+                            { header: 'RFC', accessor: 'RFC' },
+                            {
+                                header: 'Acciones', cell: (p) => (
+                                    <button onClick={() => setModal({ open: true, action: 'edit', item: p.item })} className="bg-indigo-500 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-bold transition-all">Editar</button>
+                                )
+                            }
+                        ]} />
                 </div>
             )}
 

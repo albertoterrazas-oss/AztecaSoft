@@ -186,7 +186,7 @@ export default function Municipios() {
 
     return (
         <div className="relative h-full pb-4 px-3 overflow-auto">
-            <div className="flex justify-between items-center p-3 border-b mb-4 bg-white sticky top-0 z-10">
+            {/* <div className="flex justify-between items-center p-3 border-b mb-4 bg-white sticky top-0 z-10">
                 <h2 className="text-3xl font-bold text-gray-800">Catálogo de Municipios</h2>
                 <button onClick={openCreateModal}
                     // className="px-4 py-2 bg-green-600 text-white rounded-lg"
@@ -194,13 +194,16 @@ export default function Municipios() {
                     style={{ backgroundColor: '#A61A18' }}
 
                 >+ Nuevo Municipio</button>
-            </div>
+            </div> */}
 
             {isLoading ? (
                 <div className='flex items-center justify-center h-64'> <LoadingDiv /> </div>
             ) : (
                 <Datatable
                     data={municipios}
+                    add={() => {
+                        openCreateModal()
+                    }}
                     virtual={true}
                     columns={[
                         { header: 'Clave', accessor: 'claveMunicipio' },
