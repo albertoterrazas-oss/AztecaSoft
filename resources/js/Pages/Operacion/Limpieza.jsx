@@ -215,5 +215,7 @@ function FinishSessionDialog({ isOpen, closeModal, total, onConfirm }) {
                 </div>
             </Dialog>
         </Transition>
+
+        //ola
     );
 } 
