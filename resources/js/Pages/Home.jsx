@@ -35,6 +35,10 @@ const routes = [
     { path: "/personas", import: lazy(() => import('./Catalogos/Personas')) },
     { path: "/provedores", import: lazy(() => import('./Catalogos/Provedores')) },
     { path: "/clientes", import: lazy(() => import('./Catalogos/Clientes')) },
+    { path: "/almacenes", import: lazy(() => import('./Catalogos/Almacenes')) },
+    { path: "/Recepcion", import: lazy(() => import('./Operacion/Recepcion')) },
+    { path: "/limpieza", import: lazy(() => import('./Operacion/Limpieza')) },
+
 ];
 
 export default function Home({ auth }) {

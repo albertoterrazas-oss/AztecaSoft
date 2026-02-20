@@ -12,19 +12,12 @@ export default defineConfig({
             fastRefresh: true,
         }),
     ],
-
-     build: {
-        // Establece el límite de advertencia de tamaño de chunk a 1000 kB (1 MB)
-        chunkSizeWarningLimit: 5000, 
+    server: {
+        host: '0.0.0.0', 
+        port: 5173,
+        cors: true, // Crucial para permitir la conexión desde la tableta
+        hmr: {
+            host: '192.168.100.6', // Tu IP según el ipconfig
+        },
     },
-    //  server: {
-    //     host: true,       // <--- importante
-    //     port: 5173,       // <--- puedes cambiarlo si lo necesitas
-    //     hmr: {
-    //         host: '192.168.139.46', // <-- tu IP local (no localhost)
-    //     },
-    //     watch: {
-    //         usePolling: true, // ← Importante para algunos sistemas
-    //     },
-    // },
 });
