@@ -216,4 +216,4 @@ function FinishSessionDialog({ isOpen, closeModal, total, onConfirm }) {
             </Dialog>
         </Transition>
     );
-}
+} 
