@@ -578,17 +578,6 @@ export default function Menus() {
     return (
         <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
 
-            {/* <div className="flex justify-between items-center p-3 border-b mb-4">
-                <h2 className="text-3xl font-bold text-gray-800">Gestión de Menús </h2>
-                <button
-                    onClick={openCreateModal}
-                    className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
-                    style={{ backgroundColor: '#A61A18' }}
-
-                >
-                    + Nuevo Menú
-                </button>
-            </div> */}
             {isLoading ? (
                 <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>
 

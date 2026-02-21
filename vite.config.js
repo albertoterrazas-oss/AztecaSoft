@@ -12,12 +12,12 @@ export default defineConfig({
             fastRefresh: true,
         }),
     ],
-    server: {
-        host: '0.0.0.0', 
-        port: 5173,
-        cors: true, // Crucial para permitir la conexión desde la tableta
-        hmr: {
-            host: '192.168.100.6', // Tu IP según el ipconfig
-        },
-    },
+    // server: {
+    //     host: '0.0.0.0', 
+    //     port: 5173,
+    //     cors: true, // Crucial para permitir la conexión desde la tableta
+    //     hmr: {
+    //         host: '192.168.100.6', // Tu IP según el ipconfig
+    //     },
+    // },
 });

@@ -132,21 +132,25 @@ export default function Clientes() {
     };
 
     return (
-        <div className="relative h-full pb-4 px-3 overflow-auto">
-            {isLoading ? <div className='flex items-center justify-center h-64'><LoadingDiv /></div> : (
-                <Datatable data={data}
-                virtual={true}
-                add={() => { setAction('create'); setCurrent(initialClienteData); setIsDialogOpen(true); }}
-                    columns={[
-                        { header: 'Razón Social', accessor: 'RazonSocial' },
-                        { header: 'RFC', accessor: 'RFC' },
-                        { header: "Acciones", accessor: "actions", cell: (props) => (
-                            <button onClick={() => { setAction('edit'); setCurrent(props.item); setIsDialogOpen(true); }}
-                                className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200">Editar</button>
-                        )},
-                    ]}
-                />
-            )}
+        <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
+            {isLoading ?
+                <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>
+                : (
+                    <Datatable data={data}
+                        virtual={true}
+                        add={() => { setAction('create'); setCurrent(initialClienteData); setIsDialogOpen(true); }}
+                        columns={[
+                            { header: 'Razón Social', accessor: 'RazonSocial' },
+                            { header: 'RFC', accessor: 'RFC' },
+                            {
+                                header: "Acciones", accessor: "actions", cell: (props) => (
+                                    <button onClick={() => { setAction('edit'); setCurrent(props.item); setIsDialogOpen(true); }}
+                                        className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200">Editar</button>
+                                )
+                            },
+                        ]}
+                    />
+                )}
             <ClienteFormDialog isOpen={isDialogOpen} closeModal={() => setIsDialogOpen(false)} onSubmit={submit} dataToEdit={current} action={action} errors={errors} setErrors={setErrors} />
         </div>
     );

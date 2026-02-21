@@ -229,15 +229,21 @@ export default function Usuarios() {
     const [action, setAction] = useState('create');
     const [selectedUser, setSelectedUser] = useState(null);
     const [errors, setErrors] = useState({});
+    const [isLoading, setIsLoading] = useState(true);
 
     const getUsers = async () => {
+        setIsLoading(true);
+
         try {
             const res = await fetch(route("users.index")).then(r => r.json());
             setUsers(Array.isArray(res) ? res : (res.data || []));
         } catch (error) {
             toast.error("Error al obtener usuarios");
+        }finally {
+            setIsLoading(false);
         }
     };
+
 
     useEffect(() => { getUsers(); }, []);
 
@@ -269,42 +275,37 @@ export default function Usuarios() {
     };
 
     return (
-        <div className="p-6">
-            {/* <div className="flex justify-between items-center mb-6">
-                <h2 className="text-3xl font-bold text-gray-800">Gestión de Usuarios</h2>
-                <button onClick={openCreateModal}
-                    className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
-                    style={{ backgroundColor: '#A61A18' }}
-                >
-                    + Nuevo Usuario
-                </button>
-            </div> */}
+        <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
+            {isLoading ? (
+                <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>
 
-            <Datatable
-                data={users}
-                virtual={true}
-                add={() => {
-                    openCreateModal()
-                    // setModal({ open: true, action: 'create', item: null })
-                }}
-                columns={[
-                    { header: 'Username', accessor: 'Username' },
-                    { header: 'Nombre Completo', accessor: 'nombre_completo' },
-                    { header: 'Rol', accessor: 'rol.roles_descripcion' },
-                    {
-                        header: "Acciones",
-                        cell: (props) => (
-                            <button
-                                onClick={() => openEditModal(props.item)}
-                                className="text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded transition-colors"
-                            >
-                                Editar
-                            </button>
-                        )
-                    },
-                ]}
-            />
+            ) : (
+                <Datatable
+                    data={users}
+                    virtual={true}
+                    add={() => {
+                        openCreateModal()
+                        // setModal({ open: true, action: 'create', item: null })
+                    }}
+                    columns={[
+                        { header: 'Username', accessor: 'Username' },
+                        { header: 'Nombre Completo', accessor: 'nombre_completo' },
+                        { header: 'Rol', accessor: 'rol.roles_descripcion' },
+                        {
+                            header: "Acciones",
+                            cell: (props) => (
+                                <button
+                                    onClick={() => openEditModal(props.item)}
+                                    className="text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded transition-colors"
+                                >
+                                    Editar
+                                </button>
+                            )
+                        },
+                    ]}
+                />
 
+            )}
             <PersonFormDialog
                 isOpen={isDialogOpen}
                 closeModal={() => setIsDialogOpen(false)}

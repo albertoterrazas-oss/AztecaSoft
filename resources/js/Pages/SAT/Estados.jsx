@@ -198,10 +198,10 @@ export default function Estados() {
     };
 
     return (
-        <div className="relative h-full pb-4 px-3 overflow-auto">
-          
+        <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
+
             {isLoading ? (
-                <div className='flex items-center justify-center h-64'> <LoadingDiv /> </div>
+                <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>
             ) : (
                 <Datatable
                     data={estados}

@@ -173,17 +173,8 @@ export default function Colonias() {
     }, [filterMunicipio]);
 
     return (
-        <div className="relative h-full pb-4 px-3 overflow-auto">
+        <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
             <div className="sticky top-0 z-10 bg-white border-b pb-4 pt-2">
-                {/* <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-2xl font-bold text-gray-800">Catálogo de Colonias</h2>
-                    <button
-                        onClick={() => { setAction('create'); setCurrentCol(initialColoniaData); setIsDialogOpen(true); }}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                    >
-                        + Nueva Colonia
-                    </button>
-                </div> */}
 
                 {/* FILTROS CABECERA */}
                 <div className="flex gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -220,33 +211,35 @@ export default function Colonias() {
                 </div>
             </div>
 
-            {isLoading ? <div className="h-64 flex items-center justify-center"><LoadingDiv /></div> : (
-                <Datatable
-                    data={colonias}
-                    virtual={true}
-                    add={() => {
-                        // openCreateModal()
-                        // setModal({ open: true, action: 'create', item: null })
-                        setAction('create'); setCurrentCol(initialColoniaData); setIsDialogOpen(true);
-                    }}
-                    columns={[
-                        { header: 'CP', accessor: 'c_CodigoPostal', width: '15%' },
-                        { header: 'Nombre', accessor: 'Colonia_Nombre' },
-                        { header: 'ID Mun.', accessor: 'Colonia_IdMunicipio', width: '10%' },
-                        {
-                            header: "Acciones",
-                            cell: (props) => (
-                                <button
-                                    onClick={() => { setAction('edit'); setCurrentCol(props.item); setIsDialogOpen(true); }}
-                                    className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200"
-                                >
-                                    Editar
-                                </button>
-                            )
-                        },
-                    ]}
-                />
-            )}
+            {isLoading ?
+                <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>
+                : (
+                    <Datatable
+                        data={colonias}
+                        virtual={true}
+                        add={() => {
+                            // openCreateModal()
+                            // setModal({ open: true, action: 'create', item: null })
+                            setAction('create'); setCurrentCol(initialColoniaData); setIsDialogOpen(true);
+                        }}
+                        columns={[
+                            { header: 'CP', accessor: 'c_CodigoPostal', width: '15%' },
+                            { header: 'Nombre', accessor: 'Colonia_Nombre' },
+                            { header: 'ID Mun.', accessor: 'Colonia_IdMunicipio', width: '10%' },
+                            {
+                                header: "Acciones",
+                                cell: (props) => (
+                                    <button
+                                        onClick={() => { setAction('edit'); setCurrentCol(props.item); setIsDialogOpen(true); }}
+                                        className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200"
+                                    >
+                                        Editar
+                                    </button>
+                                )
+                            },
+                        ]}
+                    />
+                )}
 
             <ColoniaFormDialog
                 isOpen={isDialogOpen}
