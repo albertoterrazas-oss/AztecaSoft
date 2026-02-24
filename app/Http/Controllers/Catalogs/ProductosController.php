@@ -18,16 +18,18 @@ use Illuminate\Support\Facades\DB;
 
 class ProductosController extends Controller
 {
-    /**
-     * Listar todos los productos
-     */
     public function index()
     {
         try {
-            $productos = Productos::all();
+            // Usamos orderBy para ordenar por la columna 'Nombre' de forma ascendente (A-Z)
+            $productos = Productos::orderBy('Nombre', 'asc')->get();
+
             return response()->json($productos, 200);
         } catch (Exception $e) {
-            return response()->json(['error' => 'Error al obtener productos', 'details' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Error al obtener productos',
+                'details' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -37,21 +39,21 @@ class ProductosController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'Nombre'       => 'required|string|max:255',
+            'Nombre' => 'required|string|max:255',
             'UnidadMedida' => 'required|string|max:50',
-            'EsSubproducto'=> 'required|boolean',
-            'idUsuario'    => 'required|integer',
+            'EsSubproducto' => 'required|boolean',
+            'idUsuario' => 'required|integer',
         ]);
 
         try {
             DB::beginTransaction();
 
             $producto = Productos::create([
-                'Nombre'        => $request->Nombre,
-                'UnidadMedida'  => $request->UnidadMedida,
+                'Nombre' => $request->Nombre,
+                'UnidadMedida' => $request->UnidadMedida,
                 'EsSubproducto' => $request->EsSubproducto,
-                'fecha'         => now(), // Generamos la fecha actual automáticamente
-                'idUsuario'     => $request->idUsuario,
+                'fecha' => now(), // Generamos la fecha actual automáticamente
+                'idUsuario' => $request->idUsuario,
             ]);
 
             DB::commit();
@@ -89,10 +91,10 @@ class ProductosController extends Controller
         }
 
         $request->validate([
-            'Nombre'       => 'sometimes|string|max:255',
+            'Nombre' => 'sometimes|string|max:255',
             'UnidadMedida' => 'sometimes|string|max:50',
-            'EsSubproducto'=> 'sometimes|boolean',
-            'idUsuario'    => 'sometimes|integer',
+            'EsSubproducto' => 'sometimes|boolean',
+            'idUsuario' => 'sometimes|integer',
         ]);
 
         try {

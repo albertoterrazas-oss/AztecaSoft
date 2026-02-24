@@ -23,6 +23,7 @@ use App\Http\Controllers\Catalogs\MunicipiosController;
 use App\Http\Controllers\Catalogs\PersonasController;
 use App\Http\Controllers\Catalogs\ProductosController;
 use App\Http\Controllers\Catalogs\ProvedoresController;
+use App\Http\Controllers\Procesos\RecepcionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -165,6 +166,12 @@ Route::get('QuienconQuienUnidadesDashboard', [UnidadesController::class, 'Quienc
 Route::get('AutorizacionQuienconQuienUnidades', [UnidadesController::class, 'AutorizacionQuienconQuienUnidades'])->name('AutorizacionQuienconQuienUnidades');
 
 Route::post('AuthorizacionQuienCQuien', [UnidadesController::class, 'AuthorizacionQuienCQuien'])->name('AuthorizacionQuienCQuien');
+
+Route::post('GuardarLote', [RecepcionController::class, 'GuardarLote'])->name('GuardarLote');
+Route::get('Lotes', [RecepcionController::class, 'Lotes'])->name('Lotes');
+
+Route::get('LoteDetalles', [RecepcionController::class, 'LoteDetalles'])->name('LoteDetalles');
+
 
 
 
