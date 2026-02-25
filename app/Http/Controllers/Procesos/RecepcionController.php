@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Procesos;
 
 use App\Http\Controllers\Controller;
+use App\Models\Procesos\Bitacora;
 use Illuminate\Http\Request;
 use App\Models\Procesos\Encabezado;
 use App\Models\Procesos\Detalle;
@@ -15,18 +16,25 @@ class RecepcionController extends Controller
     public function Lotes()
     {
         try {
-            // Se aplica el orderBy antes del get() para que la consulta sea efectiva
-            $lotes = Encabezado::with('provedor')->get();
+            $lotes = Encabezado::with([
+                'provedor',
+                'detalles.producto' // <-- AQUÍ CARGAMOS EL PRODUCTO DENTRO DEL DETALLE
+            ])
+                ->where('estatus', "0")
+                ->get();
+
+            // if ($lotes->isEmpty()) {
+            //     return response()->json(['message' => 'No se encontraron lotes activos'], 404);
+            // }
 
             return response()->json($lotes, 200);
-        } catch (\Exception $e) { // Agregada la barra invertida para capturar la excepción global
+        } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error al obtener lotes',
                 'details' => $e->getMessage()
             ], 500);
         }
     }
-
 
     public function LoteDetalles(Request $request)
     {
@@ -36,9 +44,8 @@ class RecepcionController extends Controller
                 return response()->json(['error' => 'El ID del encabezado es requerido'], 400);
             }
 
-            // Obtenemos los detalles filtrando por el id_encabezado
-            // Opcional: puedes agregar ->orderBy('created_at', 'desc') para ver lo más reciente primero
-            $detalles = Detalle::where('id_encabezado', $request->id)->get();
+            $detalles = Detalle::where('id_encabezado', $request->id)
+                ->where('estatus', false)->get();
 
             return response()->json($detalles, 200);
         } catch (\Exception $e) {
@@ -68,6 +75,8 @@ class RecepcionController extends Controller
                     'id_proveedor' => $request->IdProveedor,
                     'observaciones' => $request->observaciones,
                     'fecha' => $request->fecha,
+                    'folio' => $request->folio,
+                    'estatus' => 0,
                     'persona_recibio' => auth()->user()->name ?? 'Sistema', // O lo que manejes
                     'total' => 0, // Puedes calcularlo sumando los detalles después
                     'id_archivo' => null,
@@ -75,12 +84,24 @@ class RecepcionController extends Controller
 
                 // 4. Crear los Detalles
                 foreach ($request->productos as $prod) {
-                    Detalle::create([
+                    $detalle =  Detalle::create([
                         'id_encabezado' => $encabezado->id_encabezado,
                         'id_producto' => $prod['IdProducto'],
                         'cantidad' => $prod['cantidad'],
                         'precio' => 0, // Ajustar si mandas precio desde el front
                         'kilos' => 0, // Ajustar si manejas kilos aparte de cantidad
+                        'estatus' => 0, // Ajustar si manejas kilos aparte de cantidad
+                    ]);
+
+                    Bitacora::create([
+                        'fechallegada' => now(), // Ajustar si manejas kilos aparte de cantidad
+                        'fechasalida' => now(), // Ajustar si manejas kilos aparte de cantidad
+                        'id_detalle' => $detalle->id_detalle, // Ajustar si manejas kilos aparte de cantidad
+                        'id_subproducto' => 0, // Ajustar si manejas kilos aparte de cantidad
+                        'area' => 'RECEPCION', // Ajustar si manejas kilos aparte de cantidad
+                        'almacen' => NULL, // Ajustar si manejas kilos aparte de cantidad
+                        'personaautorizo' => 0, // Ajustar si manejas kilos aparte de cantidad
+                        'estatus' => 1, // Ajustar si manejas kilos aparte de cantidad
                     ]);
                 }
 
@@ -89,7 +110,6 @@ class RecepcionController extends Controller
                     'id' => $encabezado->id_encabezado
                 ], 201);
             });
-
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error al procesar el guardado',

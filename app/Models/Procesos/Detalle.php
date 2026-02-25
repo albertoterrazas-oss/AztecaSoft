@@ -10,7 +10,7 @@ class Detalle extends Model
 
     use HasFactory;
     public $timestamps = false;
-    protected $table = 'dbo.Detalles';
+    protected $table = 'dbo.Detalle_Producto';
     protected $primaryKey = 'id_detalle';
     protected $fillable = [
         'id_encabezado',
@@ -18,6 +18,16 @@ class Detalle extends Model
         'cantidad',
         'precio',
         'kilos',
-       
+        'estatus'
+
     ];
+
+
+    // App\Models\Detalle.php (o el nombre que tenga tu modelo de detalles)
+
+    public function producto()
+    {
+        // Relacionamos con el modelo Productos usando la llave foránea
+        return $this->belongsTo(\App\Models\Catalogos\Productos::class, 'id_producto', 'IdProducto');
+    }
 }

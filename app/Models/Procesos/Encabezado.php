@@ -19,11 +19,20 @@ class Encabezado extends Model
         'observaciones',
         'total',
         'persona_recibio',
-        'fecha'
+        'fecha',
+        'folio',
+        'estatus'
     ];
 
-     public function provedor()
+    public function provedor()
     {
         return $this->belongsTo(Provedores::class, 'id_proveedor');
+    }
+
+    // En app/Models/Encabezado.php
+    public function detalles()
+    {
+        // Relación de uno a muchos usando tu llave foránea id_encabezado
+        return $this->hasMany(Detalle::class, 'id_encabezado');
     }
 }

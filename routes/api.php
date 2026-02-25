@@ -24,6 +24,7 @@ use App\Http\Controllers\Catalogs\PersonasController;
 use App\Http\Controllers\Catalogs\ProductosController;
 use App\Http\Controllers\Catalogs\ProvedoresController;
 use App\Http\Controllers\Procesos\RecepcionController;
+use App\Http\Controllers\Procesos\SalidaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -172,7 +173,7 @@ Route::get('Lotes', [RecepcionController::class, 'Lotes'])->name('Lotes');
 
 Route::get('LoteDetalles', [RecepcionController::class, 'LoteDetalles'])->name('LoteDetalles');
 
-
+Route::post('/pesaje/guardar-lote', [SalidaController::class, 'guardarSalida'])->name('pesaje.store');
 
 
 
