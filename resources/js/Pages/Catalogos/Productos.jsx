@@ -196,19 +196,9 @@ export default function Productos() {
     };
 
     return (
-        <div className="p-4">
-            {/* <div className="flex justify-between items-center mb-6 border-b pb-4">
-                <h2 className="text-2xl font-bold text-gray-800">Catálogo de Productos</h2>
-                <button onClick={openCreate}
-                    className="flex items-center px-4 py-2 text-base font-semibold text-white rounded-lg shadow-md  transition duration-150 ease-in-out"
-                    style={{ backgroundColor: '#A61A18' }}
-                >
-                    + Nuevo Producto
-                </button>
-            </div> */}
-
+        <div className="relative h-[100%] pb-4 px-3 overflow-auto bg-gray-50">
             {isLoading ? (
-                <div className="flex justify-center py-10"><LoadingDiv /></div>
+                <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>
             ) : (
                 <Datatable
                     data={products}

@@ -17,16 +17,12 @@ const routes = [
     { path: "/motivos", import: lazy(() => import('./Catalogos/Motivos')) },
     { path: "/destino", import: lazy(() => import('./Catalogos/Destinos')) },
     { path: "/reportes", import: lazy(() => import('./Catalogos/Reportes')) },
-    // { path: "/registrosalida", import: lazy(() => import('./Catalogos/RegistroYSalidaUnificado')) },
     { path: "/menus", import: lazy(() => import('./Catalogos/Menus')) },
     { path: "/listaverificacion", import: lazy(() => import('./Catalogos/ListaVerificacion')) },
     { path: "/puestos", import: lazy(() => import('./Catalogos/Puestos')) },
     { path: "/departamentos", import: lazy(() => import('./Catalogos/Departamentos')) },
-    // { path: "/QuienConQuienTransporte", import: lazy(() => import('./Catalogos/QuienConQuienTransporte')) },
     { path: "/roles", import: lazy(() => import('./Catalogos/Roles')) },
     { path: "/correosnotificaciones", import: lazy(() => import('./Catalogos/Correos')) },
-    // { path: "/MonitorCodes", import: lazy(() => import('./Catalogos/MonitorCodes')) },
-    // { path: "/AutorizacionQuien", import: lazy(() => import('./Catalogos/AutorizacionQuien')) },
     { path: "/Asuntos", import: lazy(() => import('./Catalogos/Asuntos')) },
     { path: "/productos", import: lazy(() => import('./Catalogos/Productos')) },
     { path: "/estados", import: lazy(() => import('./SAT/Estados')) },
@@ -38,6 +34,7 @@ const routes = [
     { path: "/almacenes", import: lazy(() => import('./Catalogos/Almacenes')) },
     { path: "/Recepcion", import: lazy(() => import('./Operacion/Recepcion')) },
     { path: "/salida", import: lazy(() => import('./Operacion/Salidas')) },
+    { path: "/Limpieza", import: lazy(() => import('./Operacion/Limpieza')) },
 
 ];
 

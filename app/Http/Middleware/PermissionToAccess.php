@@ -23,8 +23,8 @@ class PermissionToAccess
         // if(in_array($request->path(), RouteServiceProvider::SKIPPED_ROUTES_PERMISSION))
         //     return $next($request);
         $menu = Menu::where('menu_url', $route)->firstOrFail();
-        if(!$user->menus->contains($menu->menu_id))
-            return response()->view('errors.403');
+        // if(!$user->menus->contains($menu->menu_id))
+        //     return response()->view('errors.403');
         return $next($request);
     }
 }

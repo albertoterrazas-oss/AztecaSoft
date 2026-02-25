@@ -272,7 +272,7 @@ class UserController extends Controller
 
         // 4. Retornamos toda la información necesaria
         return response()->json([
-            'user'    => $user,
+            // 'user'    => $user,
             'persona' => $persona,
             'menus'   => $menus // Si necesitas los menús por separado
         ], 200);

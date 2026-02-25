@@ -13,9 +13,9 @@ const userObject = JSON.parse(localStorage.getItem('user') || '{}');
 const route = (name, params = {}) => {
     const id = params.IdProveedor;
     const routeMap = {
-        "proveedores.index": "/api/proveedores",
-        "proveedores.store": "/api/proveedores",
-        "proveedores.update": `/api/proveedores/${id}`,
+        "provedores.index": "/api/provedores",
+        "provedores.store": "/api/provedores",
+        "provedores.update": `/api/provedores/${id}`,
     };
     return routeMap[name] || `/${name}`;
 };
@@ -56,9 +56,9 @@ function ProveedorFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action,
     const handleChange = (e) => {
         const { name, value } = e.target;
         // Convertimos RFC a mayúsculas automáticamente para seguir el estándar fiscal
-        setFormData(prev => ({ 
-            ...prev, 
-            [name]: name === 'RFC' ? value.toUpperCase() : value 
+        setFormData(prev => ({
+            ...prev,
+            [name]: name === 'RFC' ? value.toUpperCase() : value
         }));
     };
 
@@ -78,7 +78,7 @@ function ProveedorFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action,
                 <div className="fixed inset-0 flex items-center justify-center p-4">
                     <DialogPanel className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl relative">
                         {loading && <LoadingDiv />}
-                        
+
                         <DialogTitle className="text-2xl font-bold mb-4 text-gray-900 border-b pb-2">
                             {action === 'create' ? 'Nuevo Proveedor' : 'Editar Proveedor'}
                         </DialogTitle>
@@ -87,12 +87,12 @@ function ProveedorFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action,
                             {/* Razón Social */}
                             <label className="block">
                                 <span className="text-sm font-medium text-gray-700">Razón Social:</span>
-                                <input 
-                                    type="text" 
-                                    name="RazonSocial" 
-                                    value={formData.RazonSocial} 
+                                <input
+                                    type="text"
+                                    name="RazonSocial"
+                                    value={formData.RazonSocial}
                                     onChange={handleChange}
-                                    className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.RazonSocial ? 'border-red-500' : 'border-gray-300'}`} 
+                                    className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.RazonSocial ? 'border-red-500' : 'border-gray-300'}`}
                                 />
                                 {errors.RazonSocial && <p className="text-red-500 text-xs mt-1">{errors.RazonSocial}</p>}
                             </label>
@@ -100,13 +100,13 @@ function ProveedorFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action,
                             {/* RFC */}
                             <label className="block">
                                 <span className="text-sm font-medium text-gray-700">RFC:</span>
-                                <input 
-                                    type="text" 
-                                    name="RFC" 
+                                <input
+                                    type="text"
+                                    name="RFC"
                                     maxLength={13}
-                                    value={formData.RFC} 
+                                    value={formData.RFC}
                                     onChange={handleChange}
-                                    className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.RFC ? 'border-red-500' : 'border-gray-300'}`} 
+                                    className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.RFC ? 'border-red-500' : 'border-gray-300'}`}
                                 />
                                 {errors.RFC && <p className="text-red-500 text-xs mt-1">{errors.RFC}</p>}
                             </label>
@@ -134,7 +134,7 @@ export default function Proveedores() {
     const getData = async () => {
         try {
             setIsLoading(true);
-            const response = await fetch(route("proveedores.index"));
+            const response = await fetch(route("provedores.index"));
             const resData = await response.json();
             setData(resData);
         } catch (error) { toast.error("Error al cargar proveedores."); } finally { setIsLoading(false); }
@@ -147,7 +147,7 @@ export default function Proveedores() {
         if (!validation.isValid) return setErrors(validation.errors);
 
         const isEdit = !!formData.IdProveedor;
-        const ruta = isEdit ? route("proveedores.update", { IdProveedor: formData.IdProveedor }) : route("proveedores.store");
+        const ruta = isEdit ? route("provedores.update", { IdProveedor: formData.IdProveedor }) : route("provedores.store");
         const method = isEdit ? "PUT" : "POST";
 
         try {
@@ -159,34 +159,38 @@ export default function Proveedores() {
     };
 
     return (
-        <div className="relative h-full pb-4 px-3 overflow-auto">
-            {isLoading ? <div className='flex items-center justify-center h-64'><LoadingDiv /></div> : (
-                <Datatable 
+        <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
+            {isLoading ? (
+                <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>
+            ) : (
+                <Datatable
                     data={data}
                     virtual={true}
                     add={() => { setAction('create'); setCurrent(initialProveedorData); setIsDialogOpen(true); }}
                     columns={[
                         { header: 'Razón Social', accessor: 'RazonSocial' },
                         { header: 'RFC', accessor: 'RFC' },
-                        { header: "Acciones", accessor: "actions", cell: (props) => (
-                            <button 
-                                onClick={() => { setAction('edit'); setCurrent(props.item); setIsDialogOpen(true); }}
-                                className="px-3 py-1 text-sm font-medium text-indigo-600 bg-indigo-100 rounded-md hover:bg-indigo-200 transition-colors"
-                            >
-                                Editar
-                            </button>
-                        )},
+                        {
+                            header: "Acciones", accessor: "actions", cell: (props) => (
+                                <button
+                                    onClick={() => { setAction('edit'); setCurrent(props.item); setIsDialogOpen(true); }}
+                                    className="px-3 py-1 text-sm font-medium text-indigo-600 bg-indigo-100 rounded-md hover:bg-indigo-200 transition-colors"
+                                >
+                                    Editar
+                                </button>
+                            )
+                        },
                     ]}
                 />
             )}
-            <ProveedorFormDialog 
-                isOpen={isDialogOpen} 
-                closeModal={() => setIsDialogOpen(false)} 
-                onSubmit={submit} 
-                dataToEdit={current} 
-                action={action} 
-                errors={errors} 
-                setErrors={setErrors} 
+            <ProveedorFormDialog
+                isOpen={isDialogOpen}
+                closeModal={() => setIsDialogOpen(false)}
+                onSubmit={submit}
+                dataToEdit={current}
+                action={action}
+                errors={errors}
+                setErrors={setErrors}
             />
         </div>
     );

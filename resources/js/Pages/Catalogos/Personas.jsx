@@ -190,13 +190,15 @@ export default function Personas() {
     };
 
     return (
-        <div className="relative h-full pb-4 px-3 overflow-auto bg-gray-50">
-            {/* <div className="flex justify-between items-center p-4 border-b mb-6 bg-white sticky top-0 z-10 shadow-sm rounded-b-xl">
-                <h2 className="text-2xl font-extrabold text-indigo-900">Catálogo de RH</h2>
-                <button onClick={() => setModal({ open: true, action: 'create', item: null })} className="px-4 py-2 bg-[#A61A18] text-white rounded-lg font-bold shadow-md hover:opacity-90 transition-all">+ Nueva Persona</button>
-            </div> */}
+        <div className="relative h-[100%] pb-4 px-3 overflow-auto bg-gray-50">
+          
 
-            {loading ? <div className="flex justify-center mt-20"><LoadingDiv /></div> : (
+            {loading ? (
+                <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>
+
+            ) : (
+
+            // {loading ? <div className="flex justify-center mt-20"><LoadingDiv /></div> : (
                 <div className="bg-white rounded-xl shadow-md p-2">
                     <Datatable data={data} virtual={true}
 
