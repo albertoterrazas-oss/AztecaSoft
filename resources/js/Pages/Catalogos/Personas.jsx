@@ -190,33 +190,29 @@ export default function Personas() {
     };
 
     return (
-        <div className="relative h-[100%] pb-4 px-3 overflow-auto bg-gray-50">
-          
+        <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
+
 
             {loading ? (
                 <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>
 
             ) : (
+                <Datatable data={data}
+                    virtual={true}
+                    add={() => {
+                        setModal({ open: true, action: 'create', item: null })
+                    }}
+                    columns={[
 
-            // {loading ? <div className="flex justify-center mt-20"><LoadingDiv /></div> : (
-                <div className="bg-white rounded-xl shadow-md p-2">
-                    <Datatable data={data} virtual={true}
+                        { header: 'Nombre Completo', cell: (p) => <span className="font-bold text-gray-700">{`${p.item.Nombres} ${p.item.ApePat}`}</span> },
+                        { header: 'RFC', accessor: 'RFC' },
+                        {
+                            header: 'Acciones', cell: (p) => (
+                                <button onClick={() => setModal({ open: true, action: 'edit', item: p.item })} className="bg-indigo-500 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-bold transition-all">Editar</button>
+                            )
+                        }
+                    ]} />
 
-                        add={() => {
-                            // openCreateModal()
-                            setModal({ open: true, action: 'create', item: null })
-                        }}
-                        columns={[
-
-                            { header: 'Nombre Completo', cell: (p) => <span className="font-bold text-gray-700">{`${p.item.Nombres} ${p.item.ApePat}`}</span> },
-                            { header: 'RFC', accessor: 'RFC' },
-                            {
-                                header: 'Acciones', cell: (p) => (
-                                    <button onClick={() => setModal({ open: true, action: 'edit', item: p.item })} className="bg-indigo-500 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-bold transition-all">Editar</button>
-                                )
-                            }
-                        ]} />
-                </div>
             )}
 
             <PersonaFormDialog isOpen={modal.open} closeModal={() => setModal({ open: false })} action={modal.action} dataToEdit={modal.item} onSubmit={handleSave} estados={cats.est} municipios={cats.mun} colonias={cats.col} puestos={cats.pue} />

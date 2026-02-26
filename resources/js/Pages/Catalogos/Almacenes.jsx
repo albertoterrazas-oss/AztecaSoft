@@ -1,316 +1,242 @@
 import { useEffect, useState } from "react";
-import {
-    Dialog,
-    DialogPanel,
-    DialogTitle,
-    Transition,
-} from "@headlessui/react";
-import { toast } from "sonner";
-import Datatable from "@/Components/Datatable";
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
+import { toast } from 'sonner';
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
-import axios from "axios";
 
-// --- HELPERS DE RUTA ---
+// --- ICONOS SVG (Declarados manualmente para evitar errores de importación) ---
+
+const IconPlus = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+    </svg>
+);
+
+const IconEdit = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+    </svg>
+);
+
+const IconInventory = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+    </svg>
+);
+
+const IconCube = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+    </svg>
+);
+
+// --- Configuración de Rutas ---
 const route = (name, params = {}) => {
+    const id = params.id;
     const routeMap = {
-        "pesaje.catalogos": "/api/pesaje/catalogos", // Ruta que devuelva proveedores y productos
-        "pesaje.store": "/api/pesaje/guardar-lote",
+        "AlmacenesListar": "/api/almacenes",
+        "almacenes.store": "/api/almacenes",
+        "almacenes.update": `/api/almacenes/${id}`,
     };
     return routeMap[name] || `/${name}`;
 };
 
-const initialSessionData = {
-    IdProveedor: "",
-    RazonSocial: "",
-    folio: "",
-    totalLote: "",
-    observaciones: "",
-};
+// --- Componente Principal ---
+export default function AlmacenesRefrigerador() {
+    const [almacenes, setAlmacenes] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [currentAlmacen, setCurrentAlmacen] = useState({ IdAlmacen: null, Nombre: "", Tipo: "" });
+    const [action, setAction] = useState('create');
 
-// --- MODAL DE FINALIZACIÓN (Similar a tu AlmacenFormDialog) ---
-function FinishSessionDialog({ isOpen, closeModal, onSubmit, sessionData, records, totalKilos }) {
-    const [obs, setObs] = useState("");
-    const [loading, setLoading] = useState(false);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
+    const getAlmacenes = async () => {
         try {
-            await onSubmit(obs);
-            closeModal();
+            setIsLoading(true);
+            const response = await fetch(route("AlmacenesListar"));
+            const data = await response.json();
+            setAlmacenes(data);
         } catch (error) {
-            toast.error("Error al guardar el lote");
+            toast.error("Error al cargar los estantes");
         } finally {
-            setLoading(false);
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => { getAlmacenes(); }, []);
+
+    const openModal = (item = { IdAlmacen: null, Nombre: "", Tipo: "" }) => {
+        setCurrentAlmacen(item);
+        setAction(item.IdAlmacen ? 'edit' : 'create');
+        setIsDialogOpen(true);
+    };
+
+    const submitAlmacen = async (formData) => {
+        const isEdit = !!formData.IdAlmacen;
+        const method = isEdit ? "PUT" : "POST";
+        const ruta = isEdit ? route("almacenes.update", { id: formData.IdAlmacen }) : route("almacenes.store");
+        
+        try {
+            await request(ruta, method, formData);
+            toast.success("Almacén guardado");
+            getAlmacenes();
+            setIsDialogOpen(false);
+        } catch (e) {
+            toast.error("Error al guardar");
         }
     };
 
     return (
-        <Transition show={isOpen}>
-            <Dialog open={isOpen} onClose={closeModal} className="relative z-50">
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
-                <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <DialogPanel className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl relative">
-                        {loading && <LoadingDiv />}
-                        <DialogTitle className="text-xl font-black uppercase text-gray-900 border-b pb-4 mb-6">
-                            Finalizar Recepción
-                        </DialogTitle>
+        <div className="w-full  h-[100%]p-4 md:p-8">
+            
+            {/* ESTRUCTURA DEL REFRIGERADOR */}
+            <div className="w-full mx-auto  h-[100%] rounded-t-[4rem] rounded-b-2xl border-x-[16px] border-t-[16px]  shadow-2xl overflow-hidden">
+                
+                {/* Termostato Digital */}
+                <div className="flex flex-col items-center pt-8 pb-6 border-b-4 border-gray-400/30 mb-6 bg-gray-300">
+                    <div className="w-40 h-12 bg-black rounded-lg border-2 border-gray-600 flex items-center justify-between px-4 shadow-inner">
+                        <span className="text-cyan-400 font-mono text-xl animate-pulse">2.8°C</span>
+                        <div className="w-3 h-3 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]"></div>
+                    </div>
+                    <h2 className="mt-2 text-gray-500 font-bold text-[10px] tracking-[0.3em] uppercase">Sistema de control de enfriamiento</h2>
+                </div>
 
-                        <div className="space-y-4 mb-6">
-                            <div className="flex justify-between bg-slate-50 p-4 rounded-xl">
-                                <span className="text-xs font-bold text-slate-400 uppercase">Total KG:</span>
-                                <span className="font-black text-red-600">{totalKilos}</span>
-                            </div>
-                            <div className="flex justify-between bg-slate-50 p-4 rounded-xl">
-                                <span className="text-xs font-bold text-slate-400 uppercase">Proveedor:</span>
-                                <span className="font-bold text-slate-700 text-xs">{sessionData.RazonSocial}</span>
-                            </div>
+                <div className="px-6 pb-12">
+                    {isLoading ? (
+                        <div className="h-96 flex items-center justify-center"><LoadingDiv /></div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            
+                            {/* Card Agregar */}
+                            <button 
+                                onClick={() => openModal()}
+                                className="group h-52 border-4 border-dashed border-gray-400 rounded-2xl flex flex-col items-center justify-center text-gray-500 hover:bg-white hover:border-[#1B2654] hover:text-[#1B2654] transition-all shadow-inner"
+                            >
+                                <IconPlus />
+                                <span className="font-black uppercase text-xs mt-2">Nuevo Estante</span>
+                            </button>
+
+                            {/* Listado de Almacenes */}
+                            {almacenes.map((almacen) => (
+                                <div key={almacen.IdAlmacen} className="h-52 bg-white rounded-2xl shadow-lg flex flex-col border-b-8 border-gray-400 overflow-hidden">
+                                    <div className="p-5 flex-1">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-xl ${almacen.Tipo === 'Congelado' ? 'bg-cyan-100 text-cyan-600' : 'bg-blue-100 text-[#1B2654]'}`}>
+                                                <IconCube />
+                                            </div>
+                                            <div className="flex-1 overflow-hidden">
+                                                <h3 className="font-black text-gray-800 truncate uppercase text-sm leading-tight">{almacen.Nombre}</h3>
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{almacen.Tipo || 'General'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Barra decorativa */}
+                                    <div className="px-5 mb-4 text-[9px] font-bold text-gray-400 uppercase">
+                                        Capacidad
+                                        <div className="h-2 w-full bg-gray-100 rounded-full mt-1 overflow-hidden">
+                                            <div className="h-full bg-[#1B2654]" style={{ width: '45%' }}></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Botones de acción */}
+                                    <div className="grid grid-cols-2 border-t border-gray-100">
+                                        <button 
+                                            onClick={() => openModal(almacen)}
+                                            className="flex items-center justify-center gap-2 py-3 hover:bg-yellow-50 text-yellow-600 border-r border-gray-100 transition-colors"
+                                        >
+                                            <IconEdit />
+                                            <span className="text-[10px] font-black uppercase">Editar</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => toast.info(`Abriendo inventario de: ${almacen.Nombre}`)}
+                                            className="flex items-center justify-center gap-2 py-3 hover:bg-blue-50 text-blue-600 transition-colors"
+                                        >
+                                            <IconInventory />
+                                            <span className="text-[10px] font-black uppercase">Inventario</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
+                    )}
+                </div>
+            </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <label className="block">
-                                <span className="text-xs font-black text-gray-500 uppercase ml-1">Observaciones:</span>
-                                <textarea
-                                    className="mt-1 block w-full rounded-xl border-gray-200 bg-slate-50 p-3 text-sm h-24 resize-none focus:ring-red-500 focus:border-red-500"
-                                    placeholder="Ej. Merma por transporte..."
-                                    value={obs}
-                                    onChange={(e) => setObs(e.target.value)}
+            {/* Modal de Formulario */}
+            <AlmacenFormDialog 
+                isOpen={isDialogOpen} 
+                closeModal={() => setIsDialogOpen(false)} 
+                onSubmit={submitAlmacen}
+                dataToEdit={currentAlmacen}
+                action={action}
+            />
+        </div>
+    );
+}
+
+function AlmacenFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action }) {
+    const [formData, setFormData] = useState({ Nombre: "", Tipo: "" });
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) setFormData({ 
+            IdAlmacen: dataToEdit?.IdAlmacen || null, 
+            Nombre: dataToEdit?.Nombre || "", 
+            Tipo: dataToEdit?.Tipo || "" 
+        });
+    }, [isOpen, dataToEdit]);
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        try { await onSubmit(formData); } finally { setSaving(false); }
+    };
+
+    return (
+        <Transition show={isOpen}>
+            <Dialog onClose={closeModal} className="relative z-[100]">
+                <TransitionChild enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-md" />
+                </TransitionChild>
+                <div className="fixed inset-0 flex items-center justify-center p-4">
+                    <DialogPanel className="w-full max-w-md bg-white rounded-[2rem] p-8 shadow-2xl relative overflow-hidden border-t-8 border-[#1B2654]">
+                        {saving && <div className="absolute inset-0 z-10 bg-white/80 flex items-center justify-center"><LoadingDiv /></div>}
+                        <DialogTitle className="text-2xl font-black text-gray-800 mb-6 uppercase tracking-tighter">
+                            {action === 'create' ? 'Nuevo Estante' : 'Ajustar Estante'}
+                        </DialogTitle>
+                        <form onSubmit={handleSave} className="space-y-6">
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Etiqueta del Almacén</label>
+                                <input 
+                                    type="text" 
+                                    value={formData.Nombre} 
+                                    onChange={e => setFormData({...formData, Nombre: e.target.value})}
+                                    className="w-full mt-1 px-5 py-4 rounded-2xl bg-gray-100 border-none focus:ring-2 focus:ring-blue-500 font-bold text-gray-700"
+                                    placeholder="Ej: SECTOR CARNICOS"
+                                    required
                                 />
-                            </label>
-
-                            <div className="flex justify-end gap-3 pt-4">
-                                <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-bold text-gray-500">
-                                    Regresar
-                                </button>
-                                <button type="submit" className="px-6 py-2 text-sm font-black text-white bg-red-600 rounded-xl hover:bg-red-700 uppercase shadow-lg shadow-red-100">
-                                    Guardar Lote
-                                </button>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Clasificación</label>
+                                <select 
+                                    value={formData.Tipo} 
+                                    onChange={e => setFormData({...formData, Tipo: e.target.value})}
+                                    className="w-full mt-1 px-5 py-4 rounded-2xl bg-gray-100 border-none focus:ring-2 focus:ring-blue-500 font-bold text-gray-700"
+                                >
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Congelado">❄️ Congelado</option>
+                                    <option value="Refrigerado">🌡️ Refrigerado</option>
+                                    <option value="Seco">📦 Seco</option>
+                                </select>
+                            </div>
+                            <div className="flex gap-4 pt-4">
+                                <button type="button" onClick={closeModal} className="flex-1 py-4 text-gray-400 font-black text-xs uppercase hover:text-gray-600 transition-colors">Cancelar</button>
+                                <button type="submit" className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-blue-200 hover:bg-[#1B2654] transition-all">Confirmar</button>
                             </div>
                         </form>
                     </DialogPanel>
                 </div>
             </Dialog>
         </Transition>
-    );
-}
-
-// --- COMPONENTE PRINCIPAL ---
-export default function WeighingDashboard() {
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSessionActive, setIsSessionActive] = useState(false);
-    const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
-    
-    const [dbProviders, setDbProviders] = useState([]);
-    const [dbProducts, setDbProducts] = useState([]);
-    
-    const [records, setRecords] = useState([]);
-    const [sessionData, setSessionData] = useState(initialSessionData);
-    const [selectedProduct, setSelectedProduct] = useState(null);
-    const [currentWeight, setCurrentWeight] = useState("0.00");
-
-    // Carga inicial de catálogos
-    useEffect(() => {
-        const fetchCatalogos = async () => {
-            try {
-                // Ajustado para usar axios o tu helper request
-                const response = await axios.get(route("pesaje.catalogos"));
-                setDbProviders(response.data.proveedores);
-                setDbProducts(response.data.productos);
-                if (response.data.productos.length > 0) setSelectedProduct(response.data.productos[0]);
-            } catch (error) {
-                toast.error("Error al conectar con el servidor.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchCatalogos();
-    }, []);
-
-    const totalKilos = records.reduce((acc, rec) => acc + parseFloat(rec.peso), 0).toFixed(2);
-
-    const handleStartSession = (e) => {
-        e.preventDefault();
-        if (sessionData.IdProveedor && sessionData.folio) {
-            setIsSessionActive(true);
-            toast.success("Sesión iniciada");
-        } else {
-            toast.error("Complete los datos de inicio");
-        }
-    };
-
-    const handleRegisterWeight = () => {
-        if (parseFloat(currentWeight) <= 0) return toast.error("Capture un peso válido");
-        const newRecord = {
-            id: Date.now(),
-            IdProducto: selectedProduct.IdProducto,
-            producto: selectedProduct.Nombre,
-            peso: currentWeight,
-            unidad: selectedProduct.UnidadMedida,
-            hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        };
-        setRecords([newRecord, ...records]);
-        setCurrentWeight("0.00");
-    };
-
-    const submitFinalLote = async (observacionesFinales) => {
-        const payload = {
-            ...sessionData,
-            observaciones: observacionesFinales,
-            detalles: records,
-            total_kg: totalKilos
-        };
-
-        try {
-            await request(route("pesaje.store"), "POST", payload);
-            toast.success("Lote guardado en la base de datos");
-            // Reset
-            setIsSessionActive(false);
-            setRecords([]);
-            setSessionData(initialSessionData);
-        } catch (error) {
-            throw error;
-        }
-    };
-
-    if (isLoading) return <div className="h-screen flex items-center justify-center"><LoadingDiv /></div>;
-
-    return (
-        <div className="h-[90vh] bg-slate-50 p-4">
-            {!isSessionActive ? (
-                /* VISTA INICIAL: PREPARAR RECEPCIÓN */
-                <div className="flex h-full items-center justify-center">
-                    <div className="w-full max-w-md bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100">
-                        <h2 className="text-2xl font-black uppercase mb-8 border-l-4 border-red-600 pl-4">Nueva Recepción</h2>
-                        <form onSubmit={handleStartSession} className="space-y-6">
-                            <label className="block">
-                                <span className="text-[10px] font-black text-slate-400 uppercase ml-1">Proveedor</span>
-                                <select 
-                                    className="mt-1 block w-full rounded-2xl border-transparent bg-slate-50 p-4 font-bold text-slate-700 focus:ring-2 focus:ring-red-500"
-                                    onChange={(e) => {
-                                        const p = dbProviders.find(x => x.IdProveedor == e.target.value);
-                                        setSessionData({...sessionData, IdProveedor: p.IdProveedor, RazonSocial: p.RazonSocial});
-                                    }}
-                                    required
-                                >
-                                    <option value="">Seleccione...</option>
-                                    {dbProviders.map(p => <option key={p.IdProveedor} value={p.IdProveedor}>{p.RazonSocial}</option>)}
-                                </select>
-                            </label>
-                            <label className="block">
-                                <span className="text-[10px] font-black text-slate-400 uppercase ml-1">Folio del Lote</span>
-                                <input 
-                                    type="text" 
-                                    className="mt-1 block w-full rounded-2xl border-transparent bg-slate-50 p-4 font-mono focus:ring-2 focus:ring-red-500"
-                                    placeholder="0000"
-                                    value={sessionData.folio}
-                                    onChange={(e) => setSessionData({...sessionData, folio: e.target.value})}
-                                    required
-                                />
-                            </label>
-                            <button type="submit" className="w-full bg-red-600 text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-lg shadow-red-100">
-                                Comenzar Pesaje
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            ) : (
-                /* VISTA DASHBOARD: PESAJE ACTIVO */
-                <div className="flex flex-col lg:flex-row gap-6 h-full">
-                    {/* IZQUIERDA: PRODUCTOS E HISTORIAL */}
-                    <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-                        <header className="flex justify-between items-end">
-                            <div>
-                                <h1 className="text-3xl font-black uppercase text-slate-800">{sessionData.RazonSocial}</h1>
-                                <span className="text-xs font-bold text-red-600 uppercase italic">Folio: #{sessionData.folio}</span>
-                            </div>
-                        </header>
-
-                        {/* GRID PRODUCTOS */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            {dbProducts.map(p => (
-                                <button 
-                                    key={p.IdProducto}
-                                    onClick={() => setSelectedProduct(p)}
-                                    className={`p-5 rounded-3xl text-left transition-all border-2 ${selectedProduct?.IdProducto === p.IdProducto ? "border-red-600 bg-white shadow-lg" : "border-transparent bg-white shadow-sm"}`}
-                                >
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase block">{p.UnidadMedida}</span>
-                                    <span className="text-sm font-black uppercase text-slate-700">{p.Nombre}</span>
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* DATATABLE DE REGISTROS (Reemplazando tu tabla manual) */}
-                        <div className="flex-1 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                            <Datatable 
-                                data={records}
-                                virtual={true}
-                                columns={[
-                                    { header: "Hora", accessor: "hora" },
-                                    { header: "Producto", accessor: "producto" },
-                                    { 
-                                        header: "Peso", 
-                                        cell: (props) => <span className="font-black text-red-600">{props.item.peso} {props.item.unidad}</span> 
-                                    },
-                                    {
-                                        header: "Acción",
-                                        cell: (props) => (
-                                            <button 
-                                                onClick={() => setRecords(records.filter(r => r.id !== props.item.id))}
-                                                className="text-red-400 hover:text-red-600 p-1"
-                                            >
-                                                Borrar
-                                            </button>
-                                        )
-                                    }
-                                ]}
-                            />
-                        </div>
-                    </div>
-
-                    {/* DERECHA: CONTROL BÁSCULA */}
-                    <aside className="w-full lg:w-80 flex flex-col gap-4">
-                        <div className="bg-slate-900 rounded-[2.5rem] p-8 text-center text-white shadow-2xl">
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Peso Actual - {selectedProduct?.Nombre}</p>
-                            <div className="flex items-baseline justify-center gap-2">
-                                <span className="text-6xl font-mono font-black text-green-400">{currentWeight}</span>
-                                <span className="text-xs font-bold text-green-900 uppercase">{selectedProduct?.UnidadMedida}</span>
-                            </div>
-                        </div>
-
-                        <button 
-                            onClick={() => setCurrentWeight((Math.random() * 40 + 5).toFixed(2))}
-                            className="bg-blue-600 text-white font-black py-5 rounded-2xl uppercase text-xs tracking-tighter shadow-lg shadow-blue-100 active:scale-95"
-                        >
-                            Capturar Báscula
-                        </button>
-
-                        <button 
-                            onClick={handleRegisterWeight}
-                            className="bg-red-600 text-white font-black py-10 rounded-3xl uppercase text-xl shadow-xl shadow-red-200 active:scale-95 transition-transform"
-                        >
-                            Registrar
-                        </button>
-
-                        <button 
-                            onClick={() => setIsFinishModalOpen(true)}
-                            className="mt-auto bg-slate-200 text-slate-600 font-black py-4 rounded-2xl uppercase text-[10px] tracking-widest hover:bg-slate-300"
-                        >
-                            Finalizar Lote
-                        </button>
-                    </aside>
-                </div>
-            )}
-
-            {/* MODAL DE CIERRE */}
-            <FinishSessionDialog 
-                isOpen={isFinishModalOpen}
-                closeModal={() => setIsFinishModalOpen(false)}
-                onSubmit={submitFinalLote}
-                sessionData={sessionData}
-                records={records}
-                totalKilos={totalKilos}
-            />
-        </div>
     );
 }

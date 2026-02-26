@@ -4,6 +4,7 @@
 
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RolesController;
+use App\Http\Controllers\Catalogs\AreasController;
 use App\Http\Controllers\Catalogs\AlmacenesController;
 use App\Http\Controllers\Catalogs\CodigosController;
 use App\Http\Controllers\Catalogs\CorreosController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Catalogs\PuestosController;
 use App\Http\Controllers\Catalogs\RegistroEntradaController;
 use App\Http\Controllers\Catalogs\UnidadesController;
 use App\Http\Controllers\Catalogs\AsuntosController;
+use App\Http\Controllers\Catalogs\BasculasController;
 use App\Http\Controllers\Catalogs\ClientesController;
 use App\Http\Controllers\Catalogs\ColoniasController;
 use App\Http\Controllers\Catalogs\EstadosController;
@@ -154,6 +156,19 @@ Route::resource('clientes', ClientesController::class)->only([
     'store',
     'update'
 ]);
+
+Route::resource('areas', AreasController::class)->only([
+    'index',
+    'store',
+    'update'
+]);
+
+Route::resource('basculas', BasculasController::class)->only([
+    'index',
+    'store',
+    'update'
+]);
+
 
 
 Route::get('archivo/{id}', [App\Http\Controllers\Catalogs\PersonasController::class, 'verFoto']);

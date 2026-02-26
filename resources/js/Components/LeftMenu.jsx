@@ -52,6 +52,7 @@ const LeftMenu = ({ auth }) => {
     const [showMenu, setShowMenu] = useState(true);
     const [userMenus, setUserMenus] = useState([]);
     const [openMenus, setOpenMenus] = useState({});
+    const [isLoggingOut, setIsLoggingOut] = useState(false); // Estado para la animación
     const location = useLocation();
 
     const getPerfil = useCallback(async () => {
@@ -131,58 +132,78 @@ const LeftMenu = ({ auth }) => {
     };
 
     return (
-        <div id="left-menu" className="flex flex-col h-screen select-none transition-all duration-300"
-            style={{ width: showMenu ? '290px' : '64px', backgroundColor: '#1B2654' }}>
-            
-            {/* Estilos inyectados para el scroll blanco y limpio */}
-            <style>
-                {`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 6px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(255, 255, 255, 0.15);
-                    border-radius: 10px;
-                    border: 1px solid transparent;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(255, 255, 255, 0.3);
-                }
-                .custom-scrollbar {
-                    scrollbar-width: thin;
-                    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
-                }
-                `}
-            </style>
-            
-            <div className="flex items-center justify-between px-4 py-6 border-b border-white border-opacity-10">
-                {showMenu && (
-                    <div className="flex items-center gap-3">
-                        <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
-                        <h2 className="text-white font-bold text-lg whitespace-nowrap">AVT System</h2>
+        <>
+            {/* OVERLAY DE CIERRE DE SESIÓN PROFESIONAL */}
+            {isLoggingOut && (
+                <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#1B2654] bg-opacity-95 backdrop-blur-md transition-all duration-500">
+                    <div className="relative flex items-center justify-center">
+                        {/* Spinner animado */}
+                        <div className="w-20 h-20 border-4 border-t-blue-400 border-r-transparent border-b-blue-400 border-l-transparent rounded-full animate-spin"></div>
+                        <LogOut className="absolute text-white animate-pulse" size={30} />
                     </div>
-                )}
-                <button onClick={() => setShowMenu(!showMenu)} className="p-2 text-white hover:bg-white hover:bg-opacity-10 rounded-lg">
-                    {showMenu ? <ChevronLeft size={24} /> : <Menu size={24} />}
-                </button>
-            </div>
+                    <div className="mt-8 text-center">
+                        <h2 className="text-white text-2xl font-bold tracking-widest uppercase mb-2">
+                            Finalizando Sesión
+                        </h2>
+                        <div className="flex gap-1 justify-center">
+                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                        </div>
+                        <p className="text-blue-200 text-sm mt-4 font-light opacity-70">
+                            Esperamos verte pronto en AVT System
+                        </p>
+                    </div>
+                </div>
+            )}
 
-            <div className="flex-grow overflow-y-auto custom-scrollbar">
-                <ul className="py-2">{userMenus.map(menu => renderMenuItem(menu))}</ul>
-            </div>
+            <div id="left-menu" className={`flex flex-col h-screen select-none transition-all duration-300 ${isLoggingOut ? 'blur-md' : ''}`}
+                style={{ width: showMenu ? '290px' : '64px', backgroundColor: '#1B2654' }}>
+                
+                <style>
+                    {`
+                    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+                    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                    .custom-scrollbar::-webkit-scrollbar-thumb {
+                        background: rgba(255, 255, 255, 0.15);
+                        border-radius: 10px;
+                    }
+                    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+                    .custom-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.15) transparent; }
+                    `}
+                </style>
+                
+                <div className="flex items-center justify-between px-4 py-6 border-b border-white border-opacity-10">
+                    {showMenu && (
+                        <div className="flex items-center gap-3">
+                            <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
+                            <h2 className="text-white font-bold text-lg whitespace-nowrap">AVT System</h2>
+                        </div>
+                    )}
+                    <button onClick={() => setShowMenu(!showMenu)} className="p-2 text-white hover:bg-white hover:bg-opacity-10 rounded-lg">
+                        {showMenu ? <ChevronLeft size={24} /> : <Menu size={24} />}
+                    </button>
+                </div>
 
-            <div className="p-2 border-t border-white border-opacity-10">
-                <InertiaLink href={window.route('logout')} method="post" as="button"
-                    className={`flex items-center p-3 w-full rounded-lg text-white hover:bg-red-500 hover:bg-opacity-20 transition-all
-                    ${showMenu ? 'justify-start' : 'justify-center'}`}>
-                    <LogOut size={20} className={showMenu ? 'mr-3' : ''} />
-                    {showMenu && <span className="text-sm font-semibold">Cerrar Sesión</span>}
-                </InertiaLink>
+                <div className="flex-grow overflow-y-auto custom-scrollbar">
+                    <ul className="py-2">{userMenus.map(menu => renderMenuItem(menu))}</ul>
+                </div>
+
+                <div className="p-2 border-t border-white border-opacity-10">
+                    <InertiaLink 
+                        href={window.route('logout')} 
+                        method="post" 
+                        as="button"
+                        onClick={() => setIsLoggingOut(true)} // Activa la animación
+                        className={`flex items-center p-3 w-full rounded-lg text-white hover:bg-red-600 hover:bg-opacity-40 transition-all duration-300
+                        ${showMenu ? 'justify-start' : 'justify-center'}`}
+                    >
+                        <LogOut size={20} className={showMenu ? 'mr-3' : ''} />
+                        {showMenu && <span className="text-sm font-semibold">Cerrar Sesión</span>}
+                    </InertiaLink>
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 

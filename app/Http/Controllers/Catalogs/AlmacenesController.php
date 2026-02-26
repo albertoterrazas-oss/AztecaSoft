@@ -12,20 +12,25 @@ class AlmacenesController extends Controller
     /**
      * Muestra una lista de almacenes.
      */
-    public function index(Request $request)
+    // public function index(Request $request)
+    // {
+    //     $query = Almacenes::query();
+
+    //     // Filtro de búsqueda por nombre si se requiere
+    //     if ($request->has('search')) {
+    //         $query->where('Nombre', 'LIKE', '%' . $request->search . '%');
+    //     }
+
+    //     // Si prefieres sin paginación para catálogos cortos, usa ->get()
+    //     // Pero para consistencia con tus componentes React, usamos paginate
+    //     return response()->json($query->paginate(20), 200);
+    // }
+
+    public function index()
     {
-        $query = Almacenes::query();
-
-        // Filtro de búsqueda por nombre si se requiere
-        if ($request->has('search')) {
-            $query->where('Nombre', 'LIKE', '%' . $request->search . '%');
-        }
-
-        // Si prefieres sin paginación para catálogos cortos, usa ->get()
-        // Pero para consistencia con tus componentes React, usamos paginate
-        return response()->json($query->paginate(20), 200);
+        $asuntos = Almacenes::all();
+        return response()->json($asuntos);
     }
-
     /**
      * Almacena un nuevo almacén.
      */
@@ -42,10 +47,10 @@ class AlmacenesController extends Controller
 
         $almacen = Almacenes::create($request->all());
 
-        return response()->json([
-            'message' => 'Almacén creado correctamente',
-            'data' => $almacen
-        ], 201);
+        return response()->json(
+            $almacen,
+            201
+        );
     }
 
     /**
