@@ -62,6 +62,9 @@ const LeftMenu = ({ auth }) => {
             const data = await response.json();
             const menuArray = Array.isArray(data.menus) ? data.menus : (data.menus ? [data.menus] : []);
             setUserMenus(menuArray);
+            localStorage.setItem('menus', JSON.stringify(menuArray));
+            localStorage.setItem('perfil', JSON.stringify(data.persona));
+
         } catch (error) {
             console.error('Error en getPerfil:', error.message);
         }
@@ -98,13 +101,13 @@ const LeftMenu = ({ auth }) => {
                                 {showMenu && <span className="truncate text-sm font-medium">{menu.menu_nombre}</span>}
                             </div>
                             {showMenu && (
-                                <ChevronRight 
-                                    size={16} 
-                                    className={`transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`} 
+                                <ChevronRight
+                                    size={16}
+                                    className={`transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`}
                                 />
                             )}
                         </div>
-                        <div 
+                        <div
                             className="overflow-hidden transition-all duration-300 ease-in-out"
                             style={{ maxHeight: isOpen ? '2000px' : '0', backgroundColor: 'rgba(0,0,0,0.1)' }}
                         >
@@ -159,7 +162,7 @@ const LeftMenu = ({ auth }) => {
 
             <div id="left-menu" className={`flex flex-col h-screen select-none transition-all duration-300 ${isLoggingOut ? 'blur-md' : ''}`}
                 style={{ width: showMenu ? '290px' : '64px', backgroundColor: '#1B2654' }}>
-                
+
                 <style>
                     {`
                     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
@@ -172,7 +175,7 @@ const LeftMenu = ({ auth }) => {
                     .custom-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.15) transparent; }
                     `}
                 </style>
-                
+
                 <div className="flex items-center justify-between px-4 py-6 border-b border-white border-opacity-10">
                     {showMenu && (
                         <div className="flex items-center gap-3">
@@ -190,9 +193,9 @@ const LeftMenu = ({ auth }) => {
                 </div>
 
                 <div className="p-2 border-t border-white border-opacity-10">
-                    <InertiaLink 
-                        href={window.route('logout')} 
-                        method="post" 
+                    <InertiaLink
+                        href={window.route('logout')}
+                        method="post"
                         as="button"
                         onClick={() => setIsLoggingOut(true)} // Activa la animación
                         className={`flex items-center p-3 w-full rounded-lg text-white hover:bg-red-600 hover:bg-opacity-40 transition-all duration-300
