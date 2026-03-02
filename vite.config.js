@@ -12,6 +12,10 @@ export default defineConfig({
             fastRefresh: true,
         }),
     ],
+      build: {
+        // Establece el límite de advertencia de tamaño de chunk a 1000 kB (1 MB)
+        chunkSizeWarningLimit: 5000, 
+    },
     // server: {
     //     host: '0.0.0.0', 
     //     port: 5173,
