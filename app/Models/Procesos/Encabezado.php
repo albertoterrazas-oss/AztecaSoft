@@ -11,28 +11,28 @@ class Encabezado extends Model
 
     use HasFactory;
     public $timestamps = false;
-    protected $table = 'dbo.Encabezado';
-    protected $primaryKey = 'id_encabezado';
+    protected $table = 'dbo.Lotes';
+    protected $primaryKey = 'IdLote';
     protected $fillable = [
-        'id_proveedor',
-        'id_archivo',
-        'observaciones',
-        'total',
-        'persona_recibio',
+        'IdProveedor',
+        'IdUsuario',
         'fecha',
-        'folio',
-        'estatus'
+        // 'total',
+        // 'persona_recibio',
+        // 'fecha',
+        // 'folio',
+        // 'estatus'
     ];
 
     public function provedor()
     {
-        return $this->belongsTo(Provedores::class, 'id_proveedor');
+        return $this->belongsTo(Provedores::class, 'IdProveedor');
     }
 
     // En app/Models/Encabezado.php
     public function detalles()
     {
         // Relación de uno a muchos usando tu llave foránea id_encabezado
-        return $this->hasMany(Detalle::class, 'id_encabezado');
+        return $this->hasMany(Detalle::class, 'IdLote');
     }
 }

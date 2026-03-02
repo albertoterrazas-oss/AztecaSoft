@@ -217,27 +217,27 @@ class UserController extends Controller
             return response()->json(['error' => 'Usuario no encontrado'], 404);
         }
 
-        // 2. Buscamos a la persona relacionada cargando la relación 'foto'
-        // Asumiendo que la relación se llama 'foto' en tu modelo Persona
+        // 2. Buscamos a la persona relacionada
         $persona = Persona::with('foto')->find($user->IdPersona);
 
         if ($persona) {
-            // 3. Aplicamos la lógica de Base64 directamente al objeto (sin transform)
+            // --- AQUÍ AGREGAMOS EL IdUsuario AL OBJETO PERSONA ---
+            $persona->IdUsuario = $user->IdUsuario;
+
+            // 3. Lógica de Base64 para la foto
             if ($persona->foto && $persona->foto->archivo) {
                 $binario = $persona->foto->archivo;
-
-                // Verificamos si es un recurso (Resource) de SQL Server o string
                 $data = is_resource($binario) ? stream_get_contents($binario) : $binario;
-
                 $persona->PathFotoEmpleado = 'data:image/jpeg;base64,' . base64_encode($data);
             } else {
                 $persona->PathFotoEmpleado = null;
             }
 
-            // Limpiamos la relación para no enviar el binario pesado dos veces
+            // Limpiamos la relación binaria
             unset($persona->foto);
         }
 
+        // --- PROCESAMIENTO DE MENÚS (Igual que antes) ---
         $menusData = $user->menus()
             ->orderBy('menu_nombre')
             ->get()
@@ -245,36 +245,31 @@ class UserController extends Controller
 
         $menus = [];
         $menusMap = [];
-        $processedMenus = []; // Array para controlar menús procesados y evitar duplicados
+        $processedMenus = [];
 
-        // Crear un mapa de menús
         foreach ($menusData as $menu) {
-            $menu['childs'] = []; // Ahora sí podemos modificarlo porque es un array
+            $menu['childs'] = [];
             $menusMap[$menu['menu_id']] = $menu;
         }
 
-        // Construir jerarquía de menús
         foreach ($menusData as $menu) {
-            // Verificar si el menú ya ha sido procesado para evitar duplicados
-            if (in_array($menu['menu_id'], $processedMenus)) {
-                continue; // Si ya fue procesado, lo saltamos
-            }
+            if (in_array($menu['menu_id'], $processedMenus)) continue;
 
             if ($menu['menu_idPadre'] == 0) {
                 $menus[] = &$menusMap[$menu['menu_id']];
             } else {
-                $menusMap[$menu['menu_idPadre']]['childs'][] = &$menusMap[$menu['menu_id']];
+                // Verificamos que el padre exista en el mapa para evitar errores
+                if (isset($menusMap[$menu['menu_idPadre']])) {
+                    $menusMap[$menu['menu_idPadre']]['childs'][] = &$menusMap[$menu['menu_id']];
+                }
             }
-
-            // Marcar el menú como procesado
             $processedMenus[] = $menu['menu_id'];
         }
 
-        // 4. Retornamos toda la información necesaria
+        // 4. Retornamos la respuesta
         return response()->json([
-            // 'user'    => $user,
-            'persona' => $persona,
-            'menus'   => $menus // Si necesitas los menús por separado
+            'persona' => $persona, // Ahora incluye IdUsuario y PathFotoEmpleado
+            'menus'   => $menus
         ], 200);
     }
 }

@@ -11,63 +11,62 @@ use Illuminate\Support\Facades\DB;
 
 class SalidaController extends Controller
 {
+    // app/Http/Controllers/PesajeController.php
+
     public function guardarSalida(Request $request)
     {
         // 1. Validamos datos
         $request->validate([
-            'id_detalle'  => 'required',
-            'cantidad'    => 'required|numeric|min:0.01',
-            'id_area'     => 'required',
-            'id_producto' => 'required'
+            'id_lote'   => 'required',
+            'cantidad'     => 'required|numeric|min:0.01',
+            'id_producto'  => 'required',
+            'piezas'       => 'nullable|integer',
+            'id_almacen'   => 'required'
         ]);
 
         try {
             return DB::transaction(function () use ($request) {
+                // 2. Localizamos el detalle para obtener el ID del Lote (encabezado)
+                // $detalle = Detalle::findOrFail($request->id_detalle);
 
-                // 2. Actualizamos el Detalle
-                $detalle = Detalle::findOrFail($request->id_detalle);
-                $detalle->estatus = 1; // Marcamos como procesado/pesado
-                $detalle->kilos += $request->cantidad;
-                $detalle->save();
-
-                // 3. Creamos el registro en la Bitácora
-                $bitacora = Bitacora::create([
-                    'fechallegada'    => now(),
-                    'fechasalida'     => now(),
-                    'id_detalle'      => $request->id_detalle,
-                    'id_subproducto'  => $request->id_producto,
-                    'area'            => 'SALIDA', 
-                    'almacen'         => 1,
-                    'personaautorizo' => 0,
-                    'estatus'         => 1,
+                // 3. Ejecución del Procedimiento Almacenado
+                // @IdLote, @IdProducto, @PesoReal, @Piezas, @IdUsuario, @IdAlmacenRecepcion
+                DB::statement('EXEC sp_RegistrarEntrada ?, ?, ?, ?, ?, ?', [
+                    $request->id_lote,          // @IdLote
+                    $request->id_producto,            // @IdProducto
+                    $request->cantidad,               // @PesoReal (netWeight del front)
+                    $request->piezas ?? 0,            // @Piezas
+                    $request->idusuario ?? 0,            // @Piezas
+                    $request->id_almacen              // @IdAlmacenRecepcion
                 ]);
 
-                // --- LÓGICA DE CIERRE DE ENCABEZADO ---
-                
-                // Buscamos si quedan detalles pendientes (estatus != 1) para este encabezado
-                $pendientes = Detalle::where('id_encabezado', $detalle->id_encabezado)
-                                     ->where('estatus', '!=', 1)
-                                     ->count();
+                // 4. Actualización manual de apoyo (si el SP no marca el detalle como procesado)
+                // $detalle->estatus = 1;
+                // $detalle->kilos += $request->cantidad;
+                // $detalle->save();
 
-                // Si ya no hay pendientes, cerramos el encabezado
-                if ($pendientes === 0) {
-                    $encabezado = Encabezado::find($detalle->id_encabezado);
-                    if ($encabezado) {
-                        $encabezado->estatus = 1; // O el número que uses para "Cerrado/Finalizado"
-                        $encabezado->save();
-                    }
-                }
+                // // 5. Verificación de cierre de Lote
+                // $pendientes = Detalle::where('id_encabezado', $detalle->id_encabezado)
+                //     ->where('estatus', '!=', 1)
+                //     ->count();
+
+                // if ($pendientes === 0) {
+                //     $encabezado = Encabezado::find($detalle->id_encabezado);
+                //     if ($encabezado) {
+                //         $encabezado->estatus = 1; // Lote finalizado
+                //         $encabezado->save();
+                //     }
+                // }
 
                 return response()->json([
-                    'message' => 'Salida registrada correctamente',
-                    'id'      => $bitacora->id_bitacora,
-                    'kilos_actuales' => $detalle->kilos,
-                    'lote_cerrado'   => $pendientes === 0 // Le avisamos al front si se cerró el lote
+                    'message'        => 'Entrada registrada exitosamente',
+                    // 'lote_cerrado'   => $pendientes === 0,
+                    // 'kilos_actuales' => $detalle->kilos
                 ], 201);
             });
         } catch (\Exception $e) {
             return response()->json([
-                'error'   => 'Error al registrar la salida',
+                'error'   => 'Error en base de datos',
                 'details' => $e->getMessage()
             ], 500);
         }

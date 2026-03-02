@@ -20,7 +20,7 @@ class RecepcionController extends Controller
                 'provedor',
                 'detalles.producto' // <-- AQUÍ CARGAMOS EL PRODUCTO DENTRO DEL DETALLE
             ])
-                ->where('estatus', "0")
+                // ->where('estatus', "0")
                 ->get();
 
             // if ($lotes->isEmpty()) {
@@ -61,52 +61,89 @@ class RecepcionController extends Controller
     // use Illuminate\Http\Request;
     // use Illuminate\Support\Facades\DB;
 
+    // public function GuardarLote(Request $request)
+    // {
+    //     // Datos de ejemplo basados en tu estructura
+    //     $idProveedor = $request->IdProveedor;
+    //     // $idUsuario = auth()->id(); // O el ID que manejes
+    //     // $fecha = now(); // O una fecha específica
+
+    //     // // Tu array de productos
+    //     // $productos = [
+    //     //     ["id" => 1, "piezas" => 10, "decomiso" => 1],
+    //     //     ["id" => 2, "piezas" => 5, "decomiso" => 0]
+    //     // ];
+
+
+
+
+    //     dd($request->productos);
+    //     //  foreach ($request->productos as $prod) {
+    //     //             $detalle =  [
+    //     //                 // 'id_encabezado' => $encabezado->id_encabezado,
+    //     //                 'id_producto' => $prod['IdProducto'],
+    //     //                 'decomiso' => $prod['cantidad'],
+    //     //                 // 'precio' => 0, // Ajustar si mandas precio desde el front
+    //     //                 // 'kilos' => 0, // Ajustar si manejas kilos aparte de cantidad
+    //     //                 // 'estatus' => 0, // Ajustar si manejas kilos aparte de cantidad
+    //     //             ];
+
+    //     //             // Bitacora::create([
+    //     //             //     'fechallegada' => now(), // Ajustar si manejas kilos aparte de cantidad
+    //     //             //     'fechasalida' => now(), // Ajustar si manejas kilos aparte de cantidad
+    //     //             //     'id_detalle' => $detalle->id_detalle, // Ajustar si manejas kilos aparte de cantidad
+    //     //             //     'id_subproducto' => 0, // Ajustar si manejas kilos aparte de cantidad
+    //     //             //     'area' => 'RECEPCION', // Ajustar si manejas kilos aparte de cantidad
+    //     //             //     'almacen' => NULL, // Ajustar si manejas kilos aparte de cantidad
+    //     //             //     'personaautorizo' => 0, // Ajustar si manejas kilos aparte de cantidad
+    //     //             //     'estatus' => 1, // Ajustar si manejas kilos aparte de cantidad
+    //     //             // ]);
+    //     //         }
+
+    //     try {
+    //         // Ejecutar el procedimiento almacenado
+    //         $resultado = DB::select('EXEC sp_GenerarLote ?, ?, ?, ?', [
+    //             $idProveedor,
+    //             $idUsuario,
+    //             $fecha,
+    //             json_encode($productos) // Convertimos el array a string JSON
+    //         ]);
+
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'message' => 'Lote registrado correctamente',
+    //             'data' => $resultado
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['error' => $e->getMessage()], 500);
+    //     }
+    // }
+
     public function GuardarLote(Request $request)
     {
-        // Datos de ejemplo basados en tu estructura
+        // 1. Recolectar datos del request
         $idProveedor = $request->IdProveedor;
-        // $idUsuario = auth()->id(); // O el ID que manejes
-        // $fecha = now(); // O una fecha específica
+        $idUsuario = $request->idUsuarioLocal; // Ajusta según tu sistema de autenticación
+        $fecha = $request->fecha ?? now(); // La fecha que viene del front
 
-        // // Tu array de productos
-        // $productos = [
-        //     ["id" => 1, "piezas" => 10, "decomiso" => 1],
-        //     ["id" => 2, "piezas" => 5, "decomiso" => 0]
-        // ];
-
-
-
-
-        dd($request->productos);
-        //  foreach ($request->productos as $prod) {
-        //             $detalle =  [
-        //                 // 'id_encabezado' => $encabezado->id_encabezado,
-        //                 'id_producto' => $prod['IdProducto'],
-        //                 'decomiso' => $prod['cantidad'],
-        //                 // 'precio' => 0, // Ajustar si mandas precio desde el front
-        //                 // 'kilos' => 0, // Ajustar si manejas kilos aparte de cantidad
-        //                 // 'estatus' => 0, // Ajustar si manejas kilos aparte de cantidad
-        //             ];
-
-        //             // Bitacora::create([
-        //             //     'fechallegada' => now(), // Ajustar si manejas kilos aparte de cantidad
-        //             //     'fechasalida' => now(), // Ajustar si manejas kilos aparte de cantidad
-        //             //     'id_detalle' => $detalle->id_detalle, // Ajustar si manejas kilos aparte de cantidad
-        //             //     'id_subproducto' => 0, // Ajustar si manejas kilos aparte de cantidad
-        //             //     'area' => 'RECEPCION', // Ajustar si manejas kilos aparte de cantidad
-        //             //     'almacen' => NULL, // Ajustar si manejas kilos aparte de cantidad
-        //             //     'personaautorizo' => 0, // Ajustar si manejas kilos aparte de cantidad
-        //             //     'estatus' => 1, // Ajustar si manejas kilos aparte de cantidad
-        //             // ]);
-        //         }
+        // 2. Formatear el array de productos para que coincida EXACTAMENTE con el JSON del SP
+        // SP espera: { "id": 1, "piezas": 10, "decomiso": 1 }
+        $productosParaSP = collect($request->productos)->map(function ($prod) {
+            return [
+                "id" => $prod['IdProducto'], // Cambiamos IdProducto por id
+                "piezas" => $prod['piezas'],
+                "decomiso" => $prod['decomiso']
+            ];
+        });
 
         try {
-            // Ejecutar el procedimiento almacenado
+            // 3. Ejecutar el procedimiento almacenado
+            // Importante: json_encode para el parámetro @ProductosJSON
             $resultado = DB::select('EXEC sp_GenerarLote ?, ?, ?, ?', [
                 $idProveedor,
                 $idUsuario,
                 $fecha,
-                json_encode($productos) // Convertimos el array a string JSON
+                json_encode($productosParaSP)
             ]);
 
             return response()->json([
@@ -115,7 +152,12 @@ class RecepcionController extends Controller
                 'data' => $resultado
             ]);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            // En caso de error de SQL o código
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al ejecutar el procedimiento',
+                'details' => $e->getMessage()
+            ], 500);
         }
     }
 
