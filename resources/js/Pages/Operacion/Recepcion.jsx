@@ -1,46 +1,62 @@
-import React, { useEffect, useState, Fragment, useRef } from "react";
-import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
+import React, { useEffect, useState, Fragment } from "react";
+import { Dialog, DialogPanel, DialogTitle, Transition } from "@headlessui/react";
 import { toast } from "sonner";
 import LoadingDiv from "@/Components/LoadingDiv";
 import axios from "axios";
-import { Plus, Minus, Check, Save, Loader2 } from 'lucide-react';
+import { Plus, Minus, Check, Save, Loader2, AlertTriangle, Package } from 'lucide-react';
 
-// --- COMPONENTE PARA LA ANIMACIÓN DE COLOR ---
-const QuantityItem = ({ p, quantity, onUpdate, onChange }) => {
-    const [flashClass, setFlashClass] = useState("");
-    const prevValue = useRef(quantity);
+// --- COMPONENTE CON DOBLE INPUT (PIEZAS Y DECOMISO) ---
+const QuantityItem = ({ p, values, onUpdate, onChange }) => {
+    // values es un objeto: { piezas: X, decomiso: Y }
 
-    useEffect(() => {
-        if (quantity > prevValue.current) {
-            setFlashClass("bg-green-100 border-green-500");
-        } else if (quantity < prevValue.current) {
-            setFlashClass("bg-red-100 border-red-500");
-        }
-        
-        const timer = setTimeout(() => setFlashClass(""), 300);
-        prevValue.current = quantity;
-        return () => clearTimeout(timer);
-    }, [quantity]);
+
+
 
     return (
-        <div className={`flex items-center justify-between p-5 rounded-3xl border transition-all duration-300 ${flashClass || "bg-slate-50 border-slate-100"}`}>
-            <div className="flex-1 pr-4">
-                <p className="font-black text-slate-800 uppercase truncate leading-none mb-1">{p.Nombre}</p>
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{p.UnidadMedida}</p>
+        <div className="p-6 rounded-[2.5rem] border border-slate-200 bg-white shadow-sm space-y-4">
+            <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                <div>
+                    <p className="font-black text-slate-800 uppercase leading-none mb-1">{p.Nombre}</p>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{p.UnidadMedida}</p>
+                </div>
             </div>
-            <div className="flex items-center gap-2">
-                <button onClick={() => onUpdate(p.IdProducto, -1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-200 active:scale-90 transition-transform">
-                    <Minus className="w-4 h-4" />
-                </button>
-                <input 
-                    type="number" 
-                    className="w-16 text-center font-black bg-white rounded-xl border-none ring-1 ring-slate-200 text-lg py-2 focus:ring-red-500"
-                    value={quantity}
-                    onChange={(e) => onChange(p.IdProducto, parseInt(e.target.value) || 1)}
-                />
-                <button onClick={() => onUpdate(p.IdProducto, 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-200 active:scale-90 transition-transform">
-                    <Plus className="w-4 h-4" />
-                </button>
+
+            <div className="space-y-3">
+                {/* FILA DE PIEZAS */}
+                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl">
+                    <div className="flex items-center gap-2 text-slate-600">
+                        <Package className="w-4 h-4" />
+                        <span className="text-xs font-black uppercase">Piezas</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => onUpdate(p.IdProducto, 'piezas', -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm border border-slate-200 active:scale-90">-</button>
+                        <input
+                            type="number"
+                            className="w-16 text-center font-black bg-transparent border-none p-0 text-lg focus:ring-0"
+                            value={values.piezas}
+                            onChange={(e) => onChange(p.IdProducto, 'piezas', parseInt(e.target.value) || 0)}
+                        />
+                        <button onClick={() => onUpdate(p.IdProducto, 'piezas', 1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm border border-slate-200 active:scale-90">+</button>
+                    </div>
+                </div>
+
+                {/* FILA DE DECOMISO */}
+                <div className="flex items-center justify-between bg-red-50 p-3 rounded-2xl border border-red-100">
+                    <div className="flex items-center gap-2 text-red-600">
+                        <AlertTriangle className="w-4 h-4" />
+                        <span className="text-xs font-black uppercase">Decomiso</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => onUpdate(p.IdProducto, 'decomiso', -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm border border-red-200 text-red-600 active:scale-90">-</button>
+                        <input
+                            type="number"
+                            className="w-16 text-center font-black bg-transparent border-none p-0 text-lg text-red-600 focus:ring-0"
+                            value={values.decomiso}
+                            onChange={(e) => onChange(p.IdProducto, 'decomiso', parseInt(e.target.value) || 0)}
+                        />
+                        <button onClick={() => onUpdate(p.IdProducto, 'decomiso', 1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm border border-red-200 text-red-600 active:scale-90">+</button>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -50,30 +66,23 @@ const route = (name) => {
     const routeMap = {
         "provedores.index": "/api/provedores",
         "productos.index": "/api/productos",
-        "GuardarLote": "/api/GuardarLote",
+        "GuardarTodo": "/api/GuardarLote",
     };
     return routeMap[name] || `/${name}`;
 };
 
-const initialSessionData = {
-    IdProveedor: "",
-    RazonSocial: "",
-    folio: "",
-    observaciones: ""
-};
-
-export default function WeighingDashboard() {
+export default function CombinedDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [step, setStep] = useState(1);
-    
+
     const [dbProviders, setDbProviders] = useState([]);
     const [dbProducts, setDbProducts] = useState([]);
+    const [sessionData, setSessionData] = useState({ IdProveedor: "", RazonSocial: "" });
+    const [selectedProducts, setSelectedProducts] = useState([]);
 
-    const [sessionData, setSessionData] = useState(initialSessionData);
-    const [selectedProducts, setSelectedProducts] = useState([]); 
-    const [quantities, setQuantities] = useState({});
-
+    // Estado estructurado: { [id]: { piezas: 0, decomiso: 0 } }
+    const [itemValues, setItemValues] = useState({});
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
     useEffect(() => {
@@ -84,147 +93,124 @@ export default function WeighingDashboard() {
                     axios.get(route("productos.index"))
                 ]);
                 setDbProviders(resProv.data.data || resProv.data);
-                const allProducts = resProd.data.data || resProd.data;
-                setDbProducts(allProducts.filter(p => p.EsSubproducto == 0));
-            } catch (error) {
-                toast.error("Error al conectar con el servidor.");
-            } finally {
-                setIsLoading(false);
-            }
+                setDbProducts((resProd.data.data || resProd.data).filter(p => p.EsSubproducto == 0));
+            } catch (error) { toast.error("Error de conexión"); }
+            finally { setIsLoading(false); }
         };
         fetchCatalogos();
     }, []);
 
-    const handleSaveLote = async () => {
+    const handleUpdateValue = (id, field, delta) => {
+        setItemValues(prev => ({
+            ...prev,
+            [id]: {
+                ...prev[id],
+                [field]: Math.max(0, (prev[id]?.[field] || 0) + delta)
+            }
+        }));
+    };
+
+    const handleManualChange = (id, field, value) => {
+        setItemValues(prev => ({
+            ...prev,
+            [id]: { ...prev[id], [field]: Math.max(0, value) }
+        }));
+    };
+
+    const getUserId = () => {
+        const perfil = localStorage.getItem('perfil');
+        if (perfil) {
+            try {
+                const parsed = JSON.parse(perfil);
+                return parsed.IdUsuario;
+            } catch (e) {
+                console.error("Error al parsear el perfil", e);
+                return null;
+            }
+        }
+        return null;
+    };
+
+    const handleSave = async () => {
         setIsSaving(true);
         const productosData = selectedProducts.map(p => ({
             IdProducto: p.IdProducto,
-            cantidad: quantities[p.IdProducto] || 1
+            piezas: itemValues[p.IdProducto]?.piezas || 0,
+            decomiso: itemValues[p.IdProducto]?.decomiso || 0
         }));
 
-        const payload = {
-            ...sessionData,
-            fecha: new Date().toISOString().split('T')[0],
-            productos: productosData
-        };
+        const payload = { ...sessionData, fecha: new Date().toISOString().split('T')[0], productos: productosData ,  idUsuarioLocal : getUserId()};
 
         try {
-            await axios.post(route("GuardarLote"), payload);
-            toast.success("Lote guardado correctamente");
-            
-            // --- REINICIO TOTAL ---
-            setIsConfirmModalOpen(false); // Cerramos el modal
-            setStep(1); // Volvemos al inicio
-            setSessionData(initialSessionData);
+            await axios.post(route("GuardarTodo"), payload);
+            toast.success("Registro guardado correctamente");
+            setStep(1);
             setSelectedProducts([]);
-            setQuantities({});
-        } catch (error) {
-            console.error(error);
-            toast.error("Error al guardar el lote");
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const updateQuantity = (id, delta) => {
-        setQuantities(prev => ({
-            ...prev,
-            [id]: Math.max(1, (prev[id] || 1) + delta)
-        }));
-    };
-
-    const toggleProductSelection = (product) => {
-        const exists = selectedProducts.find(p => p.IdProducto === product.IdProducto);
-        if (exists) {
-            setSelectedProducts(selectedProducts.filter(p => p.IdProducto !== product.IdProducto));
-        } else {
-            setSelectedProducts([...selectedProducts, product]);
-            if (!quantities[product.IdProducto]) {
-                setQuantities(prev => ({ ...prev, [product.IdProducto]: 1 }));
-            }
-        }
+            setItemValues({});
+            setIsConfirmModalOpen(false);
+        } catch (error) { toast.error("Error al guardar"); }
+        finally { setIsSaving(false); }
     };
 
     if (isLoading) return <div className="h-screen flex items-center justify-center"><LoadingDiv /></div>;
 
     return (
         <div className="min-h-screen bg-slate-50 p-6 font-sans">
-            
             {isSaving && (
-                <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center text-white text-center p-4">
-                    <Loader2 className="w-16 h-16 animate-spin text-red-500 mb-4" />
-                    <p className="text-2xl font-black uppercase tracking-widest">Finalizando Transacción...</p>
+                <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center text-white">
+                    <Loader2 className="w-16 h-16 animate-spin mb-4 text-red-500" />
+                    <p className="text-2xl font-black uppercase tracking-tighter">Guardando Información...</p>
                 </div>
             )}
 
-            {/* STEP 1: INICIO */}
             {step === 1 && (
                 <div className="flex h-[80vh] items-center justify-center">
-                    <div className="w-full max-w-md bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100">
-                        <h2 className="text-2xl font-black uppercase mb-8 border-l-4 border-red-600 pl-4 text-slate-800">Nueva Recepción</h2>
+                    <div className="w-full max-w-md bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100">
+                        <h2 className="text-2xl font-black uppercase text-slate-800 mb-8 border-l-4 border-red-600 pl-4">Nueva Recepción</h2>
                         <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-6">
-                            <select 
-                                className="w-full rounded-2xl bg-slate-50 p-4 font-bold border-none focus:ring-2 focus:ring-red-500"
+                            <select
+                                className="w-full rounded-2xl bg-slate-50 p-4 font-bold border-none focus:ring-2 focus:ring-red-600"
                                 value={sessionData.IdProveedor}
                                 onChange={(e) => {
                                     const p = dbProviders.find(x => x.IdProveedor == e.target.value);
-                                    setSessionData({...sessionData, IdProveedor: p?.IdProveedor || "", RazonSocial: p?.RazonSocial || ""});
+                                    setSessionData({ IdProveedor: p?.IdProveedor || "", RazonSocial: p?.RazonSocial || "" });
                                 }}
                                 required
                             >
-                                <option value="">Seleccione Proveedor...</option>
-                                {dbProviders.map(p => (
-                                    <option key={p.IdProveedor} value={p.IdProveedor}>{p.RazonSocial}</option>
-                                ))}
+                                <option value="">Seleccionar Proveedor...</option>
+                                {dbProviders.map(p => (<option key={p.IdProveedor} value={p.IdProveedor}>{p.RazonSocial}</option>))}
                             </select>
-                            <input 
-                                type="text" 
-                                placeholder="Folio de Lote" 
-                                className="w-full rounded-2xl bg-slate-50 p-4 font-mono border-none focus:ring-2 focus:ring-red-500 uppercase"
-                                value={sessionData.folio}
-                                onChange={(e) => setSessionData({...sessionData, folio: e.target.value})}
-                                required 
-                            />
-                            <textarea 
-                                placeholder="Observaciones (opcional)"
-                                className="w-full rounded-2xl bg-slate-50 p-4 font-medium border-none focus:ring-2 focus:ring-red-500 resize-none"
-                                rows="2"
-                                value={sessionData.observaciones}
-                                onChange={(e) => setSessionData({...sessionData, observaciones: e.target.value})}
-                            />
-                            <button className="w-full bg-red-600 text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-lg active:scale-95 transition-transform">
-                                Comenzar
-                            </button>
+                            <button className="w-full bg-red-600 text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-lg active:scale-95 transition-all">Siguiente</button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* STEP 2: SELECCIÓN */}
             {step === 2 && (
                 <div className="w-full max-w-5xl mx-auto pb-32">
-                    <header className="mb-8 flex justify-between items-end">
+                    <header className="mb-8 flex justify-between items-center bg-white p-6 rounded-[2.5rem] shadow-sm">
                         <div>
-                            <button onClick={() => setStep(1)} className="text-red-600 font-bold text-xs uppercase mb-2">← Cambiar Datos</button>
-                            <h1 className="text-3xl font-black text-slate-800 uppercase leading-none">Selección de Carga</h1>
-                            <p className="text-slate-500 font-medium mt-2 italic">Proveedor: {sessionData.RazonSocial}</p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Folio Lote</p>
-                            <p className="font-mono font-black text-xl text-slate-700">#{sessionData.folio}</p>
+                            <button onClick={() => setStep(1)} className="text-red-600 font-bold text-xs uppercase mb-1">← Volver</button>
+                            <h1 className="text-2xl font-black uppercase text-slate-800">Selección de Productos</h1>
+                            <p className="text-slate-400 font-bold text-sm uppercase italic">{sessionData.RazonSocial}</p>
                         </div>
                     </header>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {dbProducts.map((p) => {
                             const isSelected = selectedProducts.find(x => x.IdProducto === p.IdProducto);
                             return (
                                 <button
                                     key={p.IdProducto}
-                                    onClick={() => toggleProductSelection(p)}
-                                    className={`relative p-6 rounded-[2.5rem] text-left transition-all border-4 ${
-                                        isSelected ? "border-red-600 bg-white shadow-xl scale-[1.02]" : "border-transparent bg-white opacity-60 shadow-sm hover:opacity-100"
-                                    }`}
+                                    onClick={() => {
+                                        if (isSelected) {
+                                            setSelectedProducts(selectedProducts.filter(x => x.IdProducto !== p.IdProducto));
+                                        } else {
+                                            setSelectedProducts([...selectedProducts, p]);
+                                            if (!itemValues[p.IdProducto]) setItemValues({ ...itemValues, [p.IdProducto]: { piezas: 0, decomiso: 0 } });
+                                        }
+                                    }}
+                                    className={`relative p-6 rounded-[2.5rem] text-left transition-all border-4 ${isSelected ? "border-red-600 bg-white shadow-xl scale-[1.02]" : "border-transparent bg-white opacity-60"}`}
                                 >
                                     {isSelected && <div className="absolute top-4 right-4 bg-red-600 rounded-full p-1"><Check className="w-3 h-3 text-white" strokeWidth={4} /></div>}
                                     <span className="text-[10px] font-black text-slate-400 block tracking-widest uppercase mb-1">{p.UnidadMedida}</span>
@@ -235,44 +221,40 @@ export default function WeighingDashboard() {
                     </div>
 
                     <div className="fixed bottom-8 left-0 right-0 px-6 z-10 flex justify-center">
-                        <button 
+                        <button
                             disabled={selectedProducts.length === 0}
                             onClick={() => setIsConfirmModalOpen(true)}
-                            className="w-full max-w-md bg-slate-900 text-white font-black py-6 rounded-3xl uppercase tracking-widest shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition-all disabled:bg-slate-300 disabled:shadow-none"
+                            className="w-full max-w-md bg-slate-900 text-white font-black py-6 rounded-3xl uppercase tracking-widest shadow-2xl active:scale-95 disabled:bg-slate-300"
                         >
-                            Confirmar Selección ({selectedProducts.length})
+                            Capturar Cantidades ({selectedProducts.length})
                         </button>
                     </div>
                 </div>
             )}
 
-            {/* MODAL DE REVISIÓN Y GUARDADO */}
             <Transition show={isConfirmModalOpen} as={Fragment}>
                 <Dialog as="div" className="relative z-50" onClose={() => setIsConfirmModalOpen(false)}>
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md" />
                     <div className="fixed inset-0 flex items-center justify-center p-4">
-                        <DialogPanel className="w-full max-w-2xl bg-white rounded-[3rem] p-10 shadow-2xl">
-                            <DialogTitle className="text-2xl font-black uppercase mb-8 border-l-4 border-red-600 pl-4">Resumen de Carga</DialogTitle>
+                        <DialogPanel className="w-full max-w-2xl bg-slate-50 rounded-[3rem] p-8 shadow-2xl border border-white">
+                            <DialogTitle className="text-2xl font-black uppercase mb-6 text-slate-800 px-2 text-center">Detalle de Carga / Decomiso</DialogTitle>
 
-                            <div className="max-h-[40vh] overflow-y-auto space-y-3 mb-10 pr-2">
+                            <div className="max-h-[55vh] overflow-y-auto space-y-4 mb-8 px-2">
                                 {selectedProducts.map((p) => (
-                                    <QuantityItem 
-                                        key={p.IdProducto} 
-                                        p={p} 
-                                        quantity={quantities[p.IdProducto] || 1}
-                                        onUpdate={updateQuantity}
-                                        onChange={(id, val) => setQuantities({...quantities, [id]: val})}
+                                    <QuantityItem
+                                        key={p.IdProducto}
+                                        p={p}
+                                        values={itemValues[p.IdProducto] || { piezas: 0, decomiso: 0 }}
+                                        onUpdate={handleUpdateValue}
+                                        onChange={handleManualChange}
                                     />
                                 ))}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6">
-                                <button onClick={() => setIsConfirmModalOpen(false)} className="py-5 font-black text-slate-400 uppercase tracking-widest text-sm hover:text-slate-600">Atrás</button>
-                                <button 
-                                    onClick={handleSaveLote}
-                                    className="py-5 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:bg-red-700 transition-colors"
-                                >
-                                    <Save className="w-5 h-5" /> Guardar Lote
+                            <div className="grid grid-cols-2 gap-4">
+                                <button onClick={() => setIsConfirmModalOpen(false)} className="py-5 font-black text-slate-400 uppercase tracking-widest text-sm">Atrás</button>
+                                <button onClick={handleSave} className="py-5 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:bg-red-700">
+                                    <Save className="w-5 h-5" /> Guardar Todo
                                 </button>
                             </div>
                         </DialogPanel>

@@ -10,15 +10,15 @@ class Detalle extends Model
 
     use HasFactory;
     public $timestamps = false;
-    protected $table = 'dbo.Detalle_Producto';
-    protected $primaryKey = 'id_detalle';
+    protected $table = 'dbo.LoteDetalle';
+    protected $primaryKey = 'IdLote';
     protected $fillable = [
-        'id_encabezado',
-        'id_producto',
-        'cantidad',
-        'precio',
-        'kilos',
-        'estatus'
+        'IdProducto',
+        'Piezas',
+        'Decomiso',
+        'Peso',
+        // 'kilos',
+        // 'estatus'
 
     ];
 
