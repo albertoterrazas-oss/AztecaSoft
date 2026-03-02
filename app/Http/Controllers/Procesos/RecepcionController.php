@@ -55,7 +55,72 @@ class RecepcionController extends Controller
             ], 500);
         }
     }
+
+
+
+    // use Illuminate\Http\Request;
+    // use Illuminate\Support\Facades\DB;
+
     public function GuardarLote(Request $request)
+    {
+        // Datos de ejemplo basados en tu estructura
+        $idProveedor = $request->IdProveedor;
+        // $idUsuario = auth()->id(); // O el ID que manejes
+        // $fecha = now(); // O una fecha específica
+
+        // // Tu array de productos
+        // $productos = [
+        //     ["id" => 1, "piezas" => 10, "decomiso" => 1],
+        //     ["id" => 2, "piezas" => 5, "decomiso" => 0]
+        // ];
+
+
+
+
+        dd($request->productos);
+        //  foreach ($request->productos as $prod) {
+        //             $detalle =  [
+        //                 // 'id_encabezado' => $encabezado->id_encabezado,
+        //                 'id_producto' => $prod['IdProducto'],
+        //                 'decomiso' => $prod['cantidad'],
+        //                 // 'precio' => 0, // Ajustar si mandas precio desde el front
+        //                 // 'kilos' => 0, // Ajustar si manejas kilos aparte de cantidad
+        //                 // 'estatus' => 0, // Ajustar si manejas kilos aparte de cantidad
+        //             ];
+
+        //             // Bitacora::create([
+        //             //     'fechallegada' => now(), // Ajustar si manejas kilos aparte de cantidad
+        //             //     'fechasalida' => now(), // Ajustar si manejas kilos aparte de cantidad
+        //             //     'id_detalle' => $detalle->id_detalle, // Ajustar si manejas kilos aparte de cantidad
+        //             //     'id_subproducto' => 0, // Ajustar si manejas kilos aparte de cantidad
+        //             //     'area' => 'RECEPCION', // Ajustar si manejas kilos aparte de cantidad
+        //             //     'almacen' => NULL, // Ajustar si manejas kilos aparte de cantidad
+        //             //     'personaautorizo' => 0, // Ajustar si manejas kilos aparte de cantidad
+        //             //     'estatus' => 1, // Ajustar si manejas kilos aparte de cantidad
+        //             // ]);
+        //         }
+
+        try {
+            // Ejecutar el procedimiento almacenado
+            $resultado = DB::select('EXEC sp_GenerarLote ?, ?, ?, ?', [
+                $idProveedor,
+                $idUsuario,
+                $fecha,
+                json_encode($productos) // Convertimos el array a string JSON
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Lote registrado correctamente',
+                'data' => $resultado
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+
+    public function sa(Request $request)
     {
         // 1. Validar la información (Opcional pero recomendado)
         $request->validate([
@@ -63,6 +128,10 @@ class RecepcionController extends Controller
             'productos' => 'required|array|min:1',
             'fecha' => 'required|date'
         ]);
+
+
+
+
 
         try {
             // 2. Iniciar Transacción
