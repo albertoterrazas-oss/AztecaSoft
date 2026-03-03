@@ -25,6 +25,8 @@ use App\Http\Controllers\Catalogs\MunicipiosController;
 use App\Http\Controllers\Catalogs\PersonasController;
 use App\Http\Controllers\Catalogs\ProductosController;
 use App\Http\Controllers\Catalogs\ProvedoresController;
+use App\Http\Controllers\Procesos\DespieceController;
+use App\Http\Controllers\Procesos\InventariosController;
 use App\Http\Controllers\Procesos\RecepcionController;
 use App\Http\Controllers\Procesos\SalidaController;
 use Illuminate\Http\Request;
@@ -169,6 +171,16 @@ Route::resource('basculas', BasculasController::class)->only([
     'update'
 ]);
 
+// Route::resource('Despiece', DespieceController::class)->only([
+//     'index',
+//     'store',
+//     'update'
+// ]);
+// Route::post('/Despiece', action: [DespieceController::class, 'store'])->name('Despiece');
+
+// Cambia esto temporalmente para testear
+// Route::post('procesar-despiece', [DespieceController::class, 'store'])->name('despiece.store');
+Route::post('/despiece', [DespieceController::class, 'store'])->name('despiece.store');
 
 
 Route::get('archivo/{id}', [App\Http\Controllers\Catalogs\PersonasController::class, 'verFoto']);
@@ -190,7 +202,11 @@ Route::get('LoteDetalles', [RecepcionController::class, 'LoteDetalles'])->name('
 
 Route::post('/pesaje/guardar-lote', [SalidaController::class, 'guardarSalida'])->name('pesaje.store');
 
+Route::get('LotesAreas', [RecepcionController::class, 'LotesAreas'])->name('LotesAreas');
+Route::get('LotesAreasDeshuese', [RecepcionController::class, 'LotesAreasDeshuese'])->name('LotesAreasDeshuese');
+Route::get('LotesLimpieza', [RecepcionController::class, 'LotesLimpieza'])->name('LotesLimpieza');
 
+Route::get('/getInventario', [InventariosController::class, 'getInventario'])->name('getInventario');
 
 
 Route::get('QuienconQuienControl', [UnidadesController::class, 'QuienconQuienControl'])->name('QuienconQuienControl');

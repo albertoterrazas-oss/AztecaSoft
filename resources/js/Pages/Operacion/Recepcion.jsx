@@ -166,10 +166,10 @@ export default function CombinedDashboard() {
             {step === 1 && (
                 <div className="flex h-[80vh] items-center justify-center">
                     <div className="w-full max-w-md bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100">
-                        <h2 className="text-2xl font-black uppercase text-slate-800 mb-8 border-l-4 border-red-600 pl-4">Nueva Recepción</h2>
+                        <h2 className="text-2xl font-black uppercase text-slate-800 mb-8 border-l-4  pl-4" style={{borderColor: '#1B2654'}}>Nueva Recepción</h2>
                         <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-6">
                             <select
-                                className="w-full rounded-2xl bg-slate-50 p-4 font-bold border-none focus:ring-2 focus:ring-red-600"
+                                className="w-full rounded-2xl bg-slate-50 p-4 font-bold border-none focus:ring-2 "
                                 value={sessionData.IdProveedor}
                                 onChange={(e) => {
                                     const p = dbProviders.find(x => x.IdProveedor == e.target.value);
@@ -180,7 +180,7 @@ export default function CombinedDashboard() {
                                 <option value="">Seleccionar Proveedor...</option>
                                 {dbProviders.map(p => (<option key={p.IdProveedor} value={p.IdProveedor}>{p.RazonSocial}</option>))}
                             </select>
-                            <button className="w-full bg-red-600 text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-lg active:scale-95 transition-all">Siguiente</button>
+                            <button style={{backgroundColor: '#1B2654'}} className="w-full bg-red-600 text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-lg active:scale-95 transition-all">Siguiente</button>
                         </form>
                     </div>
                 </div>
@@ -253,7 +253,7 @@ export default function CombinedDashboard() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <button onClick={() => setIsConfirmModalOpen(false)} className="py-5 font-black text-slate-400 uppercase tracking-widest text-sm">Atrás</button>
-                                <button onClick={handleSave} className="py-5 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:bg-red-700">
+                                <button onClick={handleSave}  className="py-5 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:bg-red-700">
                                     <Save className="w-5 h-5" /> Guardar Todo
                                 </button>
                             </div>

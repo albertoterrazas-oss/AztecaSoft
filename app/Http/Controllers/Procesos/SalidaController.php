@@ -35,13 +35,13 @@ class SalidaController extends Controller
                     $request->cantidad,               // @PesoReal (netWeight del front)
                     $request->piezas ?? 0,            // @Piezas
                     $request->idusuario ?? 0,            // @Piezas
-                    $request->id_area_entrada              // @IdAlmacenRecepcion
+                    $request->id_area_entrada ?? 6, // Si no viene, por defecto es 6
                 ]);
 
                 DB::statement('EXEC sp_RegistrarTraspaso ?, ?, ?, ?, ?, ?, ?', [
                     $request->id_lote,            // @IdLote
                     $request->id_producto,        // @IdProducto
-                    $request->id_area_entrada,  // @IdAlmacenOrigen (Faltaba en tu lista)
+                    $request->id_area_entrada ?? 6, // Si no viene, por defecto es 6
                     $request->id_area_salida,         // @IdAlmacenDestino (El destino)
                     $request->cantidad,           // @Peso
                     $request->piezas ?? 0,        // @Piezas

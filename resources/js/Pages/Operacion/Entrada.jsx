@@ -23,7 +23,7 @@ export default function WeighingDashboard() {
     const [almacenes, setAlmacenes] = useState([]);
 
     const [selectedProduct, setSelectedProduct] = useState(null);
-    const [selectedArea, setSelectedArea] = useState(null); 
+    const [selectedArea, setSelectedArea] = useState(null);
     const [currentWeight, setCurrentWeight] = useState("0.00");
     const [tara, setTara] = useState("0.00");
     const [piezas, setPiezas] = useState(0);
@@ -33,8 +33,7 @@ export default function WeighingDashboard() {
     const netWeight = Math.max(0, (parseFloat(currentWeight) - parseFloat(tara))).toFixed(2);
     const totalKilosLote = records.reduce((acc, rec) => acc + parseFloat(rec.Peso || 0), 0).toFixed(2);
 
-    const areaEntradaObj = almacenes.find(a => (a.Nombre || a.Departamentos_nombre || '').toUpperCase().includes("ENTRADA"));
-    const idAreaEntrada = areaEntradaObj ? (areaEntradaObj.IdAlmacen || areaEntradaObj.id) : null;
+    // Identificación de Área usando Departamentos_nombre
     const areaSeleccionadaObj = almacenes.find(a => (a.IdAlmacen || a.id) === selectedArea);
     const esTipoEntrada = (areaSeleccionadaObj?.Nombre || areaSeleccionadaObj?.Departamentos_nombre || '').toUpperCase().includes("ENTRADA");
 
@@ -58,38 +57,39 @@ export default function WeighingDashboard() {
             setIsLoading(true);
             try {
                 const [resProd] = await Promise.all([
-                    axios.get(route("productos.index")), 
-                    fetchLotes(), 
+                    axios.get(route("productos.index")),
+                    fetchLotes(),
                     fetchAlmacenes()
                 ]);
                 const allProducts = resProd.data.data || resProd.data;
                 setDbProducts(allProducts.filter(p => p.EsSubproducto == 0));
                 hasFetchedInitialData.current = true;
-            } catch (error) { toast.error("Error de conexión"); }
-            finally { setIsLoading(false); }
+            } catch (error) {
+                toast.error("Error de conexión");
+            } finally {
+                setIsLoading(false);
+            }
         };
         initData();
     }, [fetchLotes, fetchAlmacenes]);
 
-    // --- MANEJADORES ---
     const handleSelectLote = (lote) => {
         setSelectedLote(lote);
         setRecords(lote.detalles || []);
         setSelectedProduct(null);
         setSelectedArea(null);
-        setPiezas(0); // Limpiar al cambiar de lote
+        setPiezas(0);
     };
 
-    // NUEVA FUNCIÓN: Al hacer clic en un producto, seteamos sus piezas
     const handleProductClick = (p, currentPieces) => {
         setSelectedProduct(p);
-        setPiezas(currentPieces || 0); // <--- AQUÍ SE SETEAN LAS PIEZAS
+        setPiezas(currentPieces || 0);
     };
 
     const registrarPesaje = async () => {
         if (isProcessing) return;
         if (!selectedProduct) return toast.error("Selecciona un producto");
-        if (!selectedArea) return toast.error("Selecciona área de destino/salida");
+        if (!selectedArea) return toast.error("Selecciona área");
         if (parseFloat(netWeight) <= 0) return toast.error("Báscula en cero");
 
         setIsProcessing(true);
@@ -100,8 +100,8 @@ export default function WeighingDashboard() {
                 id_lote: selectedLote.IdLote,
                 id_producto: selectedProduct.IdProducto,
                 cantidad: netWeight,
-                piezas: piezas, // Se envía lo que esté en el input
-                id_area_entrada: idAreaEntrada,
+                piezas: piezas,
+                id_area_entrada: 1,
                 id_area_salida: selectedArea,
                 idusuario: getUserId()
             };
@@ -116,7 +116,7 @@ export default function WeighingDashboard() {
                 const res = await axios.get(route("Lotes"));
                 const freshLote = res.data.find(l => l.IdLote === selectedLote.IdLote);
                 if (freshLote) setRecords(freshLote.detalles || []);
-                
+
                 setCurrentWeight("0.00");
                 setTara("0.00");
                 setPiezas(0);
@@ -139,22 +139,48 @@ export default function WeighingDashboard() {
 
     if (!selectedLote) {
         return (
-            <div className="min-h-screen bg-slate-100 p-8">
-                <Toaster position="top-right" richColors />
-                <div className="max-w-4xl mx-auto">
-                    <h1 className="text-4xl font-black text-center mb-10 text-slate-800 uppercase">Seleccionar Lote</h1>
-                    <div className="grid gap-4">
-                        {lotes.map((lote) => (
-                            <button key={lote.IdLote} onClick={() => handleSelectLote(lote)} className="bg-white p-6 rounded-[2rem] flex items-center justify-between border border-slate-200 hover:border-red-500 transition-all shadow-sm group">
-                                <div className="text-left">
-                                    <span className="text-[10px] font-black text-red-600 uppercase">Lote #{lote.IdLote}</span>
-                                    <h3 className="text-xl font-black text-slate-800 uppercase leading-none">{lote.provedor?.RazonSocial}</h3>
+            <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
+                {/* <Toaster position="top-right" richColors /> */}
+                {/* Contenedor principal para centrado total */}
+                <div className="min-h-screen w-full flex flex-col justify-center items-center p-4 bg-slate-50">
+
+                    <div className="max-w-4xl w-full mx-auto">
+                        <h1 className="text-4xl font-black text-center mb-10 text-slate-800 uppercase">
+                            Panel de entradas y salidas
+                        </h1>
+
+                        <div className="grid gap-4">
+                            {lotes.length > 0 ? (
+                                lotes.map((lote) => (
+                                    <button
+                                        key={lote.IdLote}
+                                        onClick={() => handleSelectLote(lote)}
+                                        className="bg-white p-6 rounded-[2rem] flex items-center justify-between border border-slate-200 hover:border-red-500 transition-all shadow-sm group"
+                                    >
+                                        <div className="text-left">
+                                            <span className="text-[10px] font-black text-red-600 uppercase">Lote #{lote.IdLote}</span>
+                                            <h3 className="text-xl font-black text-slate-800 uppercase leading-none">{lote.provedor?.RazonSocial}</h3>
+                                        </div>
+                                        <div className="bg-slate-50 group-hover:bg-red-600 group-hover:text-white p-4 rounded-2xl transition-all">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                            </svg>
+                                        </div>
+                                    </button>
+                                ))
+                            ) : (
+                                /* Estado vacío */
+                                <div className="col-span-full py-12 text-center border-2 border-dashed border-slate-200 rounded-[2rem] bg-white">
+                                    <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-slate-500 font-bold text-lg">No hay lotes disponibles</h3>
+                                    <p className="text-slate-400 text-sm">Por el momento no se encontraron registros en esta sección.</p>
                                 </div>
-                                <div className="bg-slate-50 group-hover:bg-red-600 group-hover:text-white p-4 rounded-2xl transition-all">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-                                </div>
-                            </button>
-                        ))}
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -164,7 +190,7 @@ export default function WeighingDashboard() {
     return (
         <div className="h-screen bg-slate-100 p-4 font-sans overflow-hidden flex flex-col lg:flex-row gap-6">
             {/* <Toaster position="top-right" richColors /> */}
-            
+
             <div className="flex-[2.5] flex flex-col gap-4 overflow-hidden">
                 <header className="flex justify-between items-end">
                     <div>
@@ -254,13 +280,19 @@ export default function WeighingDashboard() {
 
                     <div className="bg-white p-4 rounded-2xl border border-slate-200">
                         <label className="text-[8px] font-black text-slate-400 block mb-1 uppercase text-center">Cant. Piezas a Registrar</label>
-                        <input 
-                            type="number" 
-                            value={piezas} 
-                            onChange={(e) => setPiezas(e.target.value)} 
-                            className="w-full bg-slate-100 border-none rounded-xl font-black text-center text-xl p-2 mb-4 focus:ring-2 focus:ring-red-500" 
+                        <input
+                            type="number"
+                            value={piezas}
+                            onChange={(e) => setPiezas(e.target.value)}
+                            // ESTADO: Deshabilitado en Entrada
+                            disabled={esTipoEntrada}
+                            className={`w-full border-none rounded-xl font-black text-center text-xl p-2 mb-4 transition-all
+                                ${esTipoEntrada
+                                    ? "bg-emerald-100 text-emerald-700 cursor-not-allowed ring-2 ring-emerald-500/20"
+                                    : "bg-slate-100 text-slate-800 focus:ring-2 focus:ring-red-500"
+                                }`}
                         />
-                        
+
                         <div className="flex flex-wrap gap-1">
                             {almacenes.map(a => {
                                 const areaId = a.IdAlmacen || a.id;
@@ -269,12 +301,12 @@ export default function WeighingDashboard() {
                                 const isEntrada = nombre.includes("ENTRADA");
 
                                 return (
-                                    <button 
-                                        key={areaId} 
-                                        onClick={() => setSelectedArea(areaId)} 
+                                    <button
+                                        key={areaId}
+                                        onClick={() => setSelectedArea(areaId)}
                                         className={`flex-1 min-w-[70px] py-2 rounded-lg text-[8px] font-black uppercase transition-all border-2
-                                            ${isSelected 
-                                                ? (isEntrada ? "bg-emerald-600 border-emerald-700 text-white" : "bg-slate-800 border-slate-900 text-white") 
+                                            ${isSelected
+                                                ? (isEntrada ? "bg-emerald-600 border-emerald-700 text-white" : "bg-slate-800 border-slate-900 text-white")
                                                 : (isEntrada ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-100 border-transparent text-slate-400")
                                             }`}
                                     >
@@ -291,8 +323,8 @@ export default function WeighingDashboard() {
                         className={`w-full font-black py-4 rounded-[2rem] uppercase text-2xl border-b-8 shadow-lg transition-all
                             ${(isProcessing || !selectedProduct || parseFloat(netWeight) <= 0 || !selectedArea)
                                 ? "bg-slate-200 text-slate-400 border-slate-300"
-                                : esTipoEntrada 
-                                    ? "bg-emerald-600 text-white border-emerald-800 hover:bg-emerald-500" 
+                                : esTipoEntrada
+                                    ? "bg-emerald-600 text-white border-emerald-800 hover:bg-emerald-500"
                                     : "bg-red-600 text-white border-red-800 hover:bg-red-500"}`}
                     >
                         {isProcessing ? "..." : (esTipoEntrada ? "Entrada" : "Salida")}

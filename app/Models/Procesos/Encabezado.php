@@ -17,11 +17,6 @@ class Encabezado extends Model
         'IdProveedor',
         'IdUsuario',
         'fecha',
-        // 'total',
-        // 'persona_recibio',
-        // 'fecha',
-        // 'folio',
-        // 'estatus'
     ];
 
     public function provedor()
@@ -34,5 +29,11 @@ class Encabezado extends Model
     {
         // Relación de uno a muchos usando tu llave foránea id_encabezado
         return $this->hasMany(Detalle::class, 'IdLote');
+    }
+
+    public function movimientos()
+    {
+        // Relación de uno a muchos: Un lote tiene muchos movimientos
+        return $this->hasMany(Movimientos::class, 'IdLote', 'IdLote');
     }
 }

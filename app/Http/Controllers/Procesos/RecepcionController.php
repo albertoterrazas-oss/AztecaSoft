@@ -18,14 +18,16 @@ class RecepcionController extends Controller
         try {
             $lotes = Encabezado::with([
                 'provedor',
-                'detalles.producto' // <-- AQUÍ CARGAMOS EL PRODUCTO DENTRO DEL DETALLE
+                'detalles.producto',
+                'movimientos' => function ($query) {
+                    $query->where('IdAlmacenOrigen', '1');
+                },
+                'movimientos.producto'
             ])
-                // ->where('estatus', "0")
+                ->whereDoesntHave('movimientos', function ($query) {
+                    $query->where('IdAlmacenDestino', '!=', '1');
+                })
                 ->get();
-
-            // if ($lotes->isEmpty()) {
-            //     return response()->json(['message' => 'No se encontraron lotes activos'], 404);
-            // }
 
             return response()->json($lotes, 200);
         } catch (\Exception $e) {
@@ -36,86 +38,134 @@ class RecepcionController extends Controller
         }
     }
 
-    public function LoteDetalles(Request $request)
+
+
+    public function LotesAreas()
     {
         try {
-            // Validamos que el ID venga en la petición
-            if (!$request->has('id')) {
-                return response()->json(['error' => 'El ID del encabezado es requerido'], 400);
+            $lotes = Encabezado::with([
+                'provedor',
+                'movimientos' => function ($query) {
+                    // Esto filtra los movimientos que se muestran dentro del JSON
+                    $query->where('IdAlmacenDestino', '2');
+                },
+                'movimientos.producto'
+            ])
+                // Esto filtra el Encabezado: "Solo tráeme encabezados que TENGAN movimientos con Almacen 2"
+                ->whereHas('movimientos', function ($query) {
+                    $query->where('IdAlmacenDestino', '2');
+                })
+                ->whereDoesntHave('movimientos', function ($query) {
+                    $query->where('IdAlmacenDestino', '!=', '2');
+                })
+                ->get();
+
+            if ($lotes->isEmpty()) {
+                return response()->json([
+                    'mensaje' => 'No se encontraron lotes con movimientos para el almacén destino 2'
+                ], 404);
             }
 
-            $detalles = Detalle::where('id_encabezado', $request->id)
-                ->where('estatus', false)->get();
-
-            return response()->json($detalles, 200);
+            return response()->json($lotes, 200);
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Error al obtener detalles',
+                'error' => 'Error al obtener lotes',
                 'details' => $e->getMessage()
             ], 500);
         }
     }
 
 
+    public function LotesLimpieza()
+    {
+        try {
+            $almacenObjetivo = '2';
 
-    // use Illuminate\Http\Request;
-    // use Illuminate\Support\Facades\DB;
+            $lotes = Encabezado::with([
+                'provedor',
+                'movimientos' => function ($query) use ($almacenObjetivo) {
+                    // Solo cargamos los movimientos que entraron al almacén 2
+                    $query->where('IdAlmacenDestino', $almacenObjetivo)
+                        ->with('producto');
+                }
+            ])
+                // 1. CONDICIÓN: Debe tener movimientos que entraron al almacén 2
+                ->whereHas('movimientos', function ($query) use ($almacenObjetivo) {
+                    $query->where('IdAlmacenDestino', $almacenObjetivo);
+                })
+                // 2. EXCLUSIÓN: NO debe tener movimientos donde el ORIGEN sea el almacén 2
+                // (Esto significa que el lote ya salió de ahí)
+                ->whereDoesntHave('movimientos', function ($query) use ($almacenObjetivo) {
+                    $query->where('IdAlmacenOrigen', $almacenObjetivo);
+                })
+                ->get();
 
-    // public function GuardarLote(Request $request)
+            if ($lotes->isEmpty()) {
+                // return response()->json([
+                //     'mensaje' => 'No hay lotes pendientes en el almacén 2 (o ya fueron procesados)'
+                // ], 404); $LOTES
+                $lotes=[];
+            }
+
+            return response()->json($lotes, 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al procesar la limpieza de lotes',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function LotesAreasDeshuese()
+    {
+        try {
+            $lotes = Encabezado::with([
+                'provedor',
+                'movimientos' => function ($query) {
+                    // Esto filtra los movimientos que se muestran dentro del JSON
+                    $query->where('IdAlmacenDestino', '3');
+                },
+                'movimientos.producto'
+            ])
+                // Esto filtra el Encabezado: "Solo tráeme encabezados que TENGAN movimientos con Almacen 2"
+                ->whereHas('movimientos', function ($query) {
+                    $query->where('IdAlmacenDestino', '3');
+                })
+                ->get();
+
+            if ($lotes->isEmpty()) {
+                return response()->json([
+                    'mensaje' => 'No se encontraron lotes con movimientos para el almacén destino 3'
+                ], 404);
+            }
+
+            return response()->json($lotes, 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener lotes',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    // public function LoteDetalles(Request $request)
     // {
-    //     // Datos de ejemplo basados en tu estructura
-    //     $idProveedor = $request->IdProveedor;
-    //     // $idUsuario = auth()->id(); // O el ID que manejes
-    //     // $fecha = now(); // O una fecha específica
-
-    //     // // Tu array de productos
-    //     // $productos = [
-    //     //     ["id" => 1, "piezas" => 10, "decomiso" => 1],
-    //     //     ["id" => 2, "piezas" => 5, "decomiso" => 0]
-    //     // ];
-
-
-
-
-    //     dd($request->productos);
-    //     //  foreach ($request->productos as $prod) {
-    //     //             $detalle =  [
-    //     //                 // 'id_encabezado' => $encabezado->id_encabezado,
-    //     //                 'id_producto' => $prod['IdProducto'],
-    //     //                 'decomiso' => $prod['cantidad'],
-    //     //                 // 'precio' => 0, // Ajustar si mandas precio desde el front
-    //     //                 // 'kilos' => 0, // Ajustar si manejas kilos aparte de cantidad
-    //     //                 // 'estatus' => 0, // Ajustar si manejas kilos aparte de cantidad
-    //     //             ];
-
-    //     //             // Bitacora::create([
-    //     //             //     'fechallegada' => now(), // Ajustar si manejas kilos aparte de cantidad
-    //     //             //     'fechasalida' => now(), // Ajustar si manejas kilos aparte de cantidad
-    //     //             //     'id_detalle' => $detalle->id_detalle, // Ajustar si manejas kilos aparte de cantidad
-    //     //             //     'id_subproducto' => 0, // Ajustar si manejas kilos aparte de cantidad
-    //     //             //     'area' => 'RECEPCION', // Ajustar si manejas kilos aparte de cantidad
-    //     //             //     'almacen' => NULL, // Ajustar si manejas kilos aparte de cantidad
-    //     //             //     'personaautorizo' => 0, // Ajustar si manejas kilos aparte de cantidad
-    //     //             //     'estatus' => 1, // Ajustar si manejas kilos aparte de cantidad
-    //     //             // ]);
-    //     //         }
-
     //     try {
-    //         // Ejecutar el procedimiento almacenado
-    //         $resultado = DB::select('EXEC sp_GenerarLote ?, ?, ?, ?', [
-    //             $idProveedor,
-    //             $idUsuario,
-    //             $fecha,
-    //             json_encode($productos) // Convertimos el array a string JSON
-    //         ]);
+    //         // Validamos que el ID venga en la petición
+    //         if (!$request->has('id')) {
+    //             return response()->json(['error' => 'El ID del encabezado es requerido'], 400);
+    //         }
 
-    //         return response()->json([
-    //             'status' => 'success',
-    //             'message' => 'Lote registrado correctamente',
-    //             'data' => $resultado
-    //         ]);
+    //         $detalles = Detalle::where('id_encabezado', $request->id)
+    //             ->where('estatus', false)->get();
+
+    //         return response()->json($detalles, 200);
     //     } catch (\Exception $e) {
-    //         return response()->json(['error' => $e->getMessage()], 500);
+    //         return response()->json([
+    //             'error' => 'Error al obtener detalles',
+    //             'details' => $e->getMessage()
+    //         ], 500);
     //     }
     // }
 
@@ -126,8 +176,6 @@ class RecepcionController extends Controller
         $idUsuario = $request->idUsuarioLocal; // Ajusta según tu sistema de autenticación
         $fecha = $request->fecha ?? now(); // La fecha que viene del front
 
-        // 2. Formatear el array de productos para que coincida EXACTAMENTE con el JSON del SP
-        // SP espera: { "id": 1, "piezas": 10, "decomiso": 1 }
         $productosParaSP = collect($request->productos)->map(function ($prod) {
             return [
                 "id" => $prod['IdProducto'], // Cambiamos IdProducto por id
@@ -138,13 +186,21 @@ class RecepcionController extends Controller
 
         try {
             // 3. Ejecutar el procedimiento almacenado
-            // Importante: json_encode para el parámetro @ProductosJSON
             $resultado = DB::select('EXEC sp_GenerarLote ?, ?, ?, ?', [
                 $idProveedor,
                 $idUsuario,
                 $fecha,
                 json_encode($productosParaSP)
             ]);
+
+            // DB::statement('EXEC sp_RegistrarEntrada ?, ?, ?, ?, ?, ?', [
+            //     $request->id_lote,          // @IdLote
+            //     $request->id_producto,            // @IdProducto
+            //     $request->cantidad,               // @PesoReal (netWeight del front)
+            //     $request->piezas ?? 0,            // @Piezas
+            //     $request->idusuario ?? 0,            // @Piezas
+            //     $request->id_area_entrada              // @IdAlmacenRecepcion
+            // ]);
 
             return response()->json([
                 'status' => 'success',

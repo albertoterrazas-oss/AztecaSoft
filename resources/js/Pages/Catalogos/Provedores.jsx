@@ -7,8 +7,7 @@ import request from "@/utils";
 
 // --- Configuración y Utilidades ---
 
-// Obtenemos el objeto de usuario una sola vez al cargar el componente
-const userObject = JSON.parse(localStorage.getItem('user') || '{}');
+const userObject = JSON.parse(localStorage.getItem('perfil') || '{}');
 
 const route = (name, params = {}) => {
     const id = params.IdProveedor;
@@ -31,7 +30,7 @@ const initialProveedorData = {
     IdProveedor: null,
     RazonSocial: "",
     RFC: "",
-    idUsuario: userObject.IdUsuario || 1, // Usamos tu lógica de userObject
+    idUsuario: userObject.IdUsuario || 1,
 };
 
 // --- Componente del Formulario (Diálogo Modal) ---
@@ -46,7 +45,6 @@ function ProveedorFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action,
                 IdProveedor: dataToEdit?.IdProveedor || null,
                 RazonSocial: dataToEdit?.RazonSocial || "",
                 RFC: dataToEdit?.RFC || "",
-                // Mantenemos el ID original si editamos, o el del localStorage si es nuevo
                 idUsuario: dataToEdit?.idUsuario || userObject.Personas_usuarioID || 1
             });
             setErrors({});
@@ -55,7 +53,6 @@ function ProveedorFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action,
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        // Convertimos RFC a mayúsculas automáticamente para seguir el estándar fiscal
         setFormData(prev => ({
             ...prev,
             [name]: name === 'RFC' ? value.toUpperCase() : value
@@ -65,19 +62,40 @@ function ProveedorFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action,
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        try { await onSubmit(formData); } finally { setLoading(false); }
+        try { 
+            await onSubmit(formData); 
+            // El modal se cierra desde el padre si el submit es exitoso
+        } catch (error) {
+            console.error(error);
+        } finally { 
+            setLoading(false); 
+        }
     };
 
     return (
         <Transition show={isOpen}>
-            <Dialog onClose={closeModal} className="relative z-50">
-                <TransitionChild enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
-                    <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+            <Dialog onClose={loading ? () => {} : closeModal} className="relative z-50">
+                <TransitionChild 
+                    enter="ease-out duration-300" 
+                    enterFrom="opacity-0" 
+                    enterTo="opacity-100" 
+                    leave="ease-in duration-200" 
+                    leaveFrom="opacity-100" 
+                    leaveTo="opacity-0"
+                >
+                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
                 </TransitionChild>
 
                 <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <DialogPanel className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl relative">
-                        {loading && <LoadingDiv />}
+                    <DialogPanel className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl relative overflow-hidden">
+                        
+                        {/* Capa de Loading: Centrada y bloqueando el formulario */}
+                        {loading && (
+                            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/90">
+                                <LoadingDiv />
+                                <span className="mt-2 text-sm font-medium text-indigo-600">Procesando...</span>
+                            </div>
+                        )}
 
                         <DialogTitle className="text-2xl font-bold mb-4 text-gray-900 border-b pb-2">
                             {action === 'create' ? 'Nuevo Proveedor' : 'Editar Proveedor'}
@@ -90,9 +108,10 @@ function ProveedorFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action,
                                 <input
                                     type="text"
                                     name="RazonSocial"
+                                    disabled={loading}
                                     value={formData.RazonSocial}
                                     onChange={handleChange}
-                                    className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.RazonSocial ? 'border-red-500' : 'border-gray-300'}`}
+                                    className={`mt-1 block w-full rounded-md border p-2 text-sm transition-colors ${errors.RazonSocial ? 'border-red-500 bg-red-50' : 'border-gray-300 focus:border-indigo-500'}`}
                                 />
                                 {errors.RazonSocial && <p className="text-red-500 text-xs mt-1">{errors.RazonSocial}</p>}
                             </label>
@@ -104,16 +123,30 @@ function ProveedorFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action,
                                     type="text"
                                     name="RFC"
                                     maxLength={13}
+                                    disabled={loading}
                                     value={formData.RFC}
                                     onChange={handleChange}
-                                    className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.RFC ? 'border-red-500' : 'border-gray-300'}`}
+                                    className={`mt-1 block w-full rounded-md border p-2 text-sm transition-colors ${errors.RFC ? 'border-red-500 bg-red-50' : 'border-gray-300 focus:border-indigo-500'}`}
                                 />
                                 {errors.RFC && <p className="text-red-500 text-xs mt-1">{errors.RFC}</p>}
                             </label>
 
                             <div className="flex justify-end gap-3 pt-4 border-t mt-4">
-                                <button type="button" onClick={closeModal} className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">Cancelar</button>
-                                <button type="submit" className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-md hover:bg-indigo-700">Guardar</button>
+                                <button 
+                                    type="button" 
+                                    onClick={closeModal} 
+                                    disabled={loading}
+                                    className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50 transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    disabled={loading}
+                                    className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-indigo-400 transition-all shadow-sm"
+                                >
+                                    {loading ? 'Guardando...' : 'Guardar'}
+                                </button>
                             </div>
                         </form>
                     </DialogPanel>
@@ -122,6 +155,8 @@ function ProveedorFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action,
         </Transition>
     );
 }
+
+// --- Componente Principal ---
 
 export default function Proveedores() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -137,14 +172,21 @@ export default function Proveedores() {
             const response = await fetch(route("provedores.index"));
             const resData = await response.json();
             setData(resData);
-        } catch (error) { toast.error("Error al cargar proveedores."); } finally { setIsLoading(false); }
+        } catch (error) { 
+            toast.error("Error al cargar proveedores."); 
+        } finally { 
+            setIsLoading(false); 
+        }
     };
 
     useEffect(() => { getData(); }, []);
 
     const submit = async (formData) => {
         const validation = validateInputs(formData);
-        if (!validation.isValid) return setErrors(validation.errors);
+        if (!validation.isValid) {
+            setErrors(validation.errors);
+            return;
+        }
 
         const isEdit = !!formData.IdProveedor;
         const ruta = isEdit ? route("provedores.update", { IdProveedor: formData.IdProveedor }) : route("provedores.store");
@@ -155,25 +197,41 @@ export default function Proveedores() {
             toast.success(isEdit ? "Proveedor actualizado" : "Proveedor creado con éxito");
             await getData();
             setIsDialogOpen(false);
-        } catch (error) { toast.error("Error al guardar."); }
+        } catch (error) { 
+            toast.error("Error al guardar."); 
+            throw error; // Lanzamos el error para que el 'finally' del hijo maneje el estado de loading
+        }
     };
 
     return (
-        <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
+        <div className="relative h-full pb-4 px-3 overflow-auto blue-scroll">
             {isLoading ? (
-                <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>
+                <div className='flex flex-col items-center justify-center h-full w-full space-y-4'> 
+                    <LoadingDiv /> 
+                    <p className="text-gray-500 animate-pulse">Cargando catálogo...</p>
+                </div>
             ) : (
                 <Datatable
                     data={data}
                     virtual={true}
-                    add={() => { setAction('create'); setCurrent(initialProveedorData); setIsDialogOpen(true); }}
+                    add={() => { 
+                        setAction('create'); 
+                        setCurrent(initialProveedorData); 
+                        setIsDialogOpen(true); 
+                    }}
                     columns={[
                         { header: 'Razón Social', accessor: 'RazonSocial' },
                         { header: 'RFC', accessor: 'RFC' },
                         {
-                            header: "Acciones", accessor: "actions", cell: (props) => (
+                            header: "Acciones", 
+                            accessor: "actions", 
+                            cell: (props) => (
                                 <button
-                                    onClick={() => { setAction('edit'); setCurrent(props.item); setIsDialogOpen(true); }}
+                                    onClick={() => { 
+                                        setAction('edit'); 
+                                        setCurrent(props.item); 
+                                        setIsDialogOpen(true); 
+                                    }}
                                     className="px-3 py-1 text-sm font-medium text-indigo-600 bg-indigo-100 rounded-md hover:bg-indigo-200 transition-colors"
                                 >
                                     Editar
@@ -183,9 +241,10 @@ export default function Proveedores() {
                     ]}
                 />
             )}
+            
             <ProveedorFormDialog
                 isOpen={isDialogOpen}
-                closeModal={() => setIsDialogOpen(false)}
+                closeModal={() => !isLoading && setIsDialogOpen(false)}
                 onSubmit={submit}
                 dataToEdit={current}
                 action={action}

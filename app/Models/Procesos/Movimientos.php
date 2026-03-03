@@ -5,25 +5,29 @@ namespace App\Models\Procesos;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Detalle extends Model
+class Movimientos extends Model
 {
-
     use HasFactory;
     public $timestamps = false;
-    protected $table = 'dbo.LoteDetalle';
-    protected $primaryKey = 'IdLote';
+    protected $table = 'dbo.Movimientos';
+    protected $primaryKey = 'IdMovimiento';
     protected $fillable = [
+        'IdLote',
         'IdProducto',
-        'Piezas',
-        'Decomiso',
+        'IdAlmacenOrigen',
+        'IdAlmacenDestino',
+
         'Peso',
+        'Piezas',
+        'IdUsuario',
+        'Fecha',
+        'TipoMovimiento',
     ];
 
 
 
     public function producto()
     {
-        // Relacionamos con el modelo Productos usando la llave foránea
         return $this->belongsTo(\App\Models\Catalogos\Productos::class, 'id_producto', 'IdProducto');
     }
 }
