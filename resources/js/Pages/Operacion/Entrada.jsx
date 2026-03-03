@@ -33,12 +33,10 @@ export default function WeighingDashboard() {
     const netWeight = Math.max(0, (parseFloat(currentWeight) - parseFloat(tara))).toFixed(2);
     const totalKilosLote = records.reduce((acc, rec) => acc + parseFloat(rec.Peso || 0), 0).toFixed(2);
 
-    // --- LÓGICA DE LIMPIEZA (ID 2) ---
-    const areaLimpiezaObj = almacenes.find(a => (a.Nombre || '').toUpperCase().includes("LIMPIEZA"));
-    const idAreaLimpieza = areaLimpiezaObj ? areaLimpiezaObj.IdAlmacen : null;
-
-    const areaSeleccionadaObj = almacenes.find(a => a.IdAlmacen === selectedArea);
-    const esTipoLimpieza = (areaSeleccionadaObj?.Nombre || '').toUpperCase().includes("LIMPIEZA");
+    const areaEntradaObj = almacenes.find(a => (a.Nombre || a.Departamentos_nombre || '').toUpperCase().includes("ENTRADA"));
+    const idAreaEntrada = areaEntradaObj ? (areaEntradaObj.IdAlmacen || areaEntradaObj.id) : null;
+    const areaSeleccionadaObj = almacenes.find(a => (a.IdAlmacen || a.id) === selectedArea);
+    const esTipoEntrada = (areaSeleccionadaObj?.Nombre || areaSeleccionadaObj?.Departamentos_nombre || '').toUpperCase().includes("ENTRADA");
 
     const fetchLotes = useCallback(async () => {
         try {
@@ -50,10 +48,8 @@ export default function WeighingDashboard() {
     const fetchAlmacenes = useCallback(async () => {
         try {
             const res = await axios.get(route("AlmacenesListar"));
-            // Filtramos ENTRADA desde la carga para que no exista en el estado
-            const filtrados = res.data.filter(a => (a.Nombre || '').toUpperCase() !== "ENTRADA");
-            setAlmacenes(filtrados);
-        } catch (error) { toast.error("Error al cargar almacenes"); }
+            setAlmacenes(res.data);
+        } catch (error) { toast.error("Error al cargar áreas"); }
     }, []);
 
     useEffect(() => {
@@ -75,23 +71,25 @@ export default function WeighingDashboard() {
         initData();
     }, [fetchLotes, fetchAlmacenes]);
 
+    // --- MANEJADORES ---
     const handleSelectLote = (lote) => {
         setSelectedLote(lote);
         setRecords(lote.detalles || []);
         setSelectedProduct(null);
         setSelectedArea(null);
-        setPiezas(0);
+        setPiezas(0); // Limpiar al cambiar de lote
     };
 
+    // NUEVA FUNCIÓN: Al hacer clic en un producto, seteamos sus piezas
     const handleProductClick = (p, currentPieces) => {
         setSelectedProduct(p);
-        setPiezas(currentPieces || 0);
+        setPiezas(currentPieces || 0); // <--- AQUÍ SE SETEAN LAS PIEZAS
     };
 
     const registrarPesaje = async () => {
         if (isProcessing) return;
         if (!selectedProduct) return toast.error("Selecciona un producto");
-        if (!selectedArea) return toast.error("Selecciona área de destino");
+        if (!selectedArea) return toast.error("Selecciona área de destino/salida");
         if (parseFloat(netWeight) <= 0) return toast.error("Báscula en cero");
 
         setIsProcessing(true);
@@ -102,8 +100,8 @@ export default function WeighingDashboard() {
                 id_lote: selectedLote.IdLote,
                 id_producto: selectedProduct.IdProducto,
                 cantidad: netWeight,
-                piezas: piezas,
-                id_area_entrada: idAreaLimpieza, 
+                piezas: piezas, // Se envía lo que esté en el input
+                id_area_entrada: idAreaEntrada,
                 id_area_salida: selectedArea,
                 idusuario: getUserId()
             };
@@ -141,16 +139,16 @@ export default function WeighingDashboard() {
 
     if (!selectedLote) {
         return (
-            <div className="min-h-screen bg-slate-100 p-8 text-slate-800 uppercase font-black">
-                {/* <Toaster position="top-right" richColors /> */}
+            <div className="min-h-screen bg-slate-100 p-8">
+                <Toaster position="top-right" richColors />
                 <div className="max-w-4xl mx-auto">
-                    <h1 className="text-4xl text-center mb-10">Seleccionar Lote</h1>
+                    <h1 className="text-4xl font-black text-center mb-10 text-slate-800 uppercase">Seleccionar Lote</h1>
                     <div className="grid gap-4">
                         {lotes.map((lote) => (
                             <button key={lote.IdLote} onClick={() => handleSelectLote(lote)} className="bg-white p-6 rounded-[2rem] flex items-center justify-between border border-slate-200 hover:border-red-500 transition-all shadow-sm group">
                                 <div className="text-left">
-                                    <span className="text-[10px] text-red-600">Lote #{lote.IdLote}</span>
-                                    <h3 className="text-xl leading-none">{lote.provedor?.RazonSocial}</h3>
+                                    <span className="text-[10px] font-black text-red-600 uppercase">Lote #{lote.IdLote}</span>
+                                    <h3 className="text-xl font-black text-slate-800 uppercase leading-none">{lote.provedor?.RazonSocial}</h3>
                                 </div>
                                 <div className="bg-slate-50 group-hover:bg-red-600 group-hover:text-white p-4 rounded-2xl transition-all">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
@@ -165,17 +163,17 @@ export default function WeighingDashboard() {
 
     return (
         <div className="h-screen bg-slate-100 p-4 font-sans overflow-hidden flex flex-col lg:flex-row gap-6">
-            <Toaster position="top-right" richColors />
+            {/* <Toaster position="top-right" richColors /> */}
             
             <div className="flex-[2.5] flex flex-col gap-4 overflow-hidden">
                 <header className="flex justify-between items-end">
                     <div>
                         <button onClick={() => setSelectedLote(null)} className="text-[9px] font-black text-slate-400 uppercase mb-1 hover:text-red-600">← Volver</button>
                         <h1 className="text-3xl font-black uppercase text-slate-800 leading-none">{selectedLote.provedor?.RazonSocial}</h1>
-                        <p className="text-[10px] font-bold text-red-600 font-mono uppercase">ID LOTE: {selectedLote.IdLote}</p>
+                        <p className="text-[10px] font-bold text-red-600 font-mono">ID: {selectedLote.IdLote}</p>
                     </div>
                     <div className="bg-white px-6 py-2 rounded-2xl border border-slate-200 text-right">
-                        <p className="text-[9px] font-black text-slate-400 uppercase">Total Lote</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase">Acumulado</p>
                         <p className="text-2xl font-black text-slate-800">{totalKilosLote} KG</p>
                     </div>
                 </header>
@@ -217,14 +215,14 @@ export default function WeighingDashboard() {
                 <div className="flex-1 bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
                     <table className="w-full text-left">
                         <thead className="bg-slate-50 border-b text-[9px] font-black text-slate-400 uppercase sticky top-0 z-20">
-                            <tr><th className="p-4">ID Prod</th><th className="p-4 text-center">PZS</th><th className="p-4 text-right">Peso</th></tr>
+                            <tr><th className="p-4">Producto</th><th className="p-4 text-center">Piezas</th><th className="p-4 text-right">Peso</th></tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {records.map((reg, i) => (
                                 <tr key={i} className={`text-[11px] font-bold ${parseFloat(reg.Peso) > 0 ? 'bg-green-50/50' : ''}`}>
-                                    <td className="p-4 uppercase text-slate-700">{reg.IdProducto}</td>
+                                    <td className="p-4 uppercase text-slate-700">ID: {reg.IdProducto}</td>
                                     <td className="p-4 text-center">
-                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded font-black">
+                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded font-black text-[10px]">
                                             {reg.Piezas}
                                         </span>
                                     </td>
@@ -240,7 +238,11 @@ export default function WeighingDashboard() {
                 <div className="bg-slate-900 rounded-[2.5rem] p-5 shadow-2xl text-center">
                     <div className="bg-[#0f1713] rounded-2xl p-6 border-4 border-slate-950 shadow-inner">
                         <div className="text-6xl font-mono font-black text-green-400 leading-none">{netWeight}</div>
-                        <span className="text-green-900 font-bold text-[10px]">KG NETOS</span>
+                        <span className="text-green-900 font-bold text-[10px]">KILOGRAMOS NETOS</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] font-mono">
+                        <div className="bg-slate-950 p-2 rounded-xl text-slate-400 uppercase">Bruto: {currentWeight}</div>
+                        <div className="bg-slate-950 p-2 rounded-xl text-blue-400 uppercase">Tara: -{tara}</div>
                     </div>
                 </div>
 
@@ -251,7 +253,7 @@ export default function WeighingDashboard() {
                     </div>
 
                     <div className="bg-white p-4 rounded-2xl border border-slate-200">
-                        <label className="text-[8px] font-black text-slate-400 block mb-1 uppercase text-center">Cant. Piezas</label>
+                        <label className="text-[8px] font-black text-slate-400 block mb-1 uppercase text-center">Cant. Piezas a Registrar</label>
                         <input 
                             type="number" 
                             value={piezas} 
@@ -261,10 +263,10 @@ export default function WeighingDashboard() {
                         
                         <div className="flex flex-wrap gap-1">
                             {almacenes.map(a => {
-                                const areaId = a.IdAlmacen;
-                                const nombre = (a.Nombre || '').toUpperCase();
+                                const areaId = a.IdAlmacen || a.id;
+                                const nombre = (a.Nombre || a.Departamentos_nombre || '').toUpperCase();
                                 const isSelected = selectedArea === areaId;
-                                const isLimpieza = nombre.includes("LIMPIEZA");
+                                const isEntrada = nombre.includes("ENTRADA");
 
                                 return (
                                     <button 
@@ -272,8 +274,8 @@ export default function WeighingDashboard() {
                                         onClick={() => setSelectedArea(areaId)} 
                                         className={`flex-1 min-w-[70px] py-2 rounded-lg text-[8px] font-black uppercase transition-all border-2
                                             ${isSelected 
-                                                ? (isLimpieza ? "bg-emerald-600 border-emerald-700 text-white" : "bg-slate-800 border-slate-900 text-white") 
-                                                : (isLimpieza ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-100 border-transparent text-slate-400")
+                                                ? (isEntrada ? "bg-emerald-600 border-emerald-700 text-white" : "bg-slate-800 border-slate-900 text-white") 
+                                                : (isEntrada ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-100 border-transparent text-slate-400")
                                             }`}
                                     >
                                         {nombre}
@@ -289,11 +291,11 @@ export default function WeighingDashboard() {
                         className={`w-full font-black py-4 rounded-[2rem] uppercase text-2xl border-b-8 shadow-lg transition-all
                             ${(isProcessing || !selectedProduct || parseFloat(netWeight) <= 0 || !selectedArea)
                                 ? "bg-slate-200 text-slate-400 border-slate-300"
-                                : esTipoLimpieza 
+                                : esTipoEntrada 
                                     ? "bg-emerald-600 text-white border-emerald-800 hover:bg-emerald-500" 
                                     : "bg-red-600 text-white border-red-800 hover:bg-red-500"}`}
                     >
-                        {isProcessing ? "..." : (esTipoLimpieza ? "Limpieza" : "Salida")}
+                        {isProcessing ? "..." : (esTipoEntrada ? "Entrada" : "Salida")}
                     </button>
                 </div>
             </aside>

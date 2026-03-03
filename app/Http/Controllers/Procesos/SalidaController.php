@@ -21,42 +21,33 @@ class SalidaController extends Controller
             'cantidad'     => 'required|numeric|min:0.01',
             'id_producto'  => 'required',
             'piezas'       => 'nullable|integer',
-            'id_almacen'   => 'required'
+            'id_area_entrada'   => 'required',
+            'id_area_salida'   => 'required'
+
         ]);
 
         try {
             return DB::transaction(function () use ($request) {
-                // 2. Localizamos el detalle para obtener el ID del Lote (encabezado)
-                // $detalle = Detalle::findOrFail($request->id_detalle);
 
-                // 3. Ejecución del Procedimiento Almacenado
-                // @IdLote, @IdProducto, @PesoReal, @Piezas, @IdUsuario, @IdAlmacenRecepcion
                 DB::statement('EXEC sp_RegistrarEntrada ?, ?, ?, ?, ?, ?', [
                     $request->id_lote,          // @IdLote
                     $request->id_producto,            // @IdProducto
                     $request->cantidad,               // @PesoReal (netWeight del front)
                     $request->piezas ?? 0,            // @Piezas
                     $request->idusuario ?? 0,            // @Piezas
-                    $request->id_almacen              // @IdAlmacenRecepcion
+                    $request->id_area_entrada              // @IdAlmacenRecepcion
                 ]);
 
-                // 4. Actualización manual de apoyo (si el SP no marca el detalle como procesado)
-                // $detalle->estatus = 1;
-                // $detalle->kilos += $request->cantidad;
-                // $detalle->save();
+                DB::statement('EXEC sp_RegistrarTraspaso ?, ?, ?, ?, ?, ?, ?', [
+                    $request->id_lote,            // @IdLote
+                    $request->id_producto,        // @IdProducto
+                    $request->id_area_entrada,  // @IdAlmacenOrigen (Faltaba en tu lista)
+                    $request->id_area_salida,         // @IdAlmacenDestino (El destino)
+                    $request->cantidad,           // @Peso
+                    $request->piezas ?? 0,        // @Piezas
+                    $request->idusuario ?? 0      // @IdUsuario
+                ]);
 
-                // // 5. Verificación de cierre de Lote
-                // $pendientes = Detalle::where('id_encabezado', $detalle->id_encabezado)
-                //     ->where('estatus', '!=', 1)
-                //     ->count();
-
-                // if ($pendientes === 0) {
-                //     $encabezado = Encabezado::find($detalle->id_encabezado);
-                //     if ($encabezado) {
-                //         $encabezado->estatus = 1; // Lote finalizado
-                //         $encabezado->save();
-                //     }
-                // }
 
                 return response()->json([
                     'message'        => 'Entrada registrada exitosamente',

@@ -125,9 +125,12 @@ const routes = [
     { path: "/clientes", import: lazy(() => import('./Catalogos/Clientes')) },
     { path: "/almacenes", import: lazy(() => import('./Catalogos/Almacenes')) },
     { path: "/Recepcion", import: lazy(() => import('./Operacion/Recepcion')) },
-    { path: "/salida", import: lazy(() => import('./Operacion/Salidas')) },
+    { path: "/Entrada", import: lazy(() => import('./Operacion/Entrada')) },
     { path: "/Limpieza", import: lazy(() => import('./Operacion/Limpieza')) },
-    { path: "/basculas", import: lazy(() => import('./Catalogos/Basculas')) },
+    { path: "/Deshuese", import: lazy(() => import('./Operacion/Deshuese')) },
+    { path: "/Deshuese", import: lazy(() => import('./Operacion/Deshuese')) },
+
+    { path: "/empaque", import: lazy(() => import('./Operacion/Venta')) },
 ];
 
 export default function Home({ auth }) {
@@ -192,9 +195,9 @@ export default function Home({ auth }) {
                 <div className="scrollable-content px-4 flex-1 overflow-y-auto">
                     <Routes>
                         {routes.map((route, index) => (
-                            <Route 
-                                key={index} 
-                                path={route.path} 
+                            <Route
+                                key={index}
+                                path={route.path}
                                 element={(
                                     <Suspense fallback={
                                         <div className="h-full flex justify-center items-center">
@@ -203,7 +206,7 @@ export default function Home({ auth }) {
                                     }>
                                         <route.import auth={usuario} />
                                     </Suspense>
-                                )} 
+                                )}
                             />
                         ))}
                     </Routes>

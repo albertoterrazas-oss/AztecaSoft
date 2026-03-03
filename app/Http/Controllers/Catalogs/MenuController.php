@@ -36,9 +36,9 @@ class MenuController extends Controller
 
         $validator = Validator::make($request->all(), [
             'menu_nombre' => 'required|string|max:50',
-            'menu_idPadre' => 'required|integer',
+            'menu_idPadre' => 'nullable|integer',
             'menu_url' => 'required',
-            'menu_tooltip' => 'required',
+            'menu_tooltip' => 'nullable',
             'menu_estatus' => 'required',
         ]);
         if (!$validator->fails()) {
@@ -56,7 +56,7 @@ class MenuController extends Controller
             $admin->save();
 
 
-       
+
             return response()->json([
                 'message' => 'Menu creado correctamente',
                 'menu' => $menu
@@ -70,9 +70,9 @@ class MenuController extends Controller
 
         $validator = Validator::make($request->all(), [
             'menu_nombre' => 'required|string|max:50',
-            'menu_idPadre' => 'required|integer',
+            'menu_idPadre' => 'nullable|integer',
             'menu_url' => 'required',
-            'menu_tooltip' => 'required',
+            'menu_tooltip' => 'nullable',
             'menu_estatus' => 'required',
         ]);
         if (!$validator->fails()) {
@@ -159,7 +159,7 @@ class MenuController extends Controller
 
                     $node['children'][] = $childNode;
                 }
- 
+
                 $tree[] = $node;
             }
         }
