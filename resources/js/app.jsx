@@ -1,4 +1,3 @@
-
 import './bootstrap';
 import '../css/app.css';
 
@@ -6,9 +5,10 @@ import { createRoot } from 'react-dom/client';
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { Toaster } from 'sonner';
-import { BrowserRouter } from 'react-router';
+import { BrowserRouter } from 'react-router-dom'; // <--- CORREGIDO: añadido -dom
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
+
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
@@ -17,15 +17,13 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
         root.render(
-            <>
-                <BrowserRouter>
-                    <Toaster /> {/* <-- ¡Añade esto! */}
-                    <App {...props} />
-                </BrowserRouter>
-            </>
+            <BrowserRouter>
+                <Toaster position="top-right" richColors />
+                <App {...props} />
+            </BrowserRouter>
         );
     },
     progress: {
-        color: '#4B5563',
+        color: '#A61A18',
     },
 });

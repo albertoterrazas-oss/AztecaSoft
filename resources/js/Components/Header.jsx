@@ -1,14 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-export default function Header(props) {
-  const [perfil, setPerfil] = useState(null);
+export default function Header({ user }) { // Recibimos 'user' directamente de las props (Home.jsx)
+  // Inicializamos el estado directamente con la prop para que no haya retraso
+  const [perfil, setPerfil] = useState(user || null);
   const [tituloDinamico, setTituloDinamico] = useState('Inicio');
-  const [cargando, setCargando] = useState(true);
   const [mostrarInfo, setMostrarInfo] = useState(false);
   const menuRef = useRef(null);
 
   const location = useLocation();
+
+  // Sincronizar el perfil si la prop 'user' cambia
+  useEffect(() => {
+    if (user) {
+      setPerfil(user);
+    }
+  }, [user]);
 
   // Cerrar el menú si se hace clic fuera
   useEffect(() => {
@@ -40,41 +47,32 @@ export default function Header(props) {
   };
 
   useEffect(() => {
-    const obtenerDatos = () => {
+    // Solo cargamos los MENÚS de localStorage, el usuario ya viene por props
+    const menusStorage = localStorage.getItem('menus');
+    if (menusStorage) {
       try {
-        const perfilStorage = localStorage.getItem('perfil');
-        if (perfilStorage) setPerfil(JSON.parse(perfilStorage));
-
-        const menusStorage = localStorage.getItem('menus');
-        if (menusStorage) {
-          const listaMenus = JSON.parse(menusStorage);
-          const pathActual = location.pathname.substring(1);
-          if (pathActual === "" || pathActual === "home") {
-            setTituloDinamico("Panel principal");
-          } else {
-            const rutaCompleta = obtenerRutaMenu(listaMenus, pathActual);
-            setTituloDinamico(rutaCompleta || "Módulo");
-          }
+        const listaMenus = JSON.parse(menusStorage);
+        const pathActual = location.pathname.substring(1);
+        if (pathActual === "" || pathActual === "dashboard" || pathActual === "home") {
+          setTituloDinamico("Panel principal");
+        } else {
+          const rutaCompleta = obtenerRutaMenu(listaMenus, pathActual);
+          setTituloDinamico(rutaCompleta || "Módulo");
         }
-      } catch (error) {
-        console.error("Error al cargar datos:", error);
-      } finally {
-        setCargando(false);
+      } catch (e) {
+        console.error("Error al parsear menús", e);
       }
-    };
-    obtenerDatos();
+    }
   }, [location.pathname]);
 
   const avatarDefault = `https://ui-avatars.com/api/?name=${perfil?.Nombres || 'U'}&background=random&color=fff`;
-
-  if (cargando) return <header className="w-full bg-white border-b p-3 animate-pulse" />;
 
   return (
     <header className="w-full bg-white border-b border-gray-200 px-6 py-3 shadow-sm relative">
       <div className="flex items-center justify-between">
         
         <div className="flex items-center">
-          <Link to="/" className="hover:opacity-80 transition-opacity">
+          <Link to="/dashboard" className="hover:opacity-80 transition-opacity">
             <h1 className="text-lg font-bold text-slate-800 tracking-tight">
               {tituloDinamico}
             </h1>
@@ -84,12 +82,13 @@ export default function Header(props) {
         <div className="flex items-center space-x-4">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-bold text-slate-700 leading-none">
-              {perfil?.Nombres ? `${capitalizar(perfil.Nombres)} ${capitalizar(perfil.ApePat || '')}` : 'Usuario'}
+              {perfil?.Nombres ? `${capitalizar(perfil.Nombres)} ${capitalizar(perfil.ApePat || '')}` : 'Cargando...'}
             </p>
-            <span className="text-[10px] text-slate-400 uppercase tracking-widest">Empleado</span>
+            <span className="text-[10px] text-slate-400 uppercase tracking-widest">
+                {perfil?.Puesto || 'Empleado'}
+            </span>
           </div>
 
-          {/* CONTENEDOR DE PERFIL */}
           <div className="relative" ref={menuRef}>
             <button 
               onMouseEnter={() => setMostrarInfo(true)}
@@ -100,17 +99,15 @@ export default function Header(props) {
                 className="h-full w-full object-cover aspect-square"
                 src={perfil?.PathFotoEmpleado || avatarDefault}
                 alt="Perfil"
-                onError={(e) => { e.target.src = avatarDefault; }}
+                onError={(e) => { e.currentTarget.src = avatarDefault; }}
               />
             </button>
 
-            {/* TARJETA DE INFORMACIÓN */}
             {mostrarInfo && perfil && (
               <div 
-                className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden transition-all"
+                className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden"
                 onMouseLeave={() => setMostrarInfo(false)}
               >
-                {/* Header de la tarjeta */}
                 <div className="bg-slate-50 p-4 flex flex-col items-center border-b border-gray-100">
                   <div className="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden mb-2 bg-white">
                     <img 
@@ -123,10 +120,8 @@ export default function Header(props) {
                     {perfil.Nombres}<br/>
                     {perfil.ApePat} {perfil.ApeMat}
                   </p>
-                  {/* <p className="text-[11px] text-indigo-500 font-bold mt-1">ID PERSONA: {perfil.IdPersona}</p> */}
                 </div>
 
-                {/* Cuerpo de la tarjeta */}
                 <div className="p-4 space-y-3 bg-white">
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
                     <div>
@@ -137,29 +132,22 @@ export default function Header(props) {
                       <p className="text-gray-400 uppercase font-semibold">CURP</p>
                       <p className="text-slate-700 font-medium">{perfil.Curp || 'N/A'}</p>
                     </div>
-                    <div>
-                      <p className="text-gray-400 uppercase font-semibold">Teléfono</p>
-                      <p className="text-slate-700 font-medium">{perfil.Telefono || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400 uppercase font-semibold">C.P.</p>
-                      <p className="text-slate-700 font-medium">{perfil.CodigoPostal || 'N/A'}</p>
-                    </div>
                   </div>
                   
-                  <div className="pt-2 border-t border-gray-50">
-                    <p className="text-[10px] text-gray-400 uppercase font-semibold">Fecha de Ingreso</p>
-                    <p className="text-slate-700 text-xs font-medium">
-                      {new Date(perfil.FechaIngreso).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </p>
-                  </div>
+                  {perfil.FechaIngreso && (
+                    <div className="pt-2 border-t border-gray-50">
+                        <p className="text-[10px] text-gray-400 uppercase font-semibold">Fecha de Ingreso</p>
+                        <p className="text-slate-700 text-xs font-medium">
+                        {new Date(perfil.FechaIngreso).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </p>
+                    </div>
+                  )}
                 </div>
 
-                {/* Footer simple */}
                 <div className="bg-gray-50 px-4 py-2 flex justify-between items-center border-t border-gray-100">
                    <span className="flex items-center text-[10px] text-green-600 font-bold uppercase">
                     <span className="h-2 w-2 bg-green-500 rounded-full mr-1"></span>
-                    {perfil.Estatus === "1" ? "Activo" : "Inactivo"}
+                    Activo
                    </span>
                    <span className="text-[10px] text-gray-400 italic">Azteca System</span>
                 </div>
