@@ -19,6 +19,8 @@ class DespieceController extends Controller
                 ? json_encode($request->datos_json)
                 : $request->datos_json;
 
+                // dd($datosJson);
+
             // 2. Registro del Movimiento de Salida (Traspaso)
             // Usamos SET NOCOUNT ON para evitar el error "The active result contains no fields"
             DB::statement("SET NOCOUNT ON; EXEC sp_RegistrarTraspaso ?, ?, ?, ?, ?, ?, ?", [
