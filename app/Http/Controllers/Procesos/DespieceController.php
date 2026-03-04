@@ -23,15 +23,15 @@ class DespieceController extends Controller
 
             // 2. Registro del Movimiento de Salida (Traspaso)
             // Usamos SET NOCOUNT ON para evitar el error "The active result contains no fields"
-            DB::statement("SET NOCOUNT ON; EXEC sp_RegistrarTraspaso ?, ?, ?, ?, ?, ?, ?", [
-                $request->id_lote,
-                $request->id_producto_origen,
-                $request->id_almacen_origen,
-                $request->id_almacen_destino,
-                $request->peso_entrada,
-                $request->piezas_entrada ?? 0,
-                $request->idusuario,
-            ]);
+            // DB::statement("SET NOCOUNT ON; EXEC sp_RegistrarTraspaso ?, ?, ?, ?, ?, ?, ?", [
+            //     $request->id_lote,
+            //     $request->id_producto_origen,
+            //     $request->id_almacen_origen,
+            //     $request->id_almacen_destino,
+            //     $request->peso_entrada,
+            //     $request->piezas_entrada ?? 0,
+            //     $request->idusuario,
+            // ]);
 
             // 3. Procesar el despiece
             DB::statement("SET NOCOUNT ON; EXEC sp_ProcesarDespiece ?, ?, ?, ?, ?, ?, ?, ?", [

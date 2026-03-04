@@ -85,25 +85,23 @@ class RecepcionController extends Controller
                 'provedor',
                 'movimientos' => function ($query) use ($almacenObjetivo) {
                     // Solo cargamos los movimientos que entraron al almacén 2
-                    $query->where('IdAlmacenDestino', $almacenObjetivo)
-                        ->with('producto');
+                    // $query->where('IdAlmacenDestino', $almacenObjetivo)
+                    //     ->with('producto');
                 }
             ])
                 // 1. CONDICIÓN: Debe tener movimientos que entraron al almacén 2
-                ->whereHas('movimientos', function ($query) use ($almacenObjetivo) {
-                    $query->where('IdAlmacenDestino', $almacenObjetivo);
-                })
-                // 2. EXCLUSIÓN: NO debe tener movimientos donde el ORIGEN sea el almacén 2
-                // (Esto significa que el lote ya salió de ahí)
-                ->whereDoesntHave('movimientos', function ($query) use ($almacenObjetivo) {
-                    $query->where('IdAlmacenOrigen', $almacenObjetivo);
-                })
+                // ->whereHas('movimientos', function ($query) use ($almacenObjetivo) {
+                //     $query->where('IdAlmacenDestino', $almacenObjetivo);
+                // })
+                // // 2. EXCLUSIÓN: NO debe tener movimientos donde el ORIGEN sea el almacén 2
+                // // (Esto significa que el lote ya salió de ahí)
+                // ->whereDoesntHave('movimientos', function ($query) use ($almacenObjetivo) {
+                //     $query->where('IdAlmacenOrigen', $almacenObjetivo);
+                // })
                 ->get();
 
             if ($lotes->isEmpty()) {
-                // return response()->json([
-                //     'mensaje' => 'No hay lotes pendientes en el almacén 2 (o ya fueron procesados)'
-                // ], 404); $LOTES
+               
                 $lotes=[];
             }
 
