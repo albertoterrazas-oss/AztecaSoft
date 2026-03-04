@@ -203,6 +203,8 @@ Route::get('LoteDetalles', [RecepcionController::class, 'LoteDetalles'])->name('
 Route::post('/pesaje/guardar-lote', [SalidaController::class, 'guardarSalida'])->name('pesaje.store');
 
 Route::get('LotesAreas', [RecepcionController::class, 'LotesAreas'])->name('LotesAreas');
+
+Route::post('ProductosLotes', [RecepcionController::class, 'ProductosLotes'])->name('ProductosLotes');
 Route::get('LotesAreasDeshuese', [RecepcionController::class, 'LotesAreasDeshuese'])->name('LotesAreasDeshuese');
 Route::get('LotesLimpieza', [RecepcionController::class, 'LotesLimpieza'])->name('LotesLimpieza');
 

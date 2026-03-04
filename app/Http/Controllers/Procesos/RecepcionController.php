@@ -13,23 +13,26 @@ class RecepcionController extends Controller
 {
 
 
-    public function Lotes()
+    public function Lotes(Request $request)
     {
         try {
-            $lotes = Encabezado::with([
-                'provedor',
-                'detalles.producto',
-                'movimientos' => function ($query) {
-                    $query->where('IdAlmacenOrigen', '1');
-                },
-                'movimientos.producto'
-            ])
-                ->whereDoesntHave('movimientos', function ($query) {
-                    $query->where('IdAlmacenDestino', '!=', '1');
-                })
-                ->get();
+            // Obtenemos el tipo de operación ('A' o 'L') y el Almacén desde el request
+            // Por defecto usamos 'A' y el almacén 1 según tu ejemplo
+            $opc = $request->input('opcion', 'L');
+            $idAlmacen = $request->input('idAlmacen', 1);
 
-            return response()->json($lotes, 200);
+            // Ejecución del SP de Lotes
+            // sp_LotesEnAlmacen @opc char(1), @IdAlmacen INT
+            $resultado = DB::select('EXEC sp_LotesEnAlmacen ?, ?', [
+                $opc,
+                $idAlmacen
+            ]);
+
+            return response()->json(
+                // 'success' => true,
+                $resultado,
+                200
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error al obtener lotes',
@@ -37,6 +40,37 @@ class RecepcionController extends Controller
             ], 500);
         }
     }
+
+    public function ProductosLotes(Request $request)
+    {
+        try {
+            // 1. Validación básica o asignación con valores por defecto
+            $opc       = $request->input('opcion', 'L');
+            $idAlmacen = $request->input('idAlmacen', 1);
+            $idLote    = $request->input('idLote'); // Si es null, el SP debe manejarlo
+
+            // 2. Ejecución del SP
+            // Es mejor usar nombres de parámetros si el SP los requiere o asegurar el orden
+            $resultado = DB::select('EXEC sp_ProductosEnAlmacenPorLote ?, ?, ?', [
+                "A",
+                $idLote,
+                $idAlmacen
+            ]);
+
+            // 3. Retornar respuesta
+            // Si el SP no devuelve nada, DB::select retorna un array vacío [].
+            return response()->json($resultado, 200);
+        } catch (\Exception $e) {
+            // Loguear el error es buena práctica para depuración
+            \Log::error("Error en ProductosLotes: " . $e->getMessage());
+
+            return response()->json([
+                'error'   => 'Error al obtener lotes',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 
 
 
@@ -101,8 +135,8 @@ class RecepcionController extends Controller
                 ->get();
 
             if ($lotes->isEmpty()) {
-               
-                $lotes=[];
+
+                $lotes = [];
             }
 
             return response()->json($lotes, 200);

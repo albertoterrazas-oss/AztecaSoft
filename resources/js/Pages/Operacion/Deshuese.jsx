@@ -85,7 +85,7 @@ export default function WeighingDashboard() {
             if (deshuese) setAreaOrigen(deshuese.IdAlmacen);
 
             const destinosValidos = resAlm.data.filter(a =>
-                !["ENTRADA", "LIMPIEZA", "DESHUESE", "VENTA"].some(word => a.Nombre.toUpperCase().includes(word))
+                !["ENTRADA", "LIMPIEZA", "DESHUESE", "VENTA","RECEPCION"].some(word => a.Nombre.toUpperCase().includes(word))
             );
             setAlmacenes(destinosValidos);
         } catch (e) {
