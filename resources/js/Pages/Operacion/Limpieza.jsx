@@ -231,7 +231,7 @@ export default function WeighingDashboard() {
                                             </span>
                                         )}
                                     </div>
-                                    <span className={`text-[12px] leading-tight line-clamp-2 pr-2 ${isCompleted ? "text-white" : "text-slate-800"}`}>
+                                    <span className={`text-[12px] leading-tight line-clamp-2 pr-2 ${isCompleted ? "text-black" : "text-slate-800"}`}>
                                         {p.Nombre}
                                     </span>
                                     {exists && (
