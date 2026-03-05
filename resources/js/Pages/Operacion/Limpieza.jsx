@@ -3,183 +3,217 @@ import { Toaster, toast } from "sonner";
 import LoadingDiv from "@/Components/LoadingDiv";
 import axios from "axios";
 
+// --- CONFIGURACIÓN DE RUTAS API ---
 const route = (name) => {
     const routeMap = {
-        "productos.index": "/api/productos",
         "LotesLimpieza": "/api/LotesLimpieza",
         "pesaje.store": "/api/pesaje/guardar-lote",
         "AlmacenesListar": "/api/almacenes",
+        "ProductosLotesHistorial": "/api/ProductosLotesHistorial",
+        "ProductosLotes": "/api/ProductosLotes",
     };
     return routeMap[name] || `/${name}`;
 };
 
+// --- COMPONENTE MODAL DE BÁSCULA ---
+const BasculaModal = ({
+    isOpen, onClose, onConfirm, currentReading, title,
+    buttonText, colorClass, subtitle, disabledConfirm,
+    showSimulate = false, onSimulate
+}) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div className="bg-slate-900 w-full max-w-2xl rounded-[4rem] p-10 border-4 border-slate-700 shadow-[0_0_60px_rgba(0,0,0,0.8)] animate-in zoom-in duration-300">
+                <h2 className="text-white text-center text-3xl mb-2 tracking-widest font-black uppercase">{title}</h2>
+                <p className="text-slate-500 text-center text-sm mb-8 tracking-widest font-bold">{subtitle}</p>
+
+                <div className="bg-[#0f1713] rounded-[3rem] p-12 border-8 border-black shadow-inner mb-6 text-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent pointer-events-none"></div>
+                    <div className="text-[12rem] font-mono text-green-400 leading-none tracking-tighter drop-shadow-[0_0_20px_rgba(74,222,128,0.6)]">
+                        {currentReading}
+                    </div>
+                    <span className="text-green-900 text-sm mt-6 block tracking-[0.5em] font-black uppercase">Lectura (KG)</span>
+                </div>
+
+                {showSimulate && (
+                    <button
+                        onClick={onSimulate}
+                        className="w-full mb-6 py-5 rounded-2xl bg-blue-600 text-white text-xl font-black hover:bg-blue-500 transition-all border-b-8 border-blue-900 active:translate-y-1 active:border-b-0"
+                    >
+                        OBTENER PESO DE BÁSCULA
+                    </button>
+                )}
+
+                <div className="flex gap-6">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-7 rounded-3xl bg-slate-800 text-white text-xl font-black hover:bg-slate-700 transition-all uppercase border-b-[10px] border-black active:translate-y-2 active:border-b-0"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        disabled={disabledConfirm}
+                        onClick={onConfirm}
+                        className={`flex-1 py-7 rounded-3xl ${colorClass} text-white text-xl font-black shadow-lg uppercase transition-all
+                            ${disabledConfirm ? 'opacity-30 cursor-not-allowed border-b-0' : 'active:translate-y-2 active:border-b-0 border-b-[10px]'}`}
+                    >
+                        {buttonText}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export default function WeighingDashboard() {
-    // ESTADOS PRINCIPALES
     const [lotes, setLotes] = useState([]);
     const [selectedLote, setSelectedLote] = useState(null);
+    const [dbProducts, setDbProducts] = useState([]);
+    const [almacenes, setAlmacenes] = useState([]);
+    const [historial, setHistorial] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [dbProducts, setDbProducts] = useState([]);
-    const [records, setRecords] = useState([]);
-    const [almacenes, setAlmacenes] = useState([]);
-
-    // ESTADOS DE FORMULARIO Y BÁSCULA
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [selectedArea, setSelectedArea] = useState(null);
     const [currentWeight, setCurrentWeight] = useState("0.00");
     const [tara, setTara] = useState("0.00");
     const [piezas, setPiezas] = useState(0);
+    const [showTaraModal, setShowTaraModal] = useState(false);
+    const [showGuardarModal, setShowGuardarModal] = useState(false);
 
     const hasFetchedInitialData = useRef(false);
 
-    // LÓGICA DE PESAJES
+    // LÓGICA DE PESO: Peso Neto = Bruto - Tara
     const pesoBruto = parseFloat(currentWeight || 0);
     const pesoTara = parseFloat(tara || 0);
     const netWeight = Math.max(0, (pesoBruto - pesoTara)).toFixed(2);
-    const totalKilosLote = records.reduce((acc, rec) => acc + parseFloat(rec.Peso || 0), 0).toFixed(2);
+    const totalKilosLote = historial.reduce((acc, h) => acc + parseFloat(h.Cantidad || h.KG || 0), 0).toFixed(2);
 
-    const areaLimpiezaObj = almacenes.find(a => (a.Nombre || '').toUpperCase().includes("LIMPIEZA"));
-    const idAreaLimpieza = areaLimpiezaObj ? areaLimpiezaObj.IdAlmacen : null;
+    // --- CARGA DE DATOS ---
+    const fetchHistorial = useCallback(async (loteId) => {
+        const id = loteId || selectedLote?.Lote;
+        if (!id) return;
+        try {
+            const res = await axios.post(route("ProductosLotesHistorial"), { Lote: id, idAlmacen: 2 });
+            setHistorial(Array.isArray(res.data) ? res.data : []);
+        } catch (e) { console.error("Error historial", e); }
+    }, [selectedLote]);
 
-    // CARGA DE DATOS
+    const fetchProductosLote = async (idLote) => {
+        try {
+            const res = await axios.post(route("ProductosLotes"), { opcion: 'L', idLote: idLote, idAlmacen: 2 });
+            setDbProducts((res.data || []).map(p => ({
+                IdProducto: String(p.idProducto),
+                Nombre: p.Producto,
+                PiezasTeoricas: parseInt(p.Piezas) || 0,
+            })));
+        } catch (e) { toast.error("Error al cargar productos"); }
+    };
+
     const fetchLotes = useCallback(async () => {
         try {
             const res = await axios.get(route("LotesLimpieza"));
-            const data = Array.isArray(res.data) ? res.data : [];
-            setLotes(data);
-            
-            // Si hay un lote seleccionado, actualizar sus records específicos
-            if (selectedLote) {
-                const freshLote = data.find(l => l.IdLote === selectedLote.IdLote);
-                if (freshLote) {
-                    setRecords(freshLote.movimientos || []);
-                }
-            }
-        } catch (error) { console.error("Error lotes:", error); }
-    }, [selectedLote]);
-
-    const fetchAlmacenes = useCallback(async () => {
-        try {
-            const res = await axios.get(route("AlmacenesListar"));
-            const filtrados = res.data.filter(a => {
-                const nombre = (a.Nombre || '').toUpperCase();
-                return nombre !== "ENTRADA" && nombre !== "VENTA" && nombre !== "DESHUESE" && nombre !== "RECEPCION";
-            });
-            setAlmacenes(filtrados);
-        } catch (error) { toast.error("Error al cargar almacenes"); }
+            setLotes(Array.isArray(res.data) ? res.data : []);
+        } catch (e) { console.error(e); }
     }, []);
 
     useEffect(() => {
         if (hasFetchedInitialData.current) return;
-        const initData = async () => {
+        const init = async () => {
             setIsLoading(true);
             try {
-                const [resProd] = await Promise.all([
-                    axios.get(route("productos.index")),
-                    fetchLotes(),
-                    fetchAlmacenes()
-                ]);
-                const allProducts = resProd.data.data || resProd.data;
-                setDbProducts(allProducts.filter(p => p.EsSubproducto == 0));
+                const resAlmacenes = await axios.get(route("AlmacenesListar"));
+                setAlmacenes(resAlmacenes.data.filter(a => !["ENTRADA", "VENTA", "DESHUESE", "RECEPCION"].includes(a.Nombre?.toUpperCase())));
+                await fetchLotes();
                 hasFetchedInitialData.current = true;
-            } catch (error) { toast.error("Error de conexión"); }
-            finally { setIsLoading(false); }
+            } finally { setIsLoading(false); }
         };
-        initData();
-    }, [fetchLotes, fetchAlmacenes]);
+        init();
+    }, [fetchLotes]);
 
-    // MANEJADORES
+    // --- MANEJO DE SELECCIÓN ---
     const handleSelectLote = (lote) => {
         setSelectedLote(lote);
-        setRecords(lote.movimientos || []);
-        resetForm();
-        const congelacion = almacenes.find(a => a.Nombre.toUpperCase().includes("CONGELACION"));
-        if (congelacion) setSelectedArea(congelacion.IdAlmacen);
-    };
-
-    const resetForm = () => {
+        setTara("0.00");
+        setCurrentWeight("0.00");
         setSelectedProduct(null);
-        setPiezas(0);
-        setCurrentWeight("0.00");
-        setTara("0.00");
-    };
+        fetchProductosLote(lote.Lote);
+        fetchHistorial(lote.Lote);
 
-    const handleProductClick = (p, currentPieces) => {
-        setSelectedProduct(p);
-        setPiezas(currentPieces || 0);
-        setCurrentWeight("0.00");
-        setTara("0.00");
-    };
+        const cong = almacenes.find(a => a.Nombre.toUpperCase().includes("CONGELACION"));
+        if (cong) setSelectedArea(cong.IdAlmacen);
 
-    const getUserId = () => {
-        const perfil = localStorage.getItem('perfil');
-        try { return JSON.parse(perfil).IdUsuario; } catch (e) { return null; }
+        setTimeout(() => setShowTaraModal(true), 400);
     };
 
     const registrarPesaje = async () => {
         if (isProcessing) return;
-        if (!selectedProduct) return toast.error("Selecciona un producto");
-        if (parseFloat(netWeight) <= 0) return toast.error("Báscula en cero");
-
         setIsProcessing(true);
-        const toastId = toast.loading("Guardando pesaje...");
-
         try {
+            const user = JSON.parse(localStorage.getItem('perfil'))?.IdUsuario || 1;
             const payload = {
-                id_lote: selectedLote.IdLote,
+                id_lote: selectedLote.Lote,
                 id_producto: selectedProduct.IdProducto,
                 cantidad: netWeight,
                 piezas: piezas,
-                id_area_entrada: idAreaLimpieza,
+                id_area_entrada: 2,
                 id_area_salida: selectedArea,
-                idusuario: getUserId()
+                idusuario: user
             };
-
-            const response = await axios.post(route("pesaje.store"), payload);
-
-            if (response.data.lote_cerrado) {
-                toast.success("Lote finalizado con éxito", { id: toastId });
+            const res = await axios.post(route("pesaje.store"), payload);
+            if (res.data.lote_cerrado) {
+                toast.success("Lote Finalizado");
                 setSelectedLote(null);
                 fetchLotes();
             } else {
-                // AQUÍ ESTÁ EL TRUCO: Refrescamos los datos del lote inmediatamente
-                await fetchLotes(); 
-                resetForm();
-                toast.success("Pesaje registrado correctamente", { id: toastId });
+                await Promise.all([fetchLotes(), fetchProductosLote(selectedLote.Lote), fetchHistorial()]);
+                setSelectedProduct(null);
+                setPiezas(0);
+                setCurrentWeight("0.00");
+                toast.success("Registro guardado con éxito");
             }
-        } catch (error) {
-            toast.error("Error al registrar: " + (error.response?.data?.message || "Error de red"), { id: toastId });
-        } finally {
-            setIsProcessing(false);
-        }
+        } catch (e) { toast.error("Error al guardar"); }
+        finally { setIsProcessing(false); setShowGuardarModal(false); }
     };
 
-    if (isLoading) return <div className="h-screen flex items-center justify-center bg-slate-100 font-black"><LoadingDiv /></div>;
+    if (isLoading) return <div className="h-screen flex items-center justify-center bg-slate-100"><LoadingDiv /></div>;
 
     if (!selectedLote) {
         return (
-            <div className="min-h-screen bg-slate-100 p-8 text-slate-800 uppercase font-black flex flex-col justify-center items-center">
-                <Toaster position="top-center" richColors />
-                <div className="max-w-4xl w-full mx-auto">
-                    <h1 className="text-4xl text-center mb-10">PANEL DE LIMPIEZA</h1>
+        
+            <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
+                <div className="max-w-4xl w-full">
+                    <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
+                        Panel de Pesaje: LIMPIEZA
+                    </h1>
+
                     <div className="grid gap-4">
                         {lotes.length > 0 ? (
                             lotes.map((lote) => (
-                                <button key={lote.IdLote} onClick={() => handleSelectLote(lote)} className="bg-white p-6 rounded-[2rem] flex items-center justify-between border border-slate-200 hover:border-red-600 transition-all shadow-sm group">
-                                    <div className="text-left">
-                                        <span className="text-[10px] text-red-600">Lote #{lote.IdLote}</span>
-                                        <h3 className="text-xl leading-none">{lote.provedor?.RazonSocial}</h3>
+                                <button
+                                    key={lote.Lote}
+                                    onClick={() => handleSelectLote(lote)}
+                                    className="bg-white p-6 rounded-[2.5rem] flex items-center justify-between border-4 border-transparent hover:border-red-600 transition-all shadow-xl group"
+                                >
+                                    <div className="text-left font-black">
+                                        <span className="text-xs text-red-600 uppercase">LOTE #{lote.Lote}</span>
+                                        <h3 className="text-2xl leading-none text-slate-700">{lote.Proveedor}</h3>
                                     </div>
-                                    <div className="bg-slate-50 group-hover:bg-red-600 group-hover:text-white p-4 rounded-2xl transition-all">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                    <div className="bg-slate-100 group-hover:bg-red-600 group-hover:text-white p-5 rounded-3xl transition-all">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                         </svg>
                                     </div>
                                 </button>
                             ))
                         ) : (
-                            <div className="bg-white/50 border-2 border-dashed border-slate-300 rounded-[2rem] p-12 text-center">
-                                <h2 className="text-xl text-slate-500">No hay lotes pendientes</h2>
+                            /* Mensaje cuando no hay datos */
+                            <div className="bg-white p-12 rounded-[2.5rem] shadow-xl border-4 border-dashed border-slate-300 flex flex-col items-center">
+                                <span className="text-6xl mb-4 text-slate-300">📦</span>
+                                <h2 className="text-2xl text-slate-400 text-center">
+                                    No hay lotes activos para pesaje en este momento
+                                </h2>
                             </div>
                         )}
                     </div>
@@ -190,125 +224,147 @@ export default function WeighingDashboard() {
 
     return (
         <div className="flex flex-col lg:flex-row h-screen bg-slate-200 p-4 gap-4 overflow-hidden font-black uppercase">
-            <Toaster position="top-center" richColors />
+            {/* <Toaster position="top-center" richColors /> */}
 
-            {/* SECCIÓN IZQUIERDA: LISTADO DE PRODUCTOS */}
-            <div className="flex-1 flex flex-col gap-4 min-h-0">
+            {/* MODAL 1: TARA */}
+            <BasculaModal
+                isOpen={showTaraModal}
+                title="PASO 1: PESAR TARA"
+                subtitle="Coloque el recipiente vacío en la báscula"
+                currentReading={currentWeight}
+                buttonText="GUARDAR TARA"
+                colorClass="bg-red-600 border-red-900 shadow-red-600/20"
+                disabledConfirm={parseFloat(currentWeight) <= 0}
+                showSimulate={true}
+                onSimulate={() => setCurrentWeight((Math.random() * (1.5 - 0.2) + 0.2).toFixed(2))}
+                onClose={() => { setShowTaraModal(false); setCurrentWeight("0.00"); }}
+                onConfirm={() => {
+                    setTara(currentWeight);
+                    setCurrentWeight("0.00");
+                    setShowTaraModal(false);
+                    toast.success("TARA FIJADA CORRECTAMENTE");
+                }}
+            />
+
+            {/* MODAL 2: PESAR PRODUCTO (PESO NETO) */}
+            <BasculaModal
+                isOpen={showGuardarModal}
+                title="PASO 2: PESAR PRODUCTO"
+                subtitle={selectedProduct?.Nombre}
+                currentReading={netWeight} // Muestra el peso restando la tara automáticamente
+                buttonText="CONFIRMAR Y GUARDAR"
+                colorClass="bg-emerald-600 border-emerald-900 shadow-emerald-600/20"
+                disabledConfirm={parseFloat(netWeight) <= 0}
+                showSimulate={true}
+                onSimulate={() => {
+                    // Genera un peso bruto (debe ser mayor a la tara para que el neto sea positivo)
+                    const randomBruto = (Math.random() * (40 - 5) + 5).toFixed(2);
+                    setCurrentWeight(randomBruto);
+                }}
+                onClose={() => { setShowGuardarModal(false); setCurrentWeight("0.00"); }}
+                onConfirm={registrarPesaje}
+            />
+
+            <div className="flex-1 flex flex-col min-h-0 gap-4">
                 <header className="flex justify-between items-center bg-white p-5 rounded-[2.5rem] shadow-sm border border-slate-300">
                     <div>
-                        <button onClick={() => setSelectedLote(null)} className="text-[10px] text-slate-400 hover:text-red-600 mb-1 block">← VOLVER A LOTES</button>
-                        <h1 className="text-2xl text-slate-800 leading-none">{selectedLote.provedor?.RazonSocial}</h1>
-                        <p className="text-[10px] text-red-600">ID LOTE: {selectedLote.IdLote}</p>
+                        <button onClick={() => setSelectedLote(null)} className="text-[10px] text-slate-400 hover:text-red-600 mb-1 block">← CAMBIAR LOTE</button>
+                        <h1 className="text-2xl text-slate-800 leading-none">{selectedLote.Proveedor}</h1>
+                        <p className="text-[10px] text-red-600 font-bold tracking-widest">LOTE: {selectedLote.Lote} | TARA FIJA: {tara} KG</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-[9px] text-slate-400">TOTAL PROCESADO</p>
-                        <p className="text-3xl text-slate-800">{totalKilosLote} KG</p>
+                        <p className="text-[9px] text-slate-400">PESO TOTAL LOTE</p>
+                        <p className="text-3xl text-slate-800 font-mono">{totalKilosLote} KG</p>
                     </div>
                 </header>
 
-                <div className="flex-1 overflow-y-auto pr-2 custom-scroll">
+                <div className="flex-1 overflow-y-auto custom-scroll pr-2">
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-                        {dbProducts.map((p) => {
-                            const detail = records.find(r => String(r.IdProducto) === String(p.IdProducto));
-                            const exists = !!detail;
-                            const isCompleted = exists && parseFloat(detail.Peso || 0) > 0;
-
-                            return (
-                                <button
-                                    key={p.IdProducto}
-                                    disabled={!exists || isProcessing}
-                                    onClick={() => handleProductClick(p, detail?.Piezas)}
-                                    className={`p-4 rounded-[2rem] text-left border-4 h-36 flex flex-col justify-between relative transition-all
-                                        ${!exists ? "bg-slate-300 opacity-20 cursor-not-allowed border-transparent" : "bg-white shadow-md"}
-                                        ${selectedProduct?.IdProducto === p.IdProducto ? "border-red-600 scale-105 z-10 shadow-xl" : "border-white"}
-                                        ${isCompleted ? "bg-emerald-500 text-white !border-emerald-600" : ""}`}
-                                >
-                                    <div className="flex justify-between items-start">
-                                        <span className={`text-[9px] ${isCompleted ? "text-emerald-100" : "text-slate-400"}`}>{p.UnidadMedida || 'KG'}</span>
-                                        {exists && (
-                                            <span className={`${isCompleted ? "bg-white text-emerald-600" : "bg-blue-600 text-white"} text-[10px] px-2 py-0.5 rounded-lg font-bold`}>
-                                                {detail.Piezas} PZS
-                                            </span>
-                                        )}
-                                    </div>
-                                    <span className={`text-[12px] leading-tight line-clamp-2 pr-2 ${isCompleted ? "text-black" : "text-slate-800"}`}>
-                                        {p.Nombre}
-                                    </span>
-                                    {exists && (
-                                        <span className={`absolute bottom-3 right-4 text-[12px] px-2 py-0.5 rounded shadow-sm ${isCompleted ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-700"}`}>
-                                            {parseFloat(detail.Peso || 0).toFixed(2)} KG
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })}
+                        {dbProducts.map((p) => (
+                            <button
+                                key={p.IdProducto}
+                                onClick={() => { setSelectedProduct(p); setPiezas(p.PiezasTeoricas || 0); }}
+                                className={`p-4 rounded-[2rem] text-left border-4 h-36 flex flex-col justify-between transition-all shadow-md
+                                    ${selectedProduct?.IdProducto === p.IdProducto ? "border-red-600 scale-105 z-10 bg-white shadow-red-200" : "border-white bg-white/80"}`}
+                            >
+                                <span className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-lg w-fit font-black">{p.PiezasTeoricas} PZS</span>
+                                <span className="text-[12px] leading-tight line-clamp-2 text-slate-800 font-black">{p.Nombre}</span>
+                            </button>
+                        ))}
                     </div>
+                </div>
+
+
+                <div className="flex-1 bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden ">
+                    <table className="w-full text-left">
+                        <thead className="bg-slate-50 border-b text-[9px] font-black text-slate-400 uppercase sticky top-0">
+                            <tr><th className="p-4">Producto</th><th className="p-4 text-center">Piezas</th><th className="p-4 text-right">Peso Registrado</th></tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 custom-scroll">
+                            {historial.map((reg, i) => (
+                                <tr key={i} className={`text-[11px] font-bold ${parseFloat(reg.PesoRegistrado) > 0 ? 'bg-green-50/40' : ''}`}>
+                                    <td className="p-4 uppercase text-slate-700">{reg.Producto}</td>
+                                    <td className="p-4 text-center"><span className="bg-slate-100 px-2 py-1 rounded font-black">{reg.Piezas}</span></td>
+                                    <td className="p-4 text-right text-base font-black">{parseFloat(reg.KG || 0).toFixed(2)} KG</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            {/* SECCIÓN DERECHA: PANEL DE CONTROL Y PESA */}
             <aside className="w-full lg:w-[420px] flex flex-col gap-4">
-                
                 <div className="bg-slate-900 rounded-[3rem] p-6 shadow-2xl border-4 border-slate-800">
                     <div className="bg-[#0f1713] rounded-[2rem] p-8 border-4 border-black shadow-inner mb-6 text-center">
-                        <div className="text-8xl font-mono text-green-400 leading-none tracking-tighter">
-                            {netWeight}
-                        </div>
-                        <span className="text-green-900 text-[11px] mt-2 block tracking-[0.3em] font-bold">KILOGRAMOS NETOS</span>
+                        <div className="text-8xl font-mono text-green-400 leading-none">{netWeight}</div>
+                        <span className="text-green-900 text-[11px] mt-2 block tracking-[0.3em] font-black uppercase">Peso Neto actual (KG)</span>
                     </div>
-
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 text-center">
+                        <div className="bg-slate-800 p-4 rounded-2xl text-center border border-slate-700">
                             <div className="text-2xl font-mono text-blue-400">{pesoBruto.toFixed(2)}</div>
-                            <span className="text-slate-500 text-[8px]">PESO BRUTO</span>
+                            <span className="text-slate-500 text-[8px] font-bold uppercase tracking-widest">Peso Bruto</span>
                         </div>
-                        <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 text-center">
+                        <div className="bg-slate-800 p-4 rounded-2xl text-center border border-slate-700">
                             <div className="text-2xl font-mono text-red-400">-{pesoTara.toFixed(2)}</div>
-                            <span className="text-slate-500 text-[8px]">TARA FIJA</span>
+                            <span className="text-slate-500 text-[8px] font-bold uppercase tracking-widest">Tara Aplicada</span>
                         </div>
                     </div>
                 </div>
 
                 <div className="bg-white p-6 rounded-[3rem] border-4 border-slate-300 shadow-sm flex flex-col gap-5">
-                    <div className="grid grid-cols-2 gap-3">
-                        <button onClick={() => setTara((Math.random() * 1.5).toFixed(2))} className="bg-slate-800 text-white py-5 rounded-2xl text-[11px] border-b-8 border-black active:translate-y-2 active:border-b-0 transition-all">ESTABLECER TARA</button>
-                        <button onClick={() => setCurrentWeight((Math.random() * 40 + 10).toFixed(2))} className="bg-blue-600 text-white py-5 rounded-2xl text-[11px] border-b-8 border-blue-900 active:translate-y-2 active:border-b-0 transition-all">SIMULAR BÁSCULA</button>
-                    </div>
+                    <button
+                        onClick={() => { setCurrentWeight("0.00"); setShowTaraModal(true); }}
+                        className="bg-slate-800 text-white py-6 rounded-2xl text-xs border-b-8 border-black active:translate-y-1 active:border-b-0 transition-all font-black uppercase"
+                    >
+                        {parseFloat(tara) > 0 ? "CAMBIAR TARA" : "1. CONFIGURAR TARA"}
+                    </button>
 
                     <div>
-                        <label className="text-[10px] text-slate-400 block mb-2 text-center tracking-widest">NÚMERO DE PIEZAS</label>
-                        <input
-                            type="number"
-                            value={piezas}
-                            onChange={(e) => setPiezas(e.target.value)}
-                            className="w-full bg-slate-100 border-4 border-slate-200 rounded-2xl font-black text-center text-5xl p-4 focus:ring-0 focus:border-red-600 transition-all"
-                        />
+                        <label className="text-[10px] text-slate-400 block mb-2 text-center tracking-widest font-black uppercase">Cantidad de Piezas</label>
+                        <input type="number" value={piezas} onChange={(e) => setPiezas(e.target.value)} className="w-full bg-slate-100 border-4 border-slate-200 rounded-2xl font-black text-center text-5xl p-4 focus:ring-0 focus:border-red-600" />
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] text-slate-400 text-center">DESTINO: CONGELACIÓN</label>
-                        <div className="flex gap-2">
-                            {almacenes.filter(a => a.Nombre.toUpperCase().includes("CONGELACION")).map(a => (
-                                <button
-                                    key={a.IdAlmacen}
-                                    onClick={() => setSelectedArea(a.IdAlmacen)}
-                                    className={`flex-1 py-4 rounded-2xl text-[12px] transition-all border-b-4 bg-[#facc15] border-[#ca8a04] text-yellow-900 shadow-lg`}
-                                >
-                                    {a.Nombre} ✓
-                                </button>
-                            ))}
-                        </div>
+                    <div className="flex gap-2">
+                        {almacenes.filter(a => a.Nombre.toUpperCase().includes("CONGELACION")).map(a => (
+                            <button key={a.IdAlmacen} onClick={() => setSelectedArea(a.IdAlmacen)}
+                                className={`flex-1 py-4 rounded-2xl text-[10px] transition-all border-b-4 font-black ${selectedArea === a.IdAlmacen ? 'bg-[#facc15] border-[#ca8a04] text-yellow-900' : 'bg-slate-100 border-slate-300 text-slate-400'}`}>
+                                DESTINO: {a.Nombre}
+                            </button>
+                        ))}
                     </div>
 
                     <button
-                        onClick={registrarPesaje}
-                        disabled={isProcessing || !selectedProduct || parseFloat(netWeight) <= 0 || !selectedArea}
-                        className={`w-full py-7 rounded-[2.5rem] text-3xl border-b-[12px] shadow-2xl transition-all
-                            ${(isProcessing || !selectedProduct || parseFloat(netWeight) <= 0 || !selectedArea)
-                                ? "bg-slate-200 text-slate-400 border-slate-300"
+                        onClick={() => {
+                            setCurrentWeight("0.00"); // Limpiamos lectura previa antes de abrir
+                            setShowGuardarModal(true);
+                        }}
+                        disabled={isProcessing || !selectedProduct || parseFloat(tara) <= 0}
+                        className={`w-full py-8 rounded-[2.5rem] text-3xl border-b-[12px] shadow-2xl transition-all font-black
+                            ${(isProcessing || !selectedProduct || parseFloat(tara) <= 0)
+                                ? "bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed"
                                 : "bg-[#007b3e] text-white border-[#005a2d] hover:bg-[#008f48] active:translate-y-2 active:border-b-0"}`}
                     >
-                        {isProcessing ? "GUARDANDO..." : "GUARDAR PESAJE"}
+                        {parseFloat(tara) <= 0 ? "FALTA TARA" : !selectedProduct ? "SELECCIONE PRODUCTO" : "2. PESAR PRODUCTO"}
                     </button>
                 </div>
             </aside>

@@ -2,228 +2,190 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { Toaster, toast } from "sonner";
 import LoadingDiv from "@/Components/LoadingDiv";
 import axios from "axios";
+import { Scale, Package, Save, ArrowLeft, Camera, Check, Trash2, ChevronRight } from 'lucide-react';
 
-// Mapeo de rutas optimizado para Laravel Resource
-const route = (name) => {
-    const routeMap = {
-        "productos.index": "/api/productos",
-        "LotesAreasDeshuese": "/api/LotesAreasDeshuese",
-        "AlmacenesListar": "/api/almacenes",
-        // "despiece.store": "/api/despiece.store", // Apunta a la raíz del recurso con POST
-        "despiece.store": "/api/despiece",
+// --- COMPONENTE MODAL DE BÁSCULA (ESTILO INDUSTRIAL) ---
+const BasculaModal = ({
+    isOpen, onClose, onConfirm, currentReading, title,
+    buttonText, colorClass, subtitle, disabledConfirm,
+    showSimulate = false, onSimulate
+}) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div className="bg-slate-900 w-full max-w-2xl rounded-[4rem] p-10 border-4 border-slate-700 shadow-2xl animate-in zoom-in duration-300">
+                <h2 className="text-white text-center text-3xl mb-2 tracking-widest font-black uppercase">{title}</h2>
+                <p className="text-slate-500 text-center text-sm mb-8 tracking-widest font-bold uppercase">{subtitle}</p>
 
-    };
-    return routeMap[name] || `/${name}`;
+                <div className="bg-[#0f1713] rounded-[3rem] p-12 border-8 border-black shadow-inner mb-6 text-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent pointer-events-none"></div>
+                    <div className="text-[10rem] font-mono text-green-400 leading-none tracking-tighter drop-shadow-[0_0_20px_rgba(74,222,128,0.6)]">
+                        {currentReading}
+                    </div>
+                    <span className="text-green-900 text-sm mt-6 block tracking-[0.5em] font-black uppercase italic">Lectura Actual (KG)</span>
+                </div>
+
+                {showSimulate && (
+                    <button onClick={onSimulate} className="w-full mb-6 py-5 rounded-2xl bg-blue-600 text-white text-xl font-black hover:bg-blue-500 transition-all border-b-8 border-blue-900 active:translate-y-1 active:border-b-0">
+                        OBTENER PESO DE BÁSCULA
+                    </button>
+                )}
+
+                <div className="flex gap-6">
+                    <button onClick={onClose} className="flex-1 py-7 rounded-3xl bg-slate-800 text-white text-xl font-black hover:bg-slate-700 transition-all uppercase border-b-[10px] border-black active:translate-y-2 active:border-b-0">
+                        Cancelar
+                    </button>
+                    <button
+                        disabled={disabledConfirm}
+                        onClick={onConfirm}
+                        className={`flex-1 py-7 rounded-3xl ${colorClass} text-white text-xl font-black shadow-lg uppercase transition-all
+                            ${disabledConfirm ? 'opacity-30 cursor-not-allowed' : 'active:translate-y-2 active:border-b-0 border-b-[10px]'}`}
+                    >
+                        {buttonText}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
-const RELACIONES_DESHUESE = {
-    39: [40, 41], 13: [14, 15, 16, 17, 18], 19: [20, 21, 22],
-    23: [24, 25, 26, 27], 29: [30, 31, 32], 5: [8, 9, 10, 11, 12],
-    6: [8, 9, 10, 11, 12], 33: [34, 36, 37, 38], 35: [34, 36, 37, 38],
-};
-
-export default function WeighingDashboard() {
-    // --- ESTADOS ---
+export default function DeshueseDashboard() {
     const [lotes, setLotes] = useState([]);
-    const [selectedLote, setSelectedLote] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isProcessing, setIsProcessing] = useState(false);
     const [dbProducts, setDbProducts] = useState([]);
-    const [records, setRecords] = useState([]);
     const [almacenes, setAlmacenes] = useState([]);
+    const [records, setRecords] = useState([]);
 
+    const [selectedLote, setSelectedLote] = useState(null);
     const [selectedParent, setSelectedParent] = useState(null);
     const [selectedChild, setSelectedChild] = useState(null);
     const [parentFilter, setParentFilter] = useState(null);
-    const [areaOrigen, setAreaOrigen] = useState(null);
     const [areaDestino, setAreaDestino] = useState(null);
 
-    const [despieceList, setDespieceList] = useState([]);
     const [currentWeight, setCurrentWeight] = useState("0.00");
-    const [tara, setTara] = useState("0.00");
-    const [piezas, setPiezas] = useState(0);
+    const [taraGlobal, setTaraGlobal] = useState("0.00");
+    const [piezas, setPiezas] = useState("");
 
-    const hasFetchedInitialData = useRef(false);
+    const [showTaraModal, setShowTaraModal] = useState(false);
+    const [showPesarModal, setShowPesarModal] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isProcessing, setIsProcessing] = useState(false);
 
-    // --- CÁLCULOS ---
-    const netWeight = useMemo(() => {
-        const resultado = parseFloat(currentWeight) - parseFloat(tara);
-        return Math.max(0, resultado).toFixed(2);
-    }, [currentWeight, tara]);
-
-    const productosVisibles = useMemo(() => {
-        const idsEnLote = [...new Set(records.map(r => Number(r.IdProducto)))];
-        if (!parentFilter) {
-            return dbProducts.filter(p =>
-                (p.EsSubproducto == 0 || p.EsSubproducto == "0") &&
-                idsEnLote.includes(Number(p.IdProducto))
-            );
-        } else {
-            const hijosIds = RELACIONES_DESHUESE[parentFilter] || [];
-            return dbProducts.filter(p => hijosIds.includes(Number(p.IdProducto)));
-        }
-    }, [dbProducts, parentFilter, records]);
-
-
-    const getUserId = () => {
-        const perfil = localStorage.getItem('perfil');
-        try { return JSON.parse(perfil).IdUsuario; } catch (e) { return null; }
+    const RELACIONES_DESHUESE = {
+        39: [40, 41], 13: [14, 15, 16, 17, 18], 19: [20, 21, 22],
+        23: [24, 25, 26, 27], 29: [30, 31, 32], 5: [8, 9, 10, 11, 12],
+        6: [8, 9, 10, 11, 12], 33: [34, 36, 37, 38], 35: [34, 36, 37, 38],
     };
 
-    // --- EFECTOS / DATA FETCHING ---
+    const netWeight = useMemo(() => {
+        const val = parseFloat(currentWeight || 0) - parseFloat(taraGlobal || 0);
+        return Math.max(0, val).toFixed(2);
+    }, [currentWeight, taraGlobal]);
+
     const fetchData = useCallback(async () => {
         try {
-            const [resProd, resLotes, resAlm] = await Promise.all([
-                axios.get(route("productos.index")),
-                axios.get(route("LotesAreasDeshuese")),
-                axios.get(route("AlmacenesListar"))
+            setIsLoading(true);
+            const [resL, resA, resP] = await Promise.all([
+                axios.get("/api/LotesDeshuese"),
+                axios.get("/api/almacenes"),
+                axios.get("/api/productos")
             ]);
-            setDbProducts(resProd.data.data || resProd.data);
-            setLotes(resLotes.data);
+            setLotes(resL.data || []);
+            setAlmacenes((resA.data || []).filter(a => !["ENTRADA", "LIMPIEZA", 'RECEPCION', 'DESHUESE', 'VENTA'].some(w => a.Nombre.toUpperCase().includes(w))));
 
-            const deshuese = resAlm.data.find(a => a.Nombre.toUpperCase().includes("DESHUESE"));
-            if (deshuese) setAreaOrigen(deshuese.IdAlmacen);
+            setAreaDestino(resA.data[0]?.IdAlmacen);
 
-            const destinosValidos = resAlm.data.filter(a =>
-                !["ENTRADA", "LIMPIEZA", "DESHUESE", "VENTA","RECEPCION"].some(word => a.Nombre.toUpperCase().includes(word))
-            );
-            setAlmacenes(destinosValidos);
-        } catch (e) {
-            toast.error("Error al cargar datos iniciales");
-        } finally {
-            setIsLoading(false);
-        }
+            setDbProducts((resP.data || []).map(p => ({
+                IdProducto: Number(p.idProducto || p.IdProducto),
+                Nombre: p.Producto || p.Nombre,
+                EsSubproducto: Number(p.EsSubproducto) || 0
+            })));
+        } catch (e) { toast.error("Error de conexión"); } finally { setIsLoading(false); }
     }, []);
 
-    useEffect(() => {
-        if (!hasFetchedInitialData.current) {
-            fetchData();
-            hasFetchedInitialData.current = true;
-        }
-    }, [fetchData]);
+    useEffect(() => { fetchData(); }, [fetchData]);
 
-    // --- MANEJADORES ---
-    const handleProductSelect = (p) => {
-        if (RELACIONES_DESHUESE[p.IdProducto] && !parentFilter) {
-            const mov = records.find(r => Number(r.IdProducto) === Number(p.IdProducto));
-            setParentFilter(p.IdProducto);
-            setSelectedParent({
-                ...p,
-                piezasOriginales: mov?.Piezas || 0,
-                pesoOriginal: mov?.Peso || 0
-            });
-            setPiezas(0);
-        } else {
-            setSelectedChild(p);
-        }
+    const handleLoteSelect = async (lote) => {
+        setSelectedLote(lote);
+        try {
+            const res = await axios.post("/api/ProductosLotes", { opcion: 'L', Lote: lote.Lote, idAlmacen: 3 });
+            setRecords(res.data || []);
+            setTimeout(() => setShowTaraModal(true), 400);
+        } catch (e) { toast.error("Error al cargar existencias"); }
     };
 
-    const resetSubproceso = () => {
-        setParentFilter(null);
-        setSelectedParent(null);
-        setSelectedChild(null);
-        setDespieceList([]);
-        setCurrentWeight("0.00");
-        setTara("0.00");
-        setPiezas(0);
-    };
-
-    const agregarAlCarrito = () => {
-        if (!selectedChild || parseFloat(netWeight) <= 0) return toast.warning("Peso inválido");
-        setDespieceList(prev => [...prev, {
-            id: selectedChild.IdProducto,
-            nombre: selectedChild.Nombre,
-            peso: parseFloat(netWeight),
-            piezas: parseInt(piezas) || 0
-        }]);
-        setSelectedChild(null);
-        setCurrentWeight("0.00");
-        setPiezas(0);
-        toast.success("Agregado");
-    };
-
-    const finalizarProceso = async () => {
-        if (!areaDestino || despieceList.length === 0 || !selectedParent) {
-            return toast.error("Faltan datos por completar");
-        }
-
+    const registrarDeshuese = async () => {
         setIsProcessing(true);
-        const tid = toast.loading("Registrando en base de datos...");
-
         try {
             const payload = {
-                id_lote: selectedLote.IdLote,
+                id_lote: selectedLote.Lote,
                 id_producto_origen: selectedParent.IdProducto,
-                id_almacen_origen: areaOrigen,
+                id_almacen_origen: 3,
                 id_almacen_destino: areaDestino,
-                peso_entrada: parseFloat(selectedParent.pesoOriginal),
-                piezas_entrada: parseInt(selectedParent.piezasOriginales),
-                datos_json: JSON.stringify(despieceList.map(i => ({
-                    id: i.id,
-                    peso: i.peso,
-                    piezas: i.piezas
-                }))),
-                idusuario: getUserId()
-
+                peso_entrada: parseFloat(selectedParent.KG) || 0,
+                piezas_entrada: parseInt(selectedParent.Piezas),
+                datos_json: JSON.stringify([{
+                    id: selectedChild.IdProducto,
+                    nombre: selectedChild.Nombre,
+                    peso: parseFloat(netWeight),
+                    piezas: parseInt(piezas) || 0
+                }]),
+                idusuario: 1
             };
-
-            // Petición POST explícita
-            // await axios.post(route("despiece.store"), payload);
-
-            const response = await axios.post(route("despiece.store"), payload);
-
-
-            toast.success("¡Despiece guardado correctamente!", { id: tid });
-            setSelectedLote(null);
-            resetSubproceso();
-            fetchData();
-        } catch (e) {
-            const errorMsg = e.response?.data?.message || "Error de servidor";
-            toast.error(errorMsg, { id: tid });
-        } finally {
-            setIsProcessing(false);
-        }
+            await axios.post("/api/despiece", payload);
+            toast.success("PESAJE GUARDADO");
+            setSelectedChild(null);
+            setPiezas("");
+            setCurrentWeight("0.00");
+        } catch (e) { toast.error("Error al guardar"); } finally { setIsProcessing(false); setShowPesarModal(false); }
     };
 
-    // --- VISTAS ---
-    if (isLoading) return <div className="h-screen flex items-center justify-center"><LoadingDiv /></div>;
+    const productosVisibles = useMemo(() => {
+        if (!parentFilter) {
+            const idsStock = records.map(r => Number(r.idProducto || r.IdProducto));
+            return dbProducts.filter(p => Number(p.EsSubproducto) === 0 && idsStock.includes(Number(p.IdProducto)));
+        }
+        const hijos = RELACIONES_DESHUESE[Number(parentFilter)] || [];
+        return dbProducts.filter(p => hijos.includes(Number(p.IdProducto)));
+    }, [dbProducts, parentFilter, records]);
+
+    if (isLoading) return <div className="h-screen flex items-center justify-center bg-slate-100"><LoadingDiv /></div>;
 
     if (!selectedLote) {
         return (
-            <div className="min-h-screen bg-slate-100 p-8 text-slate-800 uppercase font-black flex flex-col justify-center items-center">
-                <div className="max-w-4xl w-full mx-auto">
-                    <h1 className="text-2xl mb-8 text-center text-slate-800">Panel de Deshuese - Lotes Activos</h1>
+
+
+            <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
+                <div className="max-w-4xl w-full">
+                    <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
+                        Panel de Pesaje: DESHUESE
+                    </h1>
 
                     <div className="grid gap-4">
-                        {lotes && lotes.length > 0 ? (
-                            lotes.map(l => (
+                        {lotes.length > 0 ? (
+                            lotes.map((lote) => (
                                 <button
-                                    key={l.IdLote}
-                                    onClick={() => { setSelectedLote(l); setRecords(l.movimientos || []); }}
-                                    className="bg-white p-6 rounded-[2.5rem] border-2 border-slate-200 flex justify-between items-center shadow-sm active:scale-95 transition-all hover:border-red-500 group w-full"
+                                    key={lote.Lote}
+                                    onClick={() => handleLoteSelect(lote)}
+                                    className="bg-white p-6 rounded-[2.5rem] flex items-center justify-between border-4 border-transparent hover:border-red-600 transition-all shadow-xl group"
                                 >
-                                    <div className="text-left">
-                                        <p className="text-red-600 text-[10px]">LOTE #{l.IdLote}</p>
-                                        <p className="text-lg text-slate-700 leading-none">{l.provedor?.RazonSocial || 'Sin Proveedor'}</p>
-                                        <p className="text-[9px] text-slate-400 mt-1">{l.movimientos?.length || 0} Prod. Disponibles</p>
+                                    <div className="text-left font-black">
+                                        <span className="text-xs text-red-600 uppercase">LOTE #{lote.Lote}</span>
+                                        <h3 className="text-2xl leading-none text-slate-700">{lote.Proveedor}</h3>
                                     </div>
-                                    <span className="text-slate-300 text-[10px] group-hover:text-red-500 transition-colors font-black">
-                                        ENTRAR →
-                                    </span>
+                                    <div className="bg-slate-100 group-hover:bg-red-600 group-hover:text-white p-5 rounded-3xl transition-all">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                        </svg>
+                                    </div>
                                 </button>
                             ))
                         ) : (
-                            /* Estado Vacío para Deshuese */
-                            <div className="bg-white/60 border-2 border-dashed border-slate-300 rounded-[2.5rem] py-16 text-center">
-                                <div className="bg-slate-200 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                    </svg>
-                                </div>
-                                <p className="text-slate-500 text-lg">No hay lotes para deshuese</p>
-                                <p className="text-slate-400 text-[10px] normal-case mt-1 font-medium">
-                                    Espera a que se asigne un nuevo lote a este departamento.
-                                </p>
+                            /* Mensaje cuando no hay datos */
+                            <div className="bg-white p-12 rounded-[2.5rem] shadow-xl border-4 border-dashed border-slate-300 flex flex-col items-center">
+                                <span className="text-6xl mb-4 text-slate-300">📦</span>
+                                <h2 className="text-2xl text-slate-400 text-center">
+                                    No hay lotes activos para pesaje en este momento
+                                </h2>
                             </div>
                         )}
                     </div>
@@ -233,103 +195,165 @@ export default function WeighingDashboard() {
     }
 
     return (
-        <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
-            <header className="bg-white p-4 border-b flex justify-between items-center shrink-0 shadow-sm">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => { setSelectedLote(null); resetSubproceso(); }} className="bg-slate-800 text-white px-5 py-2.5 rounded-xl text-[10px]">VOLVER</button>
+        <div className="flex flex-col lg:flex-row h-screen bg-slate-200 p-4 gap-4 overflow-hidden font-black uppercase">
+            {/* <Toaster position="top-center" richColors /> */}
+
+            <BasculaModal
+                isOpen={showTaraModal}
+                title="PASO 1: PESAR TARA"
+                subtitle="Coloque el carro vacío"
+                currentReading={currentWeight}
+                buttonText="FIJAR TARA"
+                colorClass="bg-red-600 border-red-900 shadow-red-600/20"
+                onSimulate={() => setCurrentWeight((Math.random() * 5 + 2).toFixed(2))}
+                onConfirm={() => { setTaraGlobal(currentWeight); setCurrentWeight("0.00"); setShowTaraModal(false); }}
+                onClose={() => { setSelectedLote(null); setShowTaraModal(false); }}
+                showSimulate={true}
+            />
+
+            <BasculaModal
+                isOpen={showPesarModal}
+                title="PASO 2: PESO NETO"
+                subtitle={selectedChild?.Nombre}
+                currentReading={netWeight}
+                buttonText="GUARDAR CORTE"
+                colorClass="bg-emerald-600 border-emerald-900 shadow-emerald-600/20"
+                onSimulate={() => setCurrentWeight((Math.random() * 40 + 10).toFixed(2))}
+                onConfirm={registrarDeshuese}
+                onClose={() => { setShowPesarModal(false); setCurrentWeight("0.00"); }}
+                showSimulate={true}
+            />
+
+            <div className="flex-1 flex flex-col min-h-0 gap-4">
+                <header className="flex justify-between items-center bg-white p-6 rounded-[2.5rem] shadow-md border-b-[10px] border-slate-300">
                     <div>
-                        <h2 className="text-lg leading-none">{selectedLote.provedor?.RazonSocial}</h2>
-                        <p className="text-[10px] text-red-600">LOTE ACTIVO: {selectedLote.IdLote}</p>
+                        <button onClick={() => { setSelectedLote(null); setParentFilter(null); }} className="text-[10px] text-slate-400 hover:text-red-600 mb-1 block">← CAMBIAR LOTE</button>
+                        <h1 className="text-2xl text-slate-800 leading-none">{selectedLote.Proveedor}</h1>
+                        <p className="text-[10px] text-blue-600 tracking-widest">LOTE: {selectedLote.Lote} | TARA FIJA: {taraGlobal} KG</p>
                     </div>
-                </div>
-                {selectedParent && (
-                    <div className="bg-emerald-500 text-white px-6 py-2.5 rounded-2xl shadow-lg">
-                        <p className="text-xs text-center">{selectedParent.Nombre}</p>
-                    </div>
-                )}
-            </header>
-
-            <main className="flex-1 flex flex-col lg:flex-row p-4 gap-4 overflow-hidden">
-                {/* Panel Izquierdo: Selección de Productos */}
-                <div className="flex-[2.5] flex flex-col gap-4 min-h-0">
-                    {parentFilter && (
-                        <button onClick={resetSubproceso} className="w-fit bg-black text-white px-8 py-3 rounded-2xl text-[11px]">
-                            ← VOLVER A PRODUCTOS PADRE
-                        </button>
-                    )}
-
-                    <div className={`bg-white rounded-[2.5rem] p-5 border-2 transition-all ${despieceList.length > 0 ? 'border-orange-500' : 'border-slate-200 opacity-50'}`}>
-                        <div className="flex flex-wrap gap-2">
-                            {despieceList.length === 0 && <p className="text-slate-400 text-[10px]">Lista de despiece vacía...</p>}
-                            {despieceList.map((item, idx) => (
-                                <div key={idx} className="bg-orange-500 text-white px-4 py-2 rounded-full text-[10px] flex items-center gap-3">
-                                    <span>{item.nombre} - {item.peso} KG</span>
-                                    <button onClick={() => setDespieceList(prev => prev.filter((_, i) => i !== idx))} className="font-bold">×</button>
-                                </div>
-                            ))}
+                    {selectedParent && (
+                        <div className="bg-emerald-500 text-white px-6 py-3 rounded-2xl text-[10px] border-b-4 border-emerald-700">
+                            ORIGEN: {selectedParent.Nombre}
                         </div>
-                    </div>
+                    )}
+                </header>
 
-                    <div className="flex-1 overflow-y-auto grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 content-start">
-                        {productosVisibles.map(p => (
-                            <button key={p.IdProducto} onClick={() => handleProductSelect(p)}
-                                className={`p-4 h-32 rounded-[2.5rem] border-2 text-left flex flex-col justify-between transition-all
-                                ${selectedChild?.IdProducto === p.IdProducto ? 'border-red-600 bg-red-50' : 'bg-white border-white hover:border-slate-300'}`}>
-                                <p className="text-[11px] leading-tight text-slate-700">{p.Nombre}</p>
-                                {RELACIONES_DESHUESE[p.IdProducto] && !parentFilter && <span className="text-[8px] text-emerald-600">TIENE HIJOS</span>}
+                <div className="flex-1 overflow-y-auto custom-scroll pr-2">
+                    <div className="mb-4 flex justify-between px-4">
+                        <span className="text-xs text-slate-500 tracking-widest">{parentFilter ? "SUBPRODUCTOS DISPONIBLES" : "ELIJA PRODUCTO PADRE (EN STOCK)"}</span>
+                        {parentFilter && <button onClick={() => { setParentFilter(null); setSelectedParent(null); setSelectedChild(null); }} className="text-red-600 text-xs underline">VOLVER A PADRES</button>}
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {productosVisibles.map((p) => (
+                            <button
+                                key={p.IdProducto}
+                                onClick={() => {
+                                    if (!parentFilter) {
+                                        const r = records.find(rec => Number(rec.idProducto || rec.IdProducto) === p.IdProducto);
+                                        setParentFilter(p.IdProducto);
+                                        setSelectedParent({ ...p, pesoOriginal: r?.Peso, piezasOriginales: r?.Piezas });
+                                    } else {
+                                        setSelectedChild(p);
+                                    }
+                                }}
+                                className={`p-4 rounded-[2rem] text-left border-b-[10px] h-36 flex flex-col justify-between transition-all shadow-md active:translate-y-2 active:border-b-0
+                                    ${selectedChild?.IdProducto === p.IdProducto ? "border-red-600 bg-white scale-105" : "border-slate-300 bg-white"}`}
+                            >
+                                <span className={`text-[10px] px-2 py-0.5 rounded-lg w-fit ${p.EsSubproducto ? 'bg-orange-500 text-white' : 'bg-blue-600 text-white'}`}>
+                                    {p.EsSubproducto ? 'CORTE' : 'PRIMARIO'}
+                                </span>
+                                <span className="text-[12px] leading-tight text-slate-800 font-black">{p.Nombre}</span>
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* Panel Derecho: Bascula y Acciones */}
-                <aside className="w-full lg:w-96 flex flex-col gap-4">
-                    <div className="bg-slate-900 rounded-[2.5rem] p-5">
-                        <div className="bg-[#0f1713] rounded-3xl p-6 border-4 border-black text-center">
-                            <div className="flex justify-between text-green-900 text-[10px] mb-2">
-                                <span>BRUTO: {currentWeight}</span>
-                                <span>TARA: -{tara}</span>
+
+            </div>
+
+            <aside className="w-full lg:w-[400px] flex flex-col gap-4">
+                <div className="bg-slate-900 rounded-[3rem] p-8 border-b-[12px] border-black shadow-2xl">
+                    <div className="bg-[#0f1713] rounded-[2rem] p-10 border-4 border-black text-center relative overflow-hidden">
+                        <div className="text-8xl font-mono text-green-400 leading-none">{netWeight}</div>
+                        <span className="text-green-900 text-[10px] mt-4 block tracking-[0.3em] font-black italic">PESO NETO A GUARDAR</span>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-[3rem] border-b-[12px] border-slate-300 flex flex-col gap-4 shadow-xl">
+                    <button onClick={() => { setCurrentWeight("0.00"); setShowTaraModal(true); }} className="bg-slate-800 text-white py-5 rounded-2xl text-xs border-b-8 border-black active:translate-y-1 active:border-b-0 transition-all font-black">
+                        {parseFloat(taraGlobal) > 0 ? "RE-PESAR TARA" : "1. CONFIGURAR TARA"}
+                    </button>
+
+                    {/* <div>
+                        <label className="text-[10px] block mb-2 text-center tracking-widest font-black text-slate-400">Piezas Producidas</label>
+                        <input 
+                            type="number" 
+                            value={piezas} 
+                            onChange={(e) => setPiezas(e.target.value)} 
+                            className="w-full bg-slate-100 border-b-8 border-slate-200 rounded-2xl font-black text-center text-5xl p-4 outline-none focus:border-blue-600 transition-all" 
+                            placeholder="0"
+                        />
+                    </div> */}
+                    <div className="w-full max-w-sm mx-auto p-4">
+                        <label className="text-[10px] block mb-4 text-center tracking-widest font-black text-slate-400 uppercase">
+                            Piezas Producidas
+                        </label>
+
+                        <div className="flex items-stretch gap-2 h-24">
+                            {/* BOTÓN MENOS */}
+                            <button
+                                onClick={() => setPiezas(Math.max(0, parseInt(piezas || 0) - 1))}
+                                className="flex-none w-20 bg-slate-200 hover:bg-red-500 hover:text-white rounded-2xl border-b-8 border-slate-300 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center text-4xl font-black"
+                            >
+                                -
+                            </button>
+
+                            {/* INPUT CENTRAL */}
+                            <div className="flex-1 relative">
+                                <input
+                                    type="number"
+                                    value={piezas}
+                                    onChange={(e) => setPiezas(e.target.value)}
+                                    inputMode="none"
+                                    className="w-full h-full bg-slate-100 border-b-8 border-slate-200 rounded-2xl font-black text-center text-5xl p-2 outline-none focus:border-blue-600 transition-all appearance-none"
+                                    placeholder="0"
+                                />
                             </div>
-                            <div className="text-7xl font-mono text-green-400">{netWeight}</div>
-                            <p className="text-green-800 text-[10px] mt-2">KILOGRAMOS NETOS</p>
+
+                            {/* BOTÓN MÁS */}
+                            <button
+                                onClick={() => setPiezas(parseInt(piezas || 0) + 1)}
+                                className="flex-none w-20 bg-slate-200 hover:bg-green-500 hover:text-white rounded-2xl border-b-8 border-slate-300 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center text-4xl font-black"
+                            >
+                                +
+                            </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                        <button onClick={() => setTara((Math.random() * 1.5).toFixed(2))} className="bg-slate-800 text-white py-4 rounded-2xl text-[10px]">FIJAR TARA</button>
-                        <button onClick={() => setCurrentWeight((20 + Math.random() * 30).toFixed(2))} className="bg-blue-600 text-white py-4 rounded-2xl text-[10px]">CAPTURAR PESO</button>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-[3.5rem] border flex-1 flex flex-col gap-4">
-                        <input type="number" placeholder="PIEZAS" value={piezas} onChange={(e) => setPiezas(e.target.value)}
-                            className="w-full bg-slate-50 rounded-2xl p-3 text-center text-3xl outline-none border-2 border-transparent focus:border-red-500" />
-
-                        <div className="space-y-2 overflow-y-auto max-h-40">
-                            <p className="text-[9px] text-slate-400 text-center uppercase">Seleccionar Almacén Destino</p>
+                    <div>
+                        {/* <label className="text-[10px] block mb-2 text-center tracking-widest font-black text-slate-400">Destino del Corte</label> */}
+                        <div className="grid grid-cols-1 gap-2">
                             {almacenes.map(a => (
                                 <button key={a.IdAlmacen} onClick={() => setAreaDestino(a.IdAlmacen)}
-                                    className={`w-full p-4 rounded-2xl text-[10px] border-2 transition-all
-                                    ${areaDestino === a.IdAlmacen ? 'bg-yellow-400 border-yellow-600' : 'bg-slate-50 border-transparent'}`}>
-                                    {a.Nombre}
+                                    className={`py-4 rounded-2xl text-[10px] transition-all border-b-4 font-black ${areaDestino === a.IdAlmacen ? 'bg-yellow-400 border-yellow-600 text-yellow-900' : 'bg-slate-100 border-slate-300 text-slate-400'}`}>
+                                    Destino del Corte:    {a.Nombre?.substring(0, 12)}
                                 </button>
                             ))}
                         </div>
-
-                        <div className="mt-auto space-y-2">
-                            <button onClick={agregarAlCarrito} disabled={!selectedChild}
-                                className={`w-full py-4 rounded-2xl text-[11px] font-bold ${selectedChild ? 'bg-black text-white' : 'bg-slate-100 text-slate-300'}`}>
-                                + AÑADIR A DESPIECE
-                            </button>
-                            <button onClick={finalizarProceso} disabled={despieceList.length === 0 || !areaDestino || isProcessing}
-                                className={`w-full py-6 rounded-[2.5rem] text-xl font-black border-b-8 transition-all
-                                ${(despieceList.length > 0 && areaDestino) ? 'bg-red-600 border-red-900 text-white' : 'bg-slate-200 text-slate-400'}`}>
-                                {isProcessing ? "GUARDANDO..." : "REGISTRAR TODO"}
-                            </button>
-                        </div>
                     </div>
-                </aside>
-            </main>
-            {/* <Toaster position="top-right" richColors /> */}
+
+                    <button
+                        onClick={() => { setCurrentWeight("0.00"); setShowPesarModal(true); }}
+                        disabled={!selectedChild || !areaDestino || isProcessing}
+                        className={`w-full py-8 rounded-[2.5rem] text-3xl border-b-[12px] shadow-2xl transition-all font-black
+                            ${(!selectedChild || !areaDestino)
+                                ? "bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed"
+                                : "bg-emerald-600 text-white border-emerald-800 hover:bg-emerald-500 active:translate-y-2 active:border-b-0"}`}
+                    >
+                        {!selectedParent ? "ELIJA PADRE" : !selectedChild ? "ELIJA CORTE" : !areaDestino ? "ELIJA ÁREA" : "2. PESAR CORTE"}
+                    </button>
+                </div>
+            </aside>
         </div>
     );
 }

@@ -205,7 +205,12 @@ Route::post('/pesaje/guardar-lote', [SalidaController::class, 'guardarSalida'])-
 Route::get('LotesAreas', [RecepcionController::class, 'LotesAreas'])->name('LotesAreas');
 
 Route::post('ProductosLotes', [RecepcionController::class, 'ProductosLotes'])->name('ProductosLotes');
-Route::get('LotesAreasDeshuese', [RecepcionController::class, 'LotesAreasDeshuese'])->name('LotesAreasDeshuese');
+Route::post('ProductosLotesHistorial', [RecepcionController::class, 'ProductosLotesHistorial'])->name('ProductosLotesHistorial');
+
+
+Route::get('LotesEntrada', [RecepcionController::class, 'LotesEntrada'])->name('LotesEntrada');
+
+Route::get('LotesDeshuese', [RecepcionController::class, 'LotesDeshuese'])->name('LotesDeshuese');
 Route::get('LotesLimpieza', [RecepcionController::class, 'LotesLimpieza'])->name('LotesLimpieza');
 
 Route::get('/getInventario', [InventariosController::class, 'getInventario'])->name('getInventario');

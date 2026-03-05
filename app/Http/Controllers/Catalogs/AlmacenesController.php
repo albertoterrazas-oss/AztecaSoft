@@ -9,26 +9,9 @@ use Illuminate\Support\Facades\Validator;
 
 class AlmacenesController extends Controller
 {
-    /**
-     * Muestra una lista de almacenes.
-     */
-    // public function index(Request $request)
-    // {
-    //     $query = Almacenes::query();
-
-    //     // Filtro de búsqueda por nombre si se requiere
-    //     if ($request->has('search')) {
-    //         $query->where('Nombre', 'LIKE', '%' . $request->search . '%');
-    //     }
-
-    //     // Si prefieres sin paginación para catálogos cortos, usa ->get()
-    //     // Pero para consistencia con tus componentes React, usamos paginate
-    //     return response()->json($query->paginate(20), 200);
-    // }
-
     public function index()
     {
-        $asuntos = Almacenes::all();
+        $asuntos = Almacenes::orderBy('Nombre', 'asc')->get();
         return response()->json($asuntos);
     }
     /**

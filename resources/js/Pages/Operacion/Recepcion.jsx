@@ -3,15 +3,10 @@ import { Dialog, DialogPanel, DialogTitle, Transition } from "@headlessui/react"
 import { toast } from "sonner";
 import LoadingDiv from "@/Components/LoadingDiv";
 import axios from "axios";
-import { Plus, Minus, Check, Save, Loader2, AlertTriangle, Package } from 'lucide-react';
+import { Plus, Minus, Check, Save, Loader2, AlertTriangle, Package, ArrowLeft } from 'lucide-react';
 
 // --- COMPONENTE CON DOBLE INPUT (PIEZAS Y DECOMISO) ---
 const QuantityItem = ({ p, values, onUpdate, onChange }) => {
-    // values es un objeto: { piezas: X, decomiso: Y }
-
-
-
-
     return (
         <div className="p-6 rounded-[2.5rem] border border-slate-200 bg-white shadow-sm space-y-4">
             <div className="flex justify-between items-start border-b border-slate-100 pb-3">
@@ -81,7 +76,6 @@ export default function CombinedDashboard() {
     const [sessionData, setSessionData] = useState({ IdProveedor: "", RazonSocial: "" });
     const [selectedProducts, setSelectedProducts] = useState([]);
 
-    // Estado estructurado: { [id]: { piezas: 0, decomiso: 0 } }
     const [itemValues, setItemValues] = useState({});
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
@@ -93,9 +87,14 @@ export default function CombinedDashboard() {
                     axios.get(route("productos.index"))
                 ]);
                 setDbProviders(resProv.data.data || resProv.data);
-                setDbProducts((resProd.data.data || resProd.data).filter(p => p.EsSubproducto == 0));
-            } catch (error) { toast.error("Error de conexión"); }
-            finally { setIsLoading(false); }
+                // Filtramos productos que no sean subproductos
+                const items = (resProd.data.data || resProd.data).filter(p => p.EsSubproducto == 0);
+                setDbProducts(items);
+            } catch (error) { 
+                toast.error("Error de conexión"); 
+            } finally { 
+                setIsLoading(false); 
+            }
         };
         fetchCatalogos();
     }, []);
@@ -124,7 +123,6 @@ export default function CombinedDashboard() {
                 const parsed = JSON.parse(perfil);
                 return parsed.IdUsuario;
             } catch (e) {
-                console.error("Error al parsear el perfil", e);
                 return null;
             }
         }
@@ -139,7 +137,12 @@ export default function CombinedDashboard() {
             decomiso: itemValues[p.IdProducto]?.decomiso || 0
         }));
 
-        const payload = { ...sessionData, fecha: new Date().toISOString().split('T')[0], productos: productosData ,  idUsuarioLocal : getUserId()};
+        const payload = { 
+            ...sessionData, 
+            fecha: new Date().toISOString().split('T')[0], 
+            productos: productosData, 
+            idUsuarioLocal: getUserId() 
+        };
 
         try {
             await axios.post(route("GuardarTodo"), payload);
@@ -148,11 +151,17 @@ export default function CombinedDashboard() {
             setSelectedProducts([]);
             setItemValues({});
             setIsConfirmModalOpen(false);
-        } catch (error) { toast.error("Error al guardar"); }
-        finally { setIsSaving(false); }
+        } catch (error) { 
+            toast.error("Error al guardar"); 
+        } finally { 
+            setIsSaving(false); 
+        }
     };
 
     if (isLoading) return <div className="h-screen flex items-center justify-center"><LoadingDiv /></div>;
+
+    // Validación de existencia de productos
+    const hasProducts = dbProducts.length > 0;
 
     return (
         <div className="min-h-screen bg-slate-50 p-6 font-sans">
@@ -166,7 +175,7 @@ export default function CombinedDashboard() {
             {step === 1 && (
                 <div className="flex h-[80vh] items-center justify-center">
                     <div className="w-full max-w-md bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100">
-                        <h2 className="text-2xl font-black uppercase text-slate-800 mb-8 border-l-4  pl-4" style={{borderColor: '#1B2654'}}>Nueva Recepción</h2>
+                        <h2 className="text-2xl font-black uppercase text-slate-800 mb-8 border-l-4 pl-4" style={{borderColor: '#1B2654'}}>Nueva Recepción</h2>
                         <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-6">
                             <select
                                 className="w-full rounded-2xl bg-slate-50 p-4 font-bold border-none focus:ring-2 "
@@ -180,7 +189,7 @@ export default function CombinedDashboard() {
                                 <option value="">Seleccionar Proveedor...</option>
                                 {dbProviders.map(p => (<option key={p.IdProveedor} value={p.IdProveedor}>{p.RazonSocial}</option>))}
                             </select>
-                            <button style={{backgroundColor: '#1B2654'}} className="w-full bg-red-600 text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-lg active:scale-95 transition-all">Siguiente</button>
+                            <button style={{backgroundColor: '#1B2654'}} className="w-full text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-lg active:scale-95 transition-all">Siguiente</button>
                         </form>
                     </div>
                 </div>
@@ -190,45 +199,68 @@ export default function CombinedDashboard() {
                 <div className="w-full max-w-5xl mx-auto pb-32">
                     <header className="mb-8 flex justify-between items-center bg-white p-6 rounded-[2.5rem] shadow-sm">
                         <div>
-                            <button onClick={() => setStep(1)} className="text-red-600 font-bold text-xs uppercase mb-1">← Volver</button>
+                            <button onClick={() => setStep(1)} className="flex items-center gap-1 text-red-600 font-bold text-xs uppercase mb-1">
+                                <ArrowLeft className="w-3 h-3"/> Volver
+                            </button>
                             <h1 className="text-2xl font-black uppercase text-slate-800">Selección de Productos</h1>
                             <p className="text-slate-400 font-bold text-sm uppercase italic">{sessionData.RazonSocial}</p>
                         </div>
                     </header>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {dbProducts.map((p) => {
-                            const isSelected = selectedProducts.find(x => x.IdProducto === p.IdProducto);
-                            return (
-                                <button
-                                    key={p.IdProducto}
-                                    onClick={() => {
-                                        if (isSelected) {
-                                            setSelectedProducts(selectedProducts.filter(x => x.IdProducto !== p.IdProducto));
-                                        } else {
-                                            setSelectedProducts([...selectedProducts, p]);
-                                            if (!itemValues[p.IdProducto]) setItemValues({ ...itemValues, [p.IdProducto]: { piezas: 0, decomiso: 0 } });
-                                        }
-                                    }}
-                                    className={`relative p-6 rounded-[2.5rem] text-left transition-all border-4 ${isSelected ? "border-red-600 bg-white shadow-xl scale-[1.02]" : "border-transparent bg-white opacity-60"}`}
-                                >
-                                    {isSelected && <div className="absolute top-4 right-4 bg-red-600 rounded-full p-1"><Check className="w-3 h-3 text-white" strokeWidth={4} /></div>}
-                                    <span className="text-[10px] font-black text-slate-400 block tracking-widest uppercase mb-1">{p.UnidadMedida}</span>
-                                    <span className="text-lg font-black uppercase text-slate-700 leading-tight">{p.Nombre}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
+                    {!hasProducts ? (
+                        /* --- ESTADO SIN LOTES --- */
+                        <div className="flex flex-col items-center justify-center bg-white p-20 rounded-[3rem] shadow-sm border-2 border-dashed border-slate-200">
+                            <div className="bg-slate-50 p-6 rounded-full mb-4">
+                                <Package className="w-12 h-12 text-slate-300" />
+                            </div>
+                            <h2 className="text-xl font-black text-slate-400 uppercase tracking-tight">Sin lotes disponibles</h2>
+                            <p className="text-slate-400 text-sm mb-6 text-center">No se encontraron productos para este registro.</p>
+                            <button 
+                                onClick={() => setStep(1)}
+                                className="px-8 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase text-xs hover:bg-slate-200 transition-colors"
+                            >
+                                Cambiar Proveedor
+                            </button>
+                        </div>
+                    ) : (
+                        /* --- GRID DE PRODUCTOS --- */
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {dbProducts.map((p) => {
+                                const isSelected = selectedProducts.find(x => x.IdProducto === p.IdProducto);
+                                return (
+                                    <button
+                                        key={p.IdProducto}
+                                        onClick={() => {
+                                            if (isSelected) {
+                                                setSelectedProducts(selectedProducts.filter(x => x.IdProducto !== p.IdProducto));
+                                            } else {
+                                                setSelectedProducts([...selectedProducts, p]);
+                                                if (!itemValues[p.IdProducto]) setItemValues({ ...itemValues, [p.IdProducto]: { piezas: 0, decomiso: 0 } });
+                                            }
+                                        }}
+                                        className={`relative p-6 rounded-[2.5rem] text-left transition-all border-4 ${isSelected ? "border-red-600 bg-white shadow-xl scale-[1.02]" : "border-transparent bg-white opacity-60"}`}
+                                    >
+                                        {isSelected && <div className="absolute top-4 right-4 bg-red-600 rounded-full p-1"><Check className="w-3 h-3 text-white" strokeWidth={4} /></div>}
+                                        <span className="text-[10px] font-black text-slate-400 block tracking-widest uppercase mb-1">{p.UnidadMedida}</span>
+                                        <span className="text-lg font-black uppercase text-slate-700 leading-tight">{p.Nombre}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
 
-                    <div className="fixed bottom-8 left-0 right-0 px-6 z-10 flex justify-center">
-                        <button
-                            disabled={selectedProducts.length === 0}
-                            onClick={() => setIsConfirmModalOpen(true)}
-                            className="w-full max-w-md bg-slate-900 text-white font-black py-6 rounded-3xl uppercase tracking-widest shadow-2xl active:scale-95 disabled:bg-slate-300"
-                        >
-                            Capturar Cantidades ({selectedProducts.length})
-                        </button>
-                    </div>
+                    {/* Solo mostrar el botón de acción si hay productos */}
+                    {hasProducts && (
+                        <div className="fixed bottom-8 left-0 right-0 px-6 z-10 flex justify-center">
+                            <button
+                                disabled={selectedProducts.length === 0}
+                                onClick={() => setIsConfirmModalOpen(true)}
+                                className="w-full max-w-md bg-slate-900 text-white font-black py-6 rounded-3xl uppercase tracking-widest shadow-2xl active:scale-95 disabled:bg-slate-300 transition-all"
+                            >
+                                Capturar Cantidades ({selectedProducts.length})
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -253,7 +285,7 @@ export default function CombinedDashboard() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <button onClick={() => setIsConfirmModalOpen(false)} className="py-5 font-black text-slate-400 uppercase tracking-widest text-sm">Atrás</button>
-                                <button onClick={handleSave}  className="py-5 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:bg-red-700">
+                                <button onClick={handleSave} className="py-5 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:bg-red-700">
                                     <Save className="w-5 h-5" /> Guardar Todo
                                 </button>
                             </div>

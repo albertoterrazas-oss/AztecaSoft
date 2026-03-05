@@ -44,15 +44,43 @@ class RecepcionController extends Controller
     public function ProductosLotes(Request $request)
     {
         try {
+            $idAlmacen = $request->input('idAlmacen', 1);
+            $idLote    = $request->input('idLote'); // Si es null, el SP debe manejarlo
+
+            // Es mejor usar nombres de parámetros si el SP los requiere o asegurar el orden
+            $resultado = DB::select('EXEC sp_ProductosEnAlmacenPorLote ?, ?, ?', [
+                "L",
+                $idLote,
+                $idAlmacen
+            ]);
+
+            // 3. Retornar respuesta
+            // Si el SP no devuelve nada, DB::select retorna un array vacío [].
+            return response()->json($resultado, 200);
+        } catch (\Exception $e) {
+            // Loguear el error es buena práctica para depuración
+            \Log::error("Error en ProductosLotes: " . $e->getMessage());
+
+            return response()->json([
+                'error'   => 'Error al obtener lotes',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    public function ProductosLotesHistorial(Request $request)
+    {
+        try {
             // 1. Validación básica o asignación con valores por defecto
-            $opc       = $request->input('opcion', 'L');
+            // $opc       = $request->input('opcion', 'L');
             $idAlmacen = $request->input('idAlmacen', 1);
             $idLote    = $request->input('idLote'); // Si es null, el SP debe manejarlo
 
             // 2. Ejecución del SP
             // Es mejor usar nombres de parámetros si el SP los requiere o asegurar el orden
             $resultado = DB::select('EXEC sp_ProductosEnAlmacenPorLote ?, ?, ?', [
-                "L",
+                "A",
                 $idLote,
                 $idAlmacen
             ]);
@@ -110,40 +138,64 @@ class RecepcionController extends Controller
     }
 
 
+     public function LotesEntrada()
+    {
+        try {
+            // Ejecutamos el Store Procedure
+            $resultado = DB::select('EXEC sp_LotesEnAlmacen ?, ?', ["L", 1]);
+
+            // DB::select devuelve un array. Si está vacío, retornamos array vacío.
+            // Usamos empty() de PHP que es más rápido para arrays nativos.
+            return response()->json($resultado ?: [], 200);
+        } catch (\Exception $e) {
+            // Loguear el error es buena práctica para no perder el rastro en producción
+            Log::error("Error en LotesLimpieza: " . $e->getMessage());
+
+            return response()->json([
+                'error'   => 'Error al procesar la limpieza de lotes',
+                'details' => config('app.debug') ? $e->getMessage() : 'Consulte al administrador'
+            ], 500);
+        }
+    }
+
+
     public function LotesLimpieza()
     {
         try {
-            $almacenObjetivo = '2';
+            // Ejecutamos el Store Procedure
+            $resultado = DB::select('EXEC sp_LotesEnAlmacen ?, ?', ["A", 2]);
 
-            $lotes = Encabezado::with([
-                'provedor',
-                'movimientos' => function ($query) use ($almacenObjetivo) {
-                    // Solo cargamos los movimientos que entraron al almacén 2
-                    // $query->where('IdAlmacenDestino', $almacenObjetivo)
-                    //     ->with('producto');
-                }
-            ])
-                // 1. CONDICIÓN: Debe tener movimientos que entraron al almacén 2
-                // ->whereHas('movimientos', function ($query) use ($almacenObjetivo) {
-                //     $query->where('IdAlmacenDestino', $almacenObjetivo);
-                // })
-                // // 2. EXCLUSIÓN: NO debe tener movimientos donde el ORIGEN sea el almacén 2
-                // // (Esto significa que el lote ya salió de ahí)
-                // ->whereDoesntHave('movimientos', function ($query) use ($almacenObjetivo) {
-                //     $query->where('IdAlmacenOrigen', $almacenObjetivo);
-                // })
-                ->get();
-
-            if ($lotes->isEmpty()) {
-
-                $lotes = [];
-            }
-
-            return response()->json($lotes, 200);
+            // DB::select devuelve un array. Si está vacío, retornamos array vacío.
+            // Usamos empty() de PHP que es más rápido para arrays nativos.
+            return response()->json($resultado ?: [], 200);
         } catch (\Exception $e) {
+            // Loguear el error es buena práctica para no perder el rastro en producción
+            Log::error("Error en LotesLimpieza: " . $e->getMessage());
+
             return response()->json([
-                'error' => 'Error al procesar la limpieza de lotes',
-                'details' => $e->getMessage()
+                'error'   => 'Error al procesar la limpieza de lotes',
+                'details' => config('app.debug') ? $e->getMessage() : 'Consulte al administrador'
+            ], 500);
+        }
+    }
+
+
+    public function LotesDeshuese()
+    {
+        try {
+            // Ejecutamos el Store Procedure
+            $resultado = DB::select('EXEC sp_LotesEnAlmacen ?, ?', ["A", 3]);
+
+            // DB::select devuelve un array. Si está vacío, retornamos array vacío.
+            // Usamos empty() de PHP que es más rápido para arrays nativos.
+            return response()->json($resultado ?: [], 200);
+        } catch (\Exception $e) {
+            // Loguear el error es buena práctica para no perder el rastro en producción
+            Log::error("Error en LotesLimpieza: " . $e->getMessage());
+
+            return response()->json([
+                'error'   => 'Error al procesar la limpieza de lotes',
+                'details' => config('app.debug') ? $e->getMessage() : 'Consulte al administrador'
             ], 500);
         }
     }
