@@ -52,7 +52,7 @@ class RecepcionController extends Controller
             // 2. Ejecución del SP
             // Es mejor usar nombres de parámetros si el SP los requiere o asegurar el orden
             $resultado = DB::select('EXEC sp_ProductosEnAlmacenPorLote ?, ?, ?', [
-                "A",
+                "L",
                 $idLote,
                 $idAlmacen
             ]);
