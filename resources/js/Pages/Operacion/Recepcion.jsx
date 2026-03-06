@@ -1,5 +1,6 @@
 import React, { useEffect, useState, Fragment } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition } from "@headlessui/react";
+import { motion, AnimatePresence } from "framer-motion"; // <-- Importamos Framer Motion
 import { toast } from "sonner";
 import LoadingDiv from "@/Components/LoadingDiv";
 import axios from "axios";
@@ -78,6 +79,10 @@ export default function CombinedDashboard() {
 
     const [itemValues, setItemValues] = useState({});
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    
+    // Estados para el Modal de Éxito
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [summaryData, setSummaryData] = useState(null);
 
     useEffect(() => {
         const fetchCatalogos = async () => {
@@ -87,7 +92,6 @@ export default function CombinedDashboard() {
                     axios.get(route("productos.index"))
                 ]);
                 setDbProviders(resProv.data.data || resProv.data);
-                // Filtramos productos que no sean subproductos
                 const items = (resProd.data.data || resProd.data).filter(p => p.EsSubproducto == 0);
                 setDbProducts(items);
             } catch (error) { 
@@ -122,9 +126,7 @@ export default function CombinedDashboard() {
             try {
                 const parsed = JSON.parse(perfil);
                 return parsed.IdUsuario;
-            } catch (e) {
-                return null;
-            }
+            } catch (e) { return null; }
         }
         return null;
     };
@@ -132,6 +134,7 @@ export default function CombinedDashboard() {
     const handleSave = async () => {
         setIsSaving(true);
         const productosData = selectedProducts.map(p => ({
+            Nombre: p.Nombre,
             IdProducto: p.IdProducto,
             piezas: itemValues[p.IdProducto]?.piezas || 0,
             decomiso: itemValues[p.IdProducto]?.decomiso || 0
@@ -146,11 +149,20 @@ export default function CombinedDashboard() {
 
         try {
             await axios.post(route("GuardarTodo"), payload);
-            toast.success("Registro guardado correctamente");
+            
+            setSummaryData({
+                proveedor: sessionData.RazonSocial,
+                productos: productosData.filter(p => p.piezas > 0 || p.decomiso > 0)
+            });
+
+            setIsConfirmModalOpen(false);
+            setIsSuccessModalOpen(true);
+            
             setStep(1);
             setSelectedProducts([]);
             setItemValues({});
-            setIsConfirmModalOpen(false);
+            setSessionData({ IdProveedor: "", RazonSocial: "" });
+
         } catch (error) { 
             toast.error("Error al guardar"); 
         } finally { 
@@ -160,17 +172,23 @@ export default function CombinedDashboard() {
 
     if (isLoading) return <div className="h-screen flex items-center justify-center"><LoadingDiv /></div>;
 
-    // Validación de existencia de productos
     const hasProducts = dbProducts.length > 0;
 
     return (
         <div className="min-h-screen bg-slate-50 p-6 font-sans">
-            {isSaving && (
-                <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center text-white">
-                    <Loader2 className="w-16 h-16 animate-spin mb-4 text-red-500" />
-                    <p className="text-2xl font-black uppercase tracking-tighter">Guardando Información...</p>
-                </div>
-            )}
+            <AnimatePresence>
+                {isSaving && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center text-white"
+                    >
+                        <Loader2 className="w-16 h-16 animate-spin mb-4 text-red-500" />
+                        <p className="text-2xl font-black uppercase tracking-tighter">Guardando Información...</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {step === 1 && (
                 <div className="flex h-[80vh] items-center justify-center">
@@ -208,22 +226,14 @@ export default function CombinedDashboard() {
                     </header>
 
                     {!hasProducts ? (
-                        /* --- ESTADO SIN LOTES --- */
                         <div className="flex flex-col items-center justify-center bg-white p-20 rounded-[3rem] shadow-sm border-2 border-dashed border-slate-200">
                             <div className="bg-slate-50 p-6 rounded-full mb-4">
                                 <Package className="w-12 h-12 text-slate-300" />
                             </div>
                             <h2 className="text-xl font-black text-slate-400 uppercase tracking-tight">Sin lotes disponibles</h2>
-                            <p className="text-slate-400 text-sm mb-6 text-center">No se encontraron productos para este registro.</p>
-                            <button 
-                                onClick={() => setStep(1)}
-                                className="px-8 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase text-xs hover:bg-slate-200 transition-colors"
-                            >
-                                Cambiar Proveedor
-                            </button>
+                            <button onClick={() => setStep(1)} className="mt-4 px-8 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase text-xs">Cambiar Proveedor</button>
                         </div>
                     ) : (
-                        /* --- GRID DE PRODUCTOS --- */
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {dbProducts.map((p) => {
                                 const isSelected = selectedProducts.find(x => x.IdProducto === p.IdProducto);
@@ -249,7 +259,6 @@ export default function CombinedDashboard() {
                         </div>
                     )}
 
-                    {/* Solo mostrar el botón de acción si hay productos */}
                     {hasProducts && (
                         <div className="fixed bottom-8 left-0 right-0 px-6 z-10 flex justify-center">
                             <button
@@ -264,13 +273,13 @@ export default function CombinedDashboard() {
                 </div>
             )}
 
+            {/* --- MODAL DE CAPTURA (CANTIDADES) --- */}
             <Transition show={isConfirmModalOpen} as={Fragment}>
                 <Dialog as="div" className="relative z-50" onClose={() => setIsConfirmModalOpen(false)}>
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md" />
                     <div className="fixed inset-0 flex items-center justify-center p-4">
                         <DialogPanel className="w-full max-w-2xl bg-slate-50 rounded-[3rem] p-8 shadow-2xl border border-white">
                             <DialogTitle className="text-2xl font-black uppercase mb-6 text-slate-800 px-2 text-center">Detalle de Carga / Decomiso</DialogTitle>
-
                             <div className="max-h-[55vh] overflow-y-auto space-y-4 mb-8 px-2">
                                 {selectedProducts.map((p) => (
                                     <QuantityItem
@@ -282,13 +291,68 @@ export default function CombinedDashboard() {
                                     />
                                 ))}
                             </div>
-
                             <div className="grid grid-cols-2 gap-4">
                                 <button onClick={() => setIsConfirmModalOpen(false)} className="py-5 font-black text-slate-400 uppercase tracking-widest text-sm">Atrás</button>
-                                <button onClick={handleSave} className="py-5 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:bg-red-700">
+                                <button onClick={handleSave} className="py-5 bg-red-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:bg-red-700 transition-colors">
                                     <Save className="w-5 h-5" /> Guardar Todo
                                 </button>
                             </div>
+                        </DialogPanel>
+                    </div>
+                </Dialog>
+            </Transition>
+
+            {/* --- MODAL DE ÉXITO CON ANIMACIÓN VERDE --- */}
+            <Transition show={isSuccessModalOpen} as={Fragment}>
+                <Dialog as="div" className="relative z-[110]" onClose={() => setIsSuccessModalOpen(false)}>
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" />
+                    <div className="fixed inset-0 flex items-center justify-center p-4">
+                        <DialogPanel className="w-full max-w-md bg-white rounded-[3rem] p-8 shadow-2xl text-center overflow-hidden">
+                            
+                            {/* Animación del Check Verde */}
+                            <div className="relative h-32 flex items-center justify-center">
+                                <motion.div 
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ type: "spring", damping: 12, stiffness: 200, delay: 0.2 }}
+                                    className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center"
+                                >
+                                    <motion.div
+                                        initial={{ pathLength: 0, opacity: 0 }}
+                                        animate={{ pathLength: 1, opacity: 1 }}
+                                        transition={{ duration: 0.5, delay: 0.5 }}
+                                    >
+                                        <Check className="w-12 h-12" strokeWidth={4} />
+                                    </motion.div>
+                                </motion.div>
+                            </div>
+                            
+                            <DialogTitle className="text-2xl font-black uppercase text-slate-800 mb-2">¡Lote Registrado!</DialogTitle>
+                            <p className="text-slate-500 font-bold text-sm mb-6 uppercase tracking-tight">
+                                Proveedor: <span className="text-slate-900 italic">{summaryData?.proveedor}</span>
+                            </p>
+
+                            <div className="bg-slate-50 rounded-2xl p-4 mb-8 max-h-48 overflow-y-auto border border-slate-100">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left border-b pb-2">Resumen de captura</p>
+                                {summaryData?.productos.map((p, i) => (
+                                    <div key={i} className="flex justify-between items-center mb-2 last:mb-0">
+                                        <span className="text-[11px] font-black text-slate-700 uppercase truncate pr-4">{p.Nombre}</span>
+                                        <div className="flex gap-2 shrink-0">
+                                            <span className="text-[10px] font-bold bg-white border border-slate-200 px-2 py-1 rounded-lg">📦 {p.piezas}</span>
+                                            {p.decomiso > 0 && (
+                                                <span className="text-[10px] font-bold bg-red-600 text-white px-2 py-1 rounded-lg">⚠️ {p.decomiso}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <button 
+                                onClick={() => setIsSuccessModalOpen(false)}
+                                className="w-full py-4 bg-slate-900 text-white font-black rounded-2xl uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+                            >
+                                Finalizar y Volver
+                            </button>
                         </DialogPanel>
                     </div>
                 </Dialog>

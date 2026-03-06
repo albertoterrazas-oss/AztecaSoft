@@ -284,16 +284,7 @@ export default function DeshueseDashboard() {
                         {parseFloat(taraGlobal) > 0 ? "RE-PESAR TARA" : "1. CONFIGURAR TARA"}
                     </button>
 
-                    {/* <div>
-                        <label className="text-[10px] block mb-2 text-center tracking-widest font-black text-slate-400">Piezas Producidas</label>
-                        <input 
-                            type="number" 
-                            value={piezas} 
-                            onChange={(e) => setPiezas(e.target.value)} 
-                            className="w-full bg-slate-100 border-b-8 border-slate-200 rounded-2xl font-black text-center text-5xl p-4 outline-none focus:border-blue-600 transition-all" 
-                            placeholder="0"
-                        />
-                    </div> */}
+                  
                     <div className="w-full max-w-sm mx-auto p-4">
                         <label className="text-[10px] block mb-4 text-center tracking-widest font-black text-slate-400 uppercase">
                             Piezas Producidas
