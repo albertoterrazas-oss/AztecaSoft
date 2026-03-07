@@ -138,7 +138,7 @@ class RecepcionController extends Controller
     }
 
 
-     public function LotesEntrada()
+    public function LotesEntrada()
     {
         try {
             // Ejecutamos el Store Procedure
@@ -259,6 +259,7 @@ class RecepcionController extends Controller
         $idProveedor = $request->IdProveedor;
         $idUsuario = $request->idUsuarioLocal; // Ajusta según tu sistema de autenticación
         $fecha = $request->fecha ?? now(); // La fecha que viene del front
+        $inspeccion = $request->inspeccion; // La fecha que viene del front
 
         $productosParaSP = collect($request->productos)->map(function ($prod) {
             return [
@@ -277,14 +278,21 @@ class RecepcionController extends Controller
                 json_encode($productosParaSP)
             ]);
 
-            // DB::statement('EXEC sp_RegistrarEntrada ?, ?, ?, ?, ?, ?', [
-            //     $request->id_lote,          // @IdLote
-            //     $request->id_producto,            // @IdProducto
-            //     $request->cantidad,               // @PesoReal (netWeight del front)
-            //     $request->piezas ?? 0,            // @Piezas
-            //     $request->idusuario ?? 0,            // @Piezas
-            //     $request->id_area_entrada              // @IdAlmacenRecepcion
-            // ]);
+
+            $idLoteGenerado = $resultado[0]->IdLote ?? null;
+
+            try {
+                DB::statement('EXEC sp_RegistrarListaVerificacionLote ?, ?, ?', [
+                    $idLoteGenerado,
+                    $idUsuario,
+                    json_encode($inspeccion)
+                ]);
+
+                // Si llega aquí, se ejecutó correctamente
+                return response()->json(['status' => 'success', 'message' => 'Guardado correctamente']);
+            } catch (\Exception $e) {
+                return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+            }
 
             return response()->json([
                 'status' => 'success',

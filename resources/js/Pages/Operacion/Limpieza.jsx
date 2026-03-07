@@ -216,7 +216,7 @@ export default function WeighingDashboard() {
             <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
                 <div className="max-w-4xl w-full">
                     <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
-                        Panel de Pesaje: Limpieza
+                        Panel de Pesaje: Proceso
                     </h1>
 
                     <div className="grid gap-4">

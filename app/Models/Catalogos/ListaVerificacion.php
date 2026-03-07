@@ -11,18 +11,18 @@ class ListaVerificacion extends Model
     use HasFactory;
     public $timestamps = false;
     protected $table = 'dbo.ListaVerificacion';
-    protected $primaryKey = 'ListaVerificacion_listaID';
+    protected $primaryKey = 'IdLista';
     protected $fillable = [
-        'ListaVerificacion_nombre',
-        'ListaVerificacion_tipo',
-        'ListaVerificacion_observaciones',
-        'ListaVerificacion_usuarioID',
-        'ListaVerificacion_imgVehiculo'
+        'Nombre',
+        'Estatus',
+        // 'ListaVerificacion_observaciones',
+        // 'ListaVerificacion_usuarioID',
+        // 'ListaVerificacion_imgVehiculo'
     ];
 
 
-    public function usuario(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'ListaVerificacion_usuarioID', 'Personas_usuarioID');
-    }
+    // public function usuario(): BelongsTo
+    // {
+    //     return $this->belongsTo(User::class, 'ListaVerificacion_usuarioID', 'Personas_usuarioID');
+    // }
 }

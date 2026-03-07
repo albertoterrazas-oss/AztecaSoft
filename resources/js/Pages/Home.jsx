@@ -1,39 +1,38 @@
 import { Head } from '@inertiajs/react';
 import React, { lazy, Suspense, useEffect, useState, useCallback } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import LoadingDiv from '@/Components/LoadingDiv';
 import LeftMenu from '@/Components/LeftMenu';
 import Header from '@/Components/Header';
 
-// --- RUTAS ---
-const routes = [
-    { path: "/", import: lazy(() => import('./Dashboard')) },
-    { path: "/dashboard", import: lazy(() => import('./Dashboard')) },
-    { path: "/unidades", import: lazy(() => import('./Catalogos/Unidades')) },
-    { path: "/usuarios", import: lazy(() => import('./Catalogos/Usuarios')) },
-    { path: "/motivos", import: lazy(() => import('./Catalogos/Motivos')) },
-    { path: "/areas", import: lazy(() => import('./Catalogos/Areas')) },
-    { path: "/reportes", import: lazy(() => import('./Catalogos/Reportes')) },
-    { path: "/menus", import: lazy(() => import('./Catalogos/Menus')) },
-    { path: "/listaverificacion", import: lazy(() => import('./Catalogos/ListaVerificacion')) },
-    { path: "/puestos", import: lazy(() => import('./Catalogos/Puestos')) },
-    { path: "/departamentos", import: lazy(() => import('./Catalogos/Departamentos')) },
-    { path: "/roles", import: lazy(() => import('./Catalogos/Roles')) },
-    { path: "/correosnotificaciones", import: lazy(() => import('./Catalogos/Correos')) },
-    { path: "/Asuntos", import: lazy(() => import('./Catalogos/Asuntos')) },
-    { path: "/productos", import: lazy(() => import('./Catalogos/Productos')) },
-    { path: "/estados", import: lazy(() => import('./SAT/Estados')) },
-    { path: "/municipios", import: lazy(() => import('./SAT/Municipios')) },
-    { path: "/colonias", import: lazy(() => import('./SAT/Colonias')) },
-    { path: "/personas", import: lazy(() => import('./Catalogos/Personas')) },
-    { path: "/provedores", import: lazy(() => import('./Catalogos/Provedores')) },
-    { path: "/clientes", import: lazy(() => import('./Catalogos/Clientes')) },
-    { path: "/almacenes", import: lazy(() => import('./Catalogos/Almacenes')) },
-    { path: "/Recepcion", import: lazy(() => import('./Operacion/Recepcion')) },
-    { path: "/Entrada", import: lazy(() => import('./Operacion/Entrada')) },
-    { path: "/Limpieza", import: lazy(() => import('./Operacion/Limpieza')) },
-    { path: "/Deshuese", import: lazy(() => import('./Operacion/Deshuese')) },
-    { path: "/empaque", import: lazy(() => import('./Operacion/Venta')) },
+// --- CONFIGURACIÓN DE RUTAS (LIMPIA) ---
+const routesConfig = [
+    { path: "/dashboard", component: lazy(() => import('./Dashboard')) },
+    { path: "/unidades", component: lazy(() => import('./Catalogos/Unidades')) },
+    { path: "/usuarios", component: lazy(() => import('./Catalogos/Usuarios')) },
+    { path: "/motivos", component: lazy(() => import('./Catalogos/Motivos')) },
+    { path: "/areas", component: lazy(() => import('./Catalogos/Areas')) },
+    { path: "/reportes", component: lazy(() => import('./Catalogos/Reportes')) },
+    { path: "/menus", component: lazy(() => import('./Catalogos/Menus')) },
+    { path: "/listaverificacion", component: lazy(() => import('./Catalogos/ListaVerificacion')) },
+    { path: "/puestos", component: lazy(() => import('./Catalogos/Puestos')) },
+    { path: "/departamentos", component: lazy(() => import('./Catalogos/Departamentos')) },
+    { path: "/roles", component: lazy(() => import('./Catalogos/Roles')) },
+    { path: "/correosnotificaciones", component: lazy(() => import('./Catalogos/Correos')) },
+    { path: "/Asuntos", component: lazy(() => import('./Catalogos/Asuntos')) },
+    { path: "/productos", component: lazy(() => import('./Catalogos/Productos')) },
+    { path: "/estados", component: lazy(() => import('./SAT/Estados')) },
+    { path: "/municipios", component: lazy(() => import('./SAT/Municipios')) },
+    { path: "/colonias", component: lazy(() => import('./SAT/Colonias')) },
+    { path: "/personas", component: lazy(() => import('./Catalogos/Personas')) },
+    { path: "/provedores", component: lazy(() => import('./Catalogos/Provedores')) },
+    { path: "/clientes", component: lazy(() => import('./Catalogos/Clientes')) },
+    { path: "/almacenes", component: lazy(() => import('./Catalogos/Almacenes')) },
+    { path: "/Recepcion", component: lazy(() => import('./Operacion/Recepcion')) },
+    { path: "/Entrada", component: lazy(() => import('./Operacion/Entrada')) },
+    { path: "/Limpieza", component: lazy(() => import('./Operacion/Limpieza')) },
+    { path: "/Deshuese", component: lazy(() => import('./Operacion/Deshuese')) },
+    { path: "/empaque", component: lazy(() => import('./Operacion/Venta')) },
 ];
 
 export default function Home({ auth }) {
@@ -43,21 +42,20 @@ export default function Home({ auth }) {
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
     const location = useLocation();
 
-    // Obtener datos extendidos del servidor
     const getPerfil = useCallback(async () => {
         try {
-            // Ajustar 'auth.user.id' según tu estructura de backend
-            const response = await fetch(window.route("user.Perfil", auth.user.id || auth.user.IdUsuario));
+            const userId = auth?.user?.id || auth?.user?.IdUsuario;
+            if (!userId) return;
+
+            const response = await fetch(window.route("user.Perfil", userId));
             if (!response.ok) throw new Error('Error al obtener perfil');
-            
+
             const data = await response.json();
-            
-            // Procesar Menús
             const menuArray = Array.isArray(data.menus) ? data.menus : (data.menus ? [data.menus] : []);
+
             setMenus(menuArray);
             setPerfilFull(data.persona);
 
-            // Persistencia para otros componentes que no usen props
             localStorage.setItem('menus', JSON.stringify(menuArray));
             localStorage.setItem('perfil', JSON.stringify(data.persona));
         } catch (error) {
@@ -65,9 +63,11 @@ export default function Home({ auth }) {
         } finally {
             setLoading(false);
         }
-    }, [auth.user]);
+    }, [auth]);
 
-    useEffect(() => { getPerfil(); }, [getPerfil]);
+    useEffect(() => {
+        getPerfil();
+    }, [getPerfil]);
 
     useEffect(() => {
         const handleFS = () => setIsFullscreen(!!document.fullscreenElement);
@@ -76,36 +76,70 @@ export default function Home({ auth }) {
     }, []);
 
     const toggleFS = () => {
-        if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
-        else document.exitFullscreen?.();
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen?.().catch(() => { });
+        } else {
+            document.exitFullscreen?.();
+        }
     };
 
-    if (loading) return <div className="h-screen w-screen flex items-center justify-center bg-gray-50"><LoadingDiv /></div>;
+    if (loading) {
+        return (
+            <div className="h-screen w-screen flex items-center justify-center bg-gray-50">
+                <LoadingDiv />
+            </div>
+        );
+    }
 
     return (
         <div id="page-container" className="flex h-screen w-screen overflow-hidden bg-gray-100">
             <Head title="Panel de Control" />
 
+            {/* Menú Lateral */}
             <div className="flex-shrink-0 h-full">
                 <LeftMenu auth={perfilFull} menus={menus} />
             </div>
 
+            {/* Contenido Principal */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <Header user={perfilFull} menus={menus} />
 
                 <main className="flex-1 overflow-y-auto p-4">
                     <Suspense fallback={<LoadingDiv />}>
-                        <Routes location={location}>
-                            {routes.map((route, index) => (
-                                <Route key={index} path={route.path} element={<route.import auth={perfilFull} />} />
-                            ))}
-                            <Route path="*" element={<div className="p-20 text-center text-gray-400">Seleccione un módulo del menú lateral.</div>} />
+                        <Routes>
+                            {/* REDIRECCIÓN AUTOMÁTICA: Si entras a "/", te manda a "/dashboard" */}
+                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+                            {/* GENERACIÓN DINÁMICA DE RUTAS */}
+                            {routesConfig.map((route, index) => {
+                                const Component = route.component;
+                                return (
+                                    <Route
+                                        key={index}
+                                        path={route.path}
+                                        element={<Component auth={perfilFull} />}
+                                    />
+                                );
+                            })}
+
+                            {/* RUTA 404 / PERMISOS */}
+                            <Route path="*" element={
+                                <div className="p-20 text-center text-gray-400">
+                                    <p className="text-xl font-semibold">Módulo no disponible</p>
+                                    <p>Verifica tu conexión o permisos de acceso.</p>
+                                </div>
+                            } />
                         </Routes>
                     </Suspense>
                 </main>
             </div>
 
-            <button onClick={toggleFS} className="fixed bottom-6 right-6 p-3 rounded-full shadow-lg text-white bg-[#A61A18] z-50">
+            {/* Botón de Pantalla Completa */}
+            <button
+                onClick={toggleFS}
+                className="fixed bottom-6 right-6 p-3 rounded-full shadow-lg text-white bg-[#A61A18] z-50 hover:bg-[#8e1614] transition-all transform hover:scale-110 active:scale-95"
+                title="Toggle Fullscreen"
+            >
                 {isFullscreen ? '✕' : '⛶'}
             </button>
         </div>

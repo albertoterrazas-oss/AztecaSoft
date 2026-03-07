@@ -195,7 +195,7 @@ export default function DeshueseDashboard() {
     }
 
     return (
-        <div className="flex flex-col lg:flex-row h-screen bg-slate-200 p-4 gap-4 overflow-hidden font-black uppercase">
+        <div className="relative flex flex-col lg:flex-row h-[100%] bg-slate-200 p-4 gap-4 font-black uppercase ">
             {/* <Toaster position="top-center" richColors /> */}
 
             <BasculaModal
@@ -284,7 +284,7 @@ export default function DeshueseDashboard() {
                         {parseFloat(taraGlobal) > 0 ? "RE-PESAR TARA" : "1. CONFIGURAR TARA"}
                     </button>
 
-                  
+
                     <div className="w-full max-w-sm mx-auto p-4">
                         <label className="text-[10px] block mb-4 text-center tracking-widest font-black text-slate-400 uppercase">
                             Piezas Producidas

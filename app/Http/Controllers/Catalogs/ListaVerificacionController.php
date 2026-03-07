@@ -16,13 +16,22 @@ class ListaVerificacionController extends Controller
     // Definición de reglas de validación comunes
     // ¡IMPORTANTE! Las claves deben coincidir con las columnas del modelo ($fillable)
     private $validationRules = [
-        'ListaVerificacion_nombre'       => 'required|string|max:255',
-        'ListaVerificacion_tipo'         => 'required',
-        'ListaVerificacion_observaciones' => 'required|string', // Cambiado a 'string'
-        'ListaVerificacion_usuarioID'    => 'required|integer', // Asumiendo que es un ID de usuario entero
-        'ListaVerificacion_imgVehiculo'    => 'required|integer', // Asumiendo que es un ID de usuario entero
+        'Nombre'       => 'required|string|max:255',
+        // 'ListaVerificacion_tipo'         => 'required',
+        // 'ListaVerificacion_observaciones' => 'required|string', // Cambiado a 'string'
+        // 'ListaVerificacion_usuarioID'    => 'required|integer', // Asumiendo que es un ID de usuario entero
+        // 'ListaVerificacion_imgVehiculo'    => 'required|integer', // Asumiendo que es un ID de usuario entero
 
     ];
+
+
+    //  use HasFactory;
+    // public $timestamps = false;
+    // protected $table = 'dbo.ListaVerificacion';
+    // protected $primaryKey = 'IdLista';
+    // protected $fillable = [
+    //     'Nombre',
+    //     'Estatus',
 
     /**
      * Display a listing of the resource.
@@ -31,7 +40,7 @@ class ListaVerificacionController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $listas = ListaVerificacion::with('usuario')->get();
+            $listas = ListaVerificacion::all();
             return response()->json($listas);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Error al obtener las listas de verificación.', 'error' => $e->getMessage()], 500);
@@ -181,25 +190,25 @@ class ListaVerificacionController extends Controller
         // B. Sobrescribir la dirección 'from' global
         config(['mail.from' => $from]);
     }
-    public function testcorreo(Request $request)
-    {
+    // public function testcorreo(Request $request)
+    // {
 
 
 
-        // $Correos = CorreoNotificacion::all();
-        // return response()->json([
-        //     'data' => $Correos,
-        //     'message' => 'Correos recuperados exitosamente'
-        // ], 200);
-        // $this->configEmail();
-        $Datos = (object) [
-            "Titulo" => "Test",
-            "Detalle" => "TEST: Envio de configuracion de correos",
-        ];
-        Mail::to("guzmaan.edgar@gmail.com")->send(new ConfiguracionCorreo($Datos));
+    //     // $Correos = CorreoNotificacion::all();
+    //     // return response()->json([
+    //     //     'data' => $Correos,
+    //     //     'message' => 'Correos recuperados exitosamente'
+    //     // ], 200);
+    //     // $this->configEmail();
+    //     $Datos = (object) [
+    //         "Titulo" => "Test",
+    //         "Detalle" => "TEST: Envio de configuracion de correos",
+    //     ];
+    //     Mail::to("guzmaan.edgar@gmail.com")->send(new ConfiguracionCorreo($Datos));
 
-        return response()->json(['message' => 'Se envio con exito el correo'], 200);
-    }
+    //     return response()->json(['message' => 'Se envio con exito el correo'], 200);
+    // }
 
     // public function CorreoIncidencias(Request $request)
     // {

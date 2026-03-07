@@ -21,7 +21,7 @@ export default defineConfig({
     //     port: 5173,
     //     cors: true, // Crucial para permitir la conexión desde la tableta
     //     hmr: {
-    //         host: '192.168.100.6', // Tu IP según el ipconfig
+    //         host: '192.168.138.141', // Tu IP según el ipconfig
     //     },
     // },
 });
