@@ -25,20 +25,34 @@ use Inertia\Inertia;
 //     ]);
 // });
 
+// Route::middleware(['auth', 'verified'])->group(function () {
+//     Route::get('/dashboard', function () {
+//         return Inertia::render('Home');
+//     })->name('dashboard');
+
+//     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+//     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+//     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+// });
+
+// Route::get('/', function () {
+//     return auth()->check()
+//         ? redirect()->route('dashboard')
+//         : redirect()->route('login');
+// });
+
+Route::get('/', function () {
+    return auth()->check()
+        ? redirect('/dashboard')
+        : Inertia::render('Auth/Login'); // O tu ruta de login
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Home');
     })->name('dashboard');
 
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
-Route::get('/', function () {
-    return auth()->check()
-        ? redirect()->route('dashboard')
-        : redirect()->route('login');
+    // ... tus otras rutas
 });
 
 

@@ -249,7 +249,7 @@ export default function WeighingDashboard() {
 
     return (
         <div className="flex flex-col lg:flex-row h-[100%] bg-slate-200 p-4 gap-4 overflow-hidden font-black uppercase">
-            {/* <Toaster position="top-center" richColors /> */}
+            <Toaster position="top-center" richColors />
 
             {/* MODALES DE FLUJO */}
             {/* <BasculaModal

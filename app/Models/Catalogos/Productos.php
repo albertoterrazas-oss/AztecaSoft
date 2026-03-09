@@ -17,5 +17,6 @@ class Productos extends Model
         'EsSubproducto',
         'fecha',
         'idUsuario',
+        'ProductoPadre'
     ];
 }

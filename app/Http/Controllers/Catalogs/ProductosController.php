@@ -43,6 +43,7 @@ class ProductosController extends Controller
             'UnidadMedida' => 'required|string|max:50',
             'EsSubproducto' => 'required|boolean',
             'idUsuario' => 'required|integer',
+            'ProductoPadre' => 'nullable|integer'
         ]);
 
         try {
@@ -54,11 +55,12 @@ class ProductosController extends Controller
                 'EsSubproducto' => $request->EsSubproducto,
                 'fecha' => now(), // Generamos la fecha actual automáticamente
                 'idUsuario' => $request->idUsuario,
+                'ProductoPadre' => $request->ProductoPadre,
+
             ]);
 
             DB::commit();
             return response()->json($producto, 201);
-
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['error' => 'Error al crear producto', 'details' => $e->getMessage()], 500);
@@ -95,6 +97,8 @@ class ProductosController extends Controller
             'UnidadMedida' => 'sometimes|string|max:50',
             'EsSubproducto' => 'sometimes|boolean',
             'idUsuario' => 'sometimes|integer',
+            'ProductoPadre' => 'nullable|integer'
+
         ]);
 
         try {
