@@ -138,7 +138,7 @@ const LeftMenu = ({ auth }) => {
         <>
             {/* OVERLAY DE CIERRE DE SESIÓN PROFESIONAL */}
             {isLoggingOut && (
-                <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#1B2654] bg-opacity-95 backdrop-blur-md transition-all duration-500">
+                <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#1B2654] bg-opacity-95 backdrop-blur-md transition-all duration-500" style={{ backgroundColor: '#131B2E' }}>
                     <div className="relative flex items-center justify-center">
                         {/* Spinner animado */}
                         <div className="w-20 h-20 border-4 border-t-blue-400 border-r-transparent border-b-blue-400 border-l-transparent rounded-full animate-spin"></div>

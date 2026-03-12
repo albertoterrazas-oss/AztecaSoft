@@ -101,7 +101,7 @@
 //             [name]: value
 //         }));
 //     };
-    
+
 
 //     const submit = (e) => {
 //         e.preventDefault();
@@ -372,13 +372,16 @@ export default function Login({ status }) {
                             id="Username"
                             type="text"
                             name="Username"
+                            // Convertimos a mayúsculas al guardar en el estado
+                            onChange={(e) => setData('Username', e.target.value.toUpperCase())}
                             value={data.Username}
-                            onChange={(e) => setData('Username', e.target.value)}
-                            placeholder="nombre.usuario"
+                            placeholder="example.user"
                             icon="email"
                             autoComplete="username"
                             isFocused={true}
                             error={errors.Username}
+                            // Opcional: Forzar visualmente vía CSS por si hay un retraso en el renderizado
+                            className="uppercase"
                         />
                         <InputError message={errors.Username} className="mt-2" />
                     </div>

@@ -192,6 +192,10 @@ const routesConfig = [
     { path: "/Limpieza", component: lazy(() => import('./Operacion/Limpieza')) },
     { path: "/Deshuese", component: lazy(() => import('./Operacion/Deshuese')) },
     { path: "/empaque", component: lazy(() => import('./Operacion/Venta')) },
+    { path: "/basculas", component: lazy(() => import('./Catalogos/Basculas')) },
+
+
+    
 ];
 
 export default function Home({ auth }) {
@@ -236,15 +240,7 @@ export default function Home({ auth }) {
         return () => document.removeEventListener('fullscreenchange', handleFS);
     }, []);
 
-    useEffect(() => {
-        // Solo loguear si no estamos en carga inicial para evitar ruido, 
-        // o déjalo así si necesitas verlo siempre.
-        console.log("📍 Ruta actual detectada:", location.pathname);
-        if (location.search) {
-            console.log("🔍 Parámetros:", location.search);
-        }
-    }, [location]);
-
+   
     const toggleFS = () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen?.().catch(() => { });

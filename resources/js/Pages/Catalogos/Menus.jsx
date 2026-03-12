@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
-import { Dialog } from '@headlessui/react';
+// import { Dialog } from '@headlessui/react';
 import { toast } from 'sonner';
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 
 // ⚠️ SOLUCIÓN AL TREE SHAKING: Importación explícita de todos los íconos
 import {
@@ -255,6 +256,159 @@ function IconDisplayField({ selectedIconName, onOpenModal, label = "Ícono Selec
 // III. COMPONENTE: MODAL DEL FORMULARIO (MenuFormDialog)
 // ----------------------------------------------------
 
+// function MenuFormDialog({ isOpen, closeModal, onSubmit, menuToEdit, action, errors, setErrors }) {
+//     const [menuData, setMenuData] = useState(initialMenuData);
+//     const [loading, setLoading] = useState(false);
+//     const [menus2, setMenus2] = useState(null);
+//     const [isIconModalOpen, setIsIconModalOpen] = useState(false);
+
+//     useEffect(() => {
+//         if (isOpen) {
+//             const dataToLoad = menuToEdit
+//                 ? {
+//                     ...menuToEdit,
+//                     menu_nombre: menuToEdit.menu_nombre || "",
+//                     menu_idPadre: menuToEdit.menu_idPadre ? Number(menuToEdit.menu_idPadre) : 0,
+//                     menu_url: menuToEdit.menu_url || "",
+//                     menu_tooltip: menuToEdit.menu_tooltip || menuToEdit.menu_icono || "Home",
+//                     menu_estatus: String(menuToEdit.menu_estatus) === "1" ? "1" : "0",
+//                 }
+//                 : initialMenuData;
+
+//             setMenuData(dataToLoad);
+//             setErrors({});
+//             if (!menus2) fetchdata();
+//         }
+//     }, [isOpen, menuToEdit]);
+
+//     const fetchdata = async () => {
+//         try {
+//             const response = await fetch(route("menus.index"));
+//             const data = await response.json();
+//             setMenus2([{ menu_id: 0, menu_nombre: "Raíz" }].concat(data));
+//         } catch (e) {
+//             toast.error("Fallo al cargar menús padre.");
+//             setMenus2([]);
+//         }
+//     };
+
+//     const handleChange = (e) => {
+//         const { name, value, type, checked } = e.target;
+//         let finalValue = value;
+
+//         if (name === 'menu_idPadre') {
+//             finalValue = value === '0' ? null : Number(value);
+//         } else if (type === 'checkbox') {
+//             finalValue = checked ? "1" : "0";
+//         }
+
+//         setMenuData(prev => ({ ...prev, [name]: finalValue }));
+//         if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
+//     };
+
+//     const handleIconSelect = (iconName) => {
+//         setMenuData(prev => ({ ...prev, menu_tooltip: iconName }));
+//     };
+
+//     const handleSubmit = async (e) => {
+//         e.preventDefault();
+//         setLoading(true);
+//         try {
+//             await onSubmit(menuData);
+//             closeModal();
+//         } catch (error) {
+//             console.error(error);
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
+//     const dialogTitle = action === 'create' ? 'Crear Nuevo Menú' : 'Editar Menú';
+
+//     return (
+//         <>
+//             <Dialog open={isOpen} onClose={closeModal} className="relative z-40">
+//                 <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+//                 <div className="fixed inset-0 flex items-center justify-center p-4">
+//                     {/* relative y overflow-hidden son clave para el loading */}
+//                     <Dialog.Panel className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl relative overflow-hidden">
+
+//                         {/* LOADING OVERLAY: Se posiciona sobre todo el contenido del Panel */}
+//                         {loading && (
+//                             <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
+//                                 <LoadingDiv />
+//                             </div>
+//                         )}
+
+//                         <Dialog.Title className="text-2xl font-bold mb-4 text-gray-900 border-b pb-2">
+//                             {dialogTitle}
+//                         </Dialog.Title>
+
+//                         {/* Añadimos opacidad visual al formulario cuando carga */}
+//                         <form onSubmit={handleSubmit} className={`grid grid-cols-1 gap-4 transition-opacity duration-200 ${loading ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}>
+//                             <div className="space-y-3">
+//                                 <label className="block">
+//                                     <span className="text-sm font-medium text-gray-700">Nombre: <span className="text-red-500">*</span></span>
+//                                     <input type="text" name="menu_nombre" value={menuData.menu_nombre} onChange={handleChange}
+//                                         className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.menu_nombre ? 'border-red-500' : 'border-gray-300'}`} />
+//                                     {errors.menu_nombre && <p className="text-red-500 text-xs mt-1">{errors.menu_nombre}</p>}
+//                                 </label>
+
+//                                 <label className="block">
+//                                     <span className="text-sm font-medium text-gray-700">URL: <span className="text-red-500">*</span></span>
+//                                     <input type="text" name="menu_url" value={menuData.menu_url} onChange={handleChange}
+//                                         className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.menu_url ? 'border-red-500' : 'border-gray-300'}`} />
+//                                     {errors.menu_url && <p className="text-red-500 text-xs mt-1">{errors.menu_url}</p>}
+//                                 </label>
+
+//                                 <label className="block">
+//                                     <span className="text-sm font-medium text-gray-700">Menú Padre:</span>
+//                                     <select name="menu_idPadre" value={menuData.menu_idPadre === null ? 0 : menuData.menu_idPadre} onChange={handleChange}
+//                                         className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm">
+//                                         {(menus2 ?? []).map((menu) => {
+//                                             if (action === 'edit' && menu.menu_id === menuData.menu_id) return null;
+//                                             return <option key={menu.menu_id} value={menu.menu_id}>{menu.menu_id === 0 ? '— Raíz —' : menu.menu_nombre}</option>
+//                                         })}
+//                                     </select>
+//                                 </label>
+
+//                                 <IconDisplayField
+//                                     selectedIconName={menuData.menu_tooltip}
+//                                     onOpenModal={() => setIsIconModalOpen(true)}
+//                                     label="Ícono Seleccionado:"
+//                                 />
+
+//                                 <div className="flex justify-center pt-2">
+//                                     <label className="flex items-center space-x-2 cursor-pointer">
+//                                         <input type="checkbox" name="menu_estatus" checked={menuData.menu_estatus == "1"} onChange={handleChange}
+//                                             className="h-4 w-4 text-blue-600 border-gray-300 rounded" />
+//                                         <span className="text-sm font-medium text-gray-700">Activo</span>
+//                                     </label>
+//                                 </div>
+//                             </div>
+
+//                             <div className="flex justify-end gap-3 pt-4 border-t mt-4">
+//                                 <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md">
+//                                     Cancelar
+//                                 </button>
+//                                 <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+//                                     {action === 'create' ? 'Guardar' : 'Actualizar'}
+//                                 </button>
+//                             </div>
+//                         </form>
+//                     </Dialog.Panel>
+//                 </div>
+//             </Dialog>
+
+//             <IconGridPickerModal
+//                 isOpen={isIconModalOpen}
+//                 closeModal={() => setIsIconModalOpen(false)}
+//                 onSelect={handleIconSelect}
+//                 selectedIconName={menuData.menu_tooltip}
+//             />
+//         </>
+//     );
+// }
 function MenuFormDialog({ isOpen, closeModal, onSubmit, menuToEdit, action, errors, setErrors }) {
     const [menuData, setMenuData] = useState(initialMenuData);
     const [loading, setLoading] = useState(false);
@@ -322,76 +476,112 @@ function MenuFormDialog({ isOpen, closeModal, onSubmit, menuToEdit, action, erro
         }
     };
 
-    const dialogTitle = action === 'create' ? 'Crear Nuevo Menú' : 'Editar Menú';
-
     return (
         <>
-            <Dialog open={isOpen} onClose={closeModal} className="relative z-40">
-                <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+            <Dialog open={isOpen} onClose={closeModal} className="relative z-[100]">
+                {/* Backdrop con Blur Industrial */}
+                <TransitionChild enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md" aria-hidden="true" />
+                </TransitionChild>
+
                 <div className="fixed inset-0 flex items-center justify-center p-4">
-                    {/* relative y overflow-hidden son clave para el loading */}
-                    <Dialog.Panel className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl relative overflow-hidden">
-                        
-                        {/* LOADING OVERLAY: Se posiciona sobre todo el contenido del Panel */}
+                    <Dialog.Panel className="w-full max-w-lg bg-white rounded-[3rem] p-10 shadow-2xl relative overflow-hidden border-b-[12px] border-[#1B2654]">
+
+                        {/* Overlay de Carga */}
                         {loading && (
                             <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
                                 <LoadingDiv />
                             </div>
                         )}
 
-                        <Dialog.Title className="text-2xl font-bold mb-4 text-gray-900 border-b pb-2">
-                            {dialogTitle}
-                        </Dialog.Title>
+                        {/* Cabecera */}
+                        <div className="flex flex-col items-center mb-8">
+                            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-[#A61A18] mb-4 shadow-inner">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                                </svg>
+                            </div>
+                            <Dialog.Title className="text-2xl font-black text-slate-800 uppercase tracking-tighter">
+                                {action === 'create' ? 'Nuevo Acceso' : 'Editar Menú'}
+                            </Dialog.Title>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1">Estructura de Navegación</p>
+                        </div>
 
-                        {/* Añadimos opacidad visual al formulario cuando carga */}
-                        <form onSubmit={handleSubmit} className={`grid grid-cols-1 gap-4 transition-opacity duration-200 ${loading ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}>
-                            <div className="space-y-3">
-                                <label className="block">
-                                    <span className="text-sm font-medium text-gray-700">Nombre: <span className="text-red-500">*</span></span>
-                                    <input type="text" name="menu_nombre" value={menuData.menu_nombre} onChange={handleChange}
-                                        className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.menu_nombre ? 'border-red-500' : 'border-gray-300'}`} />
-                                    {errors.menu_nombre && <p className="text-red-500 text-xs mt-1">{errors.menu_nombre}</p>}
-                                </label>
+                        <form onSubmit={handleSubmit} className={`space-y-5 transition-opacity duration-200 ${loading ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}>
 
-                                <label className="block">
-                                    <span className="text-sm font-medium text-gray-700">URL: <span className="text-red-500">*</span></span>
-                                    <input type="text" name="menu_url" value={menuData.menu_url} onChange={handleChange}
-                                        className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.menu_url ? 'border-red-500' : 'border-gray-300'}`} />
-                                    {errors.menu_url && <p className="text-red-500 text-xs mt-1">{errors.menu_url}</p>}
-                                </label>
+                            {/* Nombre del Menú */}
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Etiqueta del Menú *</label>
+                                <input
+                                    type="text"
+                                    name="menu_nombre"
+                                    value={menuData.menu_nombre}
+                                    onChange={handleChange}
+                                    placeholder="EJ: REPORTES DE PESO"
+                                    className={`w-full px-6 py-4 rounded-2xl bg-slate-100 border-2 transition-all font-bold text-slate-700 outline-none ${errors.menu_nombre ? 'border-red-500' : 'border-transparent focus:border-[#1B2654] focus:bg-white'}`}
+                                />
+                                {errors.menu_nombre && <p className="text-red-500 text-[10px] font-bold ml-2 uppercase">{errors.menu_nombre}</p>}
+                            </div>
 
-                                <label className="block">
-                                    <span className="text-sm font-medium text-gray-700">Menú Padre:</span>
-                                    <select name="menu_idPadre" value={menuData.menu_idPadre === null ? 0 : menuData.menu_idPadre} onChange={handleChange}
-                                        className="mt-1 block w-full rounded-md border border-gray-300 p-2 text-sm">
+                            {/* URL */}
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Ruta de Enlace (URL) *</label>
+                                <input
+                                    type="text"
+                                    name="menu_url"
+                                    value={menuData.menu_url}
+                                    onChange={handleChange}
+                                    placeholder="/admin/basculas"
+                                    className={`w-full px-6 py-4 rounded-2xl bg-slate-100 border-2 transition-all font-bold text-slate-700 outline-none ${errors.menu_url ? 'border-red-500' : 'border-transparent focus:border-[#1B2654] focus:bg-white'}`}
+                                />
+                                {errors.menu_url && <p className="text-red-500 text-[10px] font-bold ml-2 uppercase">{errors.menu_url}</p>}
+                            </div>
+
+                            {/* Menú Padre y Estatus en Fila */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Ubicación</label>
+                                    <select
+                                        name="menu_idPadre"
+                                        value={menuData.menu_idPadre === null ? 0 : menuData.menu_idPadre}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-4 rounded-2xl bg-slate-100 border-2 border-transparent focus:border-[#1B2654] font-bold text-slate-700 outline-none appearance-none"
+                                    >
                                         {(menus2 ?? []).map((menu) => {
                                             if (action === 'edit' && menu.menu_id === menuData.menu_id) return null;
-                                            return <option key={menu.menu_id} value={menu.menu_id}>{menu.menu_id === 0 ? '— Raíz —' : menu.menu_nombre}</option>
+                                            return <option key={menu.menu_id} value={menu.menu_id}>{menu.menu_id === 0 ? '— RAÍZ —' : menu.menu_nombre.toUpperCase()}</option>
                                         })}
                                     </select>
-                                </label>
+                                </div>
 
-                                <IconDisplayField
-                                    selectedIconName={menuData.menu_tooltip}
-                                    onOpenModal={() => setIsIconModalOpen(true)}
-                                    label="Ícono Seleccionado:"
-                                />
-
-                                <div className="flex justify-center pt-2">
-                                    <label className="flex items-center space-x-2 cursor-pointer">
-                                        <input type="checkbox" name="menu_estatus" checked={menuData.menu_estatus == "1"} onChange={handleChange}
-                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded" />
-                                        <span className="text-sm font-medium text-gray-700">Activo</span>
+                                <div className="flex items-center justify-center pt-5">
+                                    <label className="group flex items-center space-x-3 cursor-pointer select-none">
+                                        <div className="relative">
+                                            <input type="checkbox" name="menu_estatus" checked={menuData.menu_estatus == "1"} onChange={handleChange} className="sr-only peer" />
+                                            <div className="w-10 h-6 bg-slate-200 rounded-full peer peer-checked:bg-green-500 transition-colors shadow-inner"></div>
+                                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4 shadow-md"></div>
+                                        </div>
+                                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Activo</span>
                                     </label>
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t mt-4">
-                                <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md">
+                            {/* Selector de Icono Estilizado */}
+                            <div className="bg-slate-50 p-4 rounded-3xl border-2 border-dashed border-slate-200">
+                                <IconDisplayField
+                                    selectedIconName={menuData.menu_tooltip}
+                                    onOpenModal={() => setIsIconModalOpen(true)}
+                                    label="Icono Visual:"
+                                />
+                            </div>
+
+                            {/* Botones de Acción */}
+                            <div className="flex gap-4 pt-4">
+                                <button type="button" onClick={closeModal} className="flex-1 py-4 text-slate-400 font-black text-xs uppercase hover:text-slate-600 transition-colors">
                                     Cancelar
                                 </button>
-                                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-                                    {action === 'create' ? 'Guardar' : 'Actualizar'}
+                                <button type="submit" className="flex-[2] py-4 bg-[#1B2654] text-white rounded-2xl font-black text-xs uppercase shadow-xl hover:bg-[#A61A18] transition-all">
+                                    {action === 'create' ? 'Guardar Menú' : 'Actualizar Cambios'}
                                 </button>
                             </div>
                         </form>
@@ -408,7 +598,6 @@ function MenuFormDialog({ isOpen, closeModal, onSubmit, menuToEdit, action, erro
         </>
     );
 }
-
 // ----------------------------------------------------------------------
 // IV. COMPONENTE PRINCIPAL (Menus)
 // ----------------------------------------------------------------------
@@ -504,13 +693,13 @@ export default function Menus() {
                 <Datatable
                     data={menus}
                     virtual={true}
-                     add={() => {
+                    add={() => {
                         openCreateModal()
                     }}
                     columns={[
                         {
                             header: "Estatus",
-                            width: "10%",
+                            // width: "10%",
                             accessor: "menu_estatus",
                             cell: ({ item: { menu_estatus } }) => {
                                 const isActive = String(menu_estatus) === "1";
@@ -526,11 +715,21 @@ export default function Menus() {
                                 );
                             },
                         },
-                        { header: 'Nombre', width: "20%", accessor: 'menu_nombre' },
-                        { header: 'URL', width: "20%", accessor: 'menu_url' },
+                        {
+                            header: 'Nombre',
+                            // width: "20%",
+                            accessor: 'menu_nombre'
+                        },
+                        {
+                            header: 'URL',
+                            // width: "20%",
+                            accessor: 'menu_url'
+                        },
 
                         {
-                            header: 'Menu padre', width: '20%', cell: ({ item }) => (
+                            header: 'Menu padre',
+                            //  width: '20%',
+                            cell: ({ item }) => (
                                 <span>{
                                     // Se recomienda simplificar esta lógica si la data no es consistente en el nivel de anidamiento.
                                     // Usando el nombre del padre inmediato si existe:
@@ -543,7 +742,7 @@ export default function Menus() {
                         {
                             header: 'Icono (Tooltip)',
                             accessor: 'menu_tooltip',
-                            width: "10%",
+                            // width: "10%",
                             // 1. Center the Header Text
                             headerClassName: 'text-center',
                             cell: ({ item: { menu_tooltip } }) => {
@@ -557,7 +756,9 @@ export default function Menus() {
                             }
                         },
                         {
-                            header: "Acciones", width: "10%", accessor: "Acciones", cell: (eprops) => (<>
+                            header: "Acciones",
+                            // width: "10%", 
+                            accessor: "Acciones", cell: (eprops) => (<>
                                 <button
                                     onClick={() => openEditModal(eprops.item)}
                                     className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 transition"

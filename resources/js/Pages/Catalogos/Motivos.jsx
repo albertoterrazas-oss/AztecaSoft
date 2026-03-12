@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogPanel, DialogTitle, Transition } from '@headlessui/react';
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
@@ -50,7 +50,7 @@ function MotivoFormDialog({ isOpen, closeModal, onSubmit, motivoToEdit, action, 
                 ? {
                     ...motivoToEdit,
                     Motivos_nombre: motivoToEdit.Motivos_nombre || "",
-                    Motivos_tipo:  "EN",
+                    Motivos_tipo: "EN",
                     Motivos_descripcion: motivoToEdit.Motivos_descripcion || "",
                     Motivos_estatus: motivoToEdit.Motivos_estatus || "1",
                 }
@@ -252,7 +252,7 @@ export default function Motivos() {
         try {
             await request(ruta, method, data);
             await getMotivos(); // Obtener lista actualizada
-            
+
             toast.success(successMessage);
         } catch (error) {
             console.error("Error al guardar el motivo:", error);
@@ -322,7 +322,7 @@ export default function Motivos() {
                         // { header: 'Tipo', accessor: 'Motivos_tipo' },
                         { header: 'Descripción', accessor: 'Motivos_descripcion' },
                         {
-                            header: "Acciones", accessor: "Acciones",  cell: (eprops) => (<>
+                            header: "Acciones", accessor: "Acciones", cell: (eprops) => (<>
                                 <button
                                     onClick={() => openEditModal(eprops.item)}
                                     className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 transition"

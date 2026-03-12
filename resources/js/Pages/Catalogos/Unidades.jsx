@@ -1,5 +1,5 @@
 
-import { Dialog, DialogPanel, DialogTitle, Transition } from '@headlessui/react';
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 // Importamos Sonner
 import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";

@@ -20,11 +20,13 @@ use App\Http\Controllers\Catalogs\AsuntosController;
 use App\Http\Controllers\Catalogs\BasculasController;
 use App\Http\Controllers\Catalogs\ClientesController;
 use App\Http\Controllers\Catalogs\ColoniasController;
+use App\Http\Controllers\Catalogs\DashboardController;
 use App\Http\Controllers\Catalogs\EstadosController;
 use App\Http\Controllers\Catalogs\MunicipiosController;
 use App\Http\Controllers\Catalogs\PersonasController;
 use App\Http\Controllers\Catalogs\ProductosController;
 use App\Http\Controllers\Catalogs\ProvedoresController;
+use App\Http\Controllers\Procesos\DashboardController as ProcesosDashboardController;
 use App\Http\Controllers\Procesos\DespieceController;
 use App\Http\Controllers\Procesos\InventariosController;
 use App\Http\Controllers\Procesos\RecepcionController;
@@ -274,6 +276,11 @@ Route::resource('personas', controller: PersonasController::class)->only([
     'store',    // (POST /api/destinos)
     'update'    // (PUT/PATCH /api/destinos/{destino})
 ]);
+
+
+
+Route::get('getKilosDashboard', [ProcesosDashboardController::class, 'getKilosDashboard'])->name('getKilosDashboard');
+
 // });
 
 Route::post('CodigoverificacionEstado', [CodigosController::class, 'CodigoverificacionEstado'])->name('CodigoverificacionEstado');

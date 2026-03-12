@@ -40,7 +40,6 @@ function DepartmentFormDialog({ isOpen, closeModal, onSubmit, departmentToEdit, 
 
     useEffect(() => {
         if (isOpen) {
-            // Sincronizamos los datos que vienen del Datatable con el estado del formulario
             setDepartmentData({
                 IdDepartamento: departmentToEdit?.IdDepartamento || null,
                 nombre: departmentToEdit?.nombre || "",
@@ -53,8 +52,7 @@ function DepartmentFormDialog({ isOpen, closeModal, onSubmit, departmentToEdit, 
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        // Convertimos el checkbox a 1 o 0 para que Laravel lo procese correctamente como tinyInt/int
-        const finalValue = type === 'checkbox' ? (checked ? 1 : 0) : value;
+        const finalValue = type === 'checkbox' ? (checked ? 1 : 0) : value.toUpperCase();
 
         setDepartmentData(prev => ({
             ...prev,
@@ -68,7 +66,7 @@ function DepartmentFormDialog({ isOpen, closeModal, onSubmit, departmentToEdit, 
         try {
             await onSubmit(departmentData);
         } catch (error) {
-            // Error manejado en el componente principal
+            // Manejado en el padre
         } finally {
             setLoading(false);
         }
@@ -76,75 +74,101 @@ function DepartmentFormDialog({ isOpen, closeModal, onSubmit, departmentToEdit, 
 
     return (
         <Transition show={isOpen}>
-            <Dialog onClose={closeModal} className="relative z-50">
-                {/* Overlay / Fondo oscuro */}
+            <Dialog onClose={closeModal} className="relative z-[100]">
+                {/* Backdrop con Blur Industrial */}
                 <TransitionChild
                     enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100"
                     leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0"
                 >
-                    <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+                    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md" aria-hidden="true" />
                 </TransitionChild>
 
                 <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <DialogPanel className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl relative">
-                        {loading && <LoadingDiv />}
+                    <TransitionChild
+                        enter="ease-out duration-300" enterFrom="opacity-0 scale-95 translate-y-4"
+                        enterTo="opacity-100 scale-100 translate-y-0"
+                        leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95"
+                    >
+                        <DialogPanel className="w-full max-w-lg bg-white rounded-[3rem] p-10 shadow-2xl relative overflow-hidden border-b-[12px] border-[#1B2654]">
 
-                        <DialogTitle className="text-2xl font-bold mb-4 text-gray-900 border-b pb-2">
-                            {action === 'create' ? 'Crear Nuevo Departamento' : 'Editar Departamento'}
-                        </DialogTitle>
+                            {/* Overlay de Carga */}
+                            {loading && (
+                                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
+                                    <LoadingDiv />
+                                </div>
+                            )}
 
-                        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4">
-                            {/* Campo Nombre */}
-                            <label className="block">
-                                <span className="text-sm font-medium text-gray-700">
-                                    Nombre del Departamento: <span className="text-red-500">*</span>
-                                </span>
-                                <input
-                                    type="text"
-                                    name="nombre"
-                                    value={departmentData.nombre}
-                                    onChange={handleChange}
-                                    className={`mt-1 block w-full rounded-md border p-2 text-sm focus:ring-2 outline-none transition-all ${errors.nombre
-                                        ? 'border-red-500 focus:ring-red-200'
-                                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200'
-                                        }`}
-                                />
-                                {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
-                            </label>
+                            {/* Encabezado Estilo Rhino */}
+                            <div className="flex flex-col items-center mb-8">
+                                <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-[#1B2654] mb-4 shadow-inner">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6.75h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
+                                    </svg>
+                                </div>
+                                <DialogTitle className="text-2xl font-black text-slate-800 uppercase tracking-tighter text-center">
+                                    {action === 'create' ? 'Nuevo Departamento' : 'Editar Área'}
+                                </DialogTitle>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1 text-center">Estructura Organizacional</p>
+                            </div>
 
-                            {/* Campo Estatus */}
-                            <div className="flex justify-start py-2">
-                                <label className="flex items-center space-x-3 cursor-pointer">
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                {/* Nombre del Departamento */}
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Nombre del Área / Departamento *</label>
                                     <input
-                                        type="checkbox"
-                                        name="estatus"
-                                        checked={Number(departmentData.estatus) === 1}
+                                        type="text"
+                                        name="nombre"
+                                        value={departmentData.nombre}
                                         onChange={handleChange}
-                                        className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                        placeholder="EJ: RECURSOS HUMANOS"
+                                        className={`w-full px-6 py-4 rounded-2xl bg-slate-100 border-2 transition-all font-bold text-slate-700 outline-none uppercase ${errors.nombre ? 'border-red-500' : 'border-transparent focus:border-[#1B2654] focus:bg-white'
+                                            }`}
                                     />
-                                    <span className="text-sm font-medium text-gray-700 select-none">Departamento Activo</span>
-                                </label>
-                            </div>
+                                    {errors.nombre && (
+                                        <p className="text-red-500 text-[10px] font-bold ml-2 uppercase mt-1">{errors.nombre}</p>
+                                    )}
+                                </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t mt-4">
-                                <button
-                                    type="button"
-                                    onClick={closeModal}
-                                    disabled={loading}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 transition-colors"
-                                >
-                                    {loading ? 'Procesando...' : (action === 'create' ? 'Guardar Departamento' : 'Actualizar Departamento')}
-                                </button>
-                            </div>
-                        </form>
-                    </DialogPanel>
+                                {/* Estatus Toggle Estilo Rhino */}
+                                <div className="flex justify-center bg-slate-50 py-4 rounded-2xl border-2 border-dashed border-slate-200">
+                                    <label className="group flex items-center space-x-3 cursor-pointer select-none">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Baja</span>
+                                        <div className="relative">
+                                            <input
+                                                type="checkbox"
+                                                name="estatus"
+                                                checked={Number(departmentData.estatus) === 1}
+                                                onChange={handleChange}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-14 h-7 bg-slate-300 rounded-full peer peer-checked:bg-[#1B2654] transition-colors shadow-inner"></div>
+                                            <div className="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-7 shadow-md"></div>
+                                        </div>
+                                        <span className="text-[10px] font-black text-[#1B2654] uppercase tracking-widest">Activo</span>
+                                    </label>
+                                </div>
+
+                                {/* Botones de Acción */}
+                                <div className="flex gap-4 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={closeModal}
+                                        disabled={loading}
+                                        className="flex-1 py-4 text-slate-400 font-black text-xs uppercase hover:text-slate-600 transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="flex-[2] py-4 bg-[#1B2654] text-white rounded-2xl font-black text-xs uppercase shadow-xl hover:bg-[#A61A18] transition-all disabled:opacity-50"
+                                    >
+                                        {loading ? 'Procesando...' : (action === 'create' ? 'Guardar Área' : 'Actualizar Área')}
+                                    </button>
+                                </div>
+                            </form>
+                        </DialogPanel>
+                    </TransitionChild>
                 </div>
             </Dialog>
         </Transition>

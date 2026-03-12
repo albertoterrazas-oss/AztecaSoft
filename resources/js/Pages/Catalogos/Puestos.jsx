@@ -1,41 +1,35 @@
-import { useEffect, useState } from "react";
-import { Dialog, DialogPanel, DialogTitle, Transition } from '@headlessui/react';
+import { Fragment, useState, useEffect } from 'react';
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
 
-// Función para mapear rutas de API
+// 1. Corregimos la función de ruta para que use IdPuesto
 const route = (name, params = {}) => {
-    const id = params.Puestos_id; // Ahora usa Puestos_id
+    const id = params.IdPuesto; // Cambiado de Puestos_id a IdPuesto
     const routeMap = {
         "puestos.index": "/api/puestos",
         "DepartamentosActivos": "/api/DepartamentosActivos",
         "puestos.store": "/api/puestos",
         "puestos.update": `/api/puestos/${id}`,
-        "departamentos.index": "/api/departamentos", // Nueva ruta para obtener departamentos
     };
     return routeMap[name] || `/${name}`;
 };
 
-// Función de validación de entradas
-const validateInputs = (validations, data) => {
+const validateInputs = (data) => {
     let formErrors = {};
-    if (validations.Puestos_nombre && !data.Puestos_nombre?.trim()) formErrors.Puestos_nombre = 'El nombre del puesto es obligatorio.';
-    if (validations.Puestos_idDepartamento && !data.Puestos_idDepartamento) formErrors.Puestos_idDepartamento = 'El departamento es obligatorio.';
+    if (!data.nombre?.trim()) formErrors.nombre = 'El nombre es obligatorio.';
+    if (!data.IdDepartamento) formErrors.IdDepartamento = 'El departamento es obligatorio.';
     return { isValid: Object.keys(formErrors).length === 0, errors: formErrors };
 };
 
-const positionValidations = {
-    Puestos_nombre: true,
-    Puestos_idDepartamento: true,
-};
-
 const initialPositionData = {
-    Puestos_id: null,
-    Puestos_nombre: "",
-    Puestos_estatus: 1, // Por defecto: Activo (1)
-    Puestos_idDepartamento: "",
+    IdPuesto: null,
+    nombre: '',
+    IdDepartamento: '',
+    estatus: "1",
+    TieneHorasExtra: "0"
 };
 
 function PositionFormDialog({ isOpen, closeModal, onSubmit, positionToEdit, action, errors, setErrors, departments }) {
@@ -44,27 +38,25 @@ function PositionFormDialog({ isOpen, closeModal, onSubmit, positionToEdit, acti
 
     useEffect(() => {
         if (isOpen) {
-            // Asegura que Puestos_idDepartamento sea un string para el <select>
-            const dataToLoad = positionToEdit
-                ? { ...positionToEdit, Puestos_idDepartamento: String(positionToEdit.Puestos_idDepartamento) }
-                : initialPositionData;
-
-            setPositionData(dataToLoad);
+            setPositionData(positionToEdit || initialPositionData);
             setErrors({});
         }
     }, [isOpen, positionToEdit, setErrors]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
+        let finalValue = value;
 
-        setPositionData(prevData => ({
-            ...prevData,
-            [name]: type === 'checkbox' ? (checked ? "1" : "0") : value
-        }));
+        if (type === 'checkbox') {
+            finalValue = checked ? "1" : "0";
+        } else if (name === 'nombre') {
+            finalValue = value.toUpperCase();
+        }
 
+        setPositionData(prev => ({ ...prev, [name]: finalValue }));
         if (errors[name]) {
-            setErrors(prevErrors => {
-                const newErrors = { ...prevErrors };
+            setErrors(prev => {
+                const newErrors = { ...prev };
                 delete newErrors[name];
                 return newErrors;
             });
@@ -77,255 +69,210 @@ function PositionFormDialog({ isOpen, closeModal, onSubmit, positionToEdit, acti
         try {
             await onSubmit(positionData);
         } catch (error) {
-            // Manejo de error (ej: validación fallida)
+            console.error("Rhino Error:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    const dialogTitle = action === 'create' ? 'Crear Nuevo Puesto' : 'Editar Puesto';
-
     return (
-        <Transition show={isOpen}>
-            <Dialog open={isOpen} onClose={closeModal} className="relative z-50">
-                <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <Transition show={isOpen} as={Fragment}>
+            <Dialog onClose={closeModal} className="relative z-[100]">
+                <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                    <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md" />
+                </TransitionChild>
+
                 <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <DialogPanel className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl relative">
-                        {loading && <LoadingDiv />}
-                        <DialogTitle className="text-2xl font-bold mb-4 text-gray-900 border-b pb-2">
-                            {dialogTitle}
-                        </DialogTitle>
+                    <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95 translate-y-8" enterTo="opacity-100 scale-100 translate-y-0" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+                        <DialogPanel className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl relative overflow-hidden border-t-8 border-[#1B2654]">
+                            {loading && (
+                                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[2px]">
+                                    <div className="w-12 h-12 border-4 border-[#1B2654] border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                            )}
 
-                        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4">
+                            <div className="p-10">
+                                <div className="flex flex-col items-center mb-8">
+                                    <DialogTitle className="text-3xl font-black text-slate-900 uppercase tracking-tighter">
+                                        {action === 'create' ? 'Nuevo Puesto' : 'Editar Puesto'}
+                                    </DialogTitle>
+                                    <div className="h-1 w-12 bg-[#A61A18] mt-2 rounded-full"></div>
+                                </div>
 
-                            {/* Campo Nombre del Puesto */}
-                            <label className="block">
-                                <span className="text-sm font-medium text-gray-700">Nombre del Puesto: <span className="text-red-500">*</span></span>
-                                <input
-                                    type="text"
-                                    name="Puestos_nombre"
-                                    value={positionData.Puestos_nombre || ''}
-                                    onChange={handleChange}
-                                    className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.Puestos_nombre ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
-                                />
-                                {errors.Puestos_nombre && <p className="text-red-500 text-xs mt-1">{errors.Puestos_nombre}</p>}
-                            </label>
+                                <form onSubmit={handleSubmit} className="space-y-5">
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-2">Nombre del Puesto</label>
+                                        <input
+                                            type="text"
+                                            name="nombre"
+                                            value={positionData.nombre}
+                                            onChange={handleChange}
+                                            className={`w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 transition-all font-bold ${errors.nombre ? 'border-red-500' : 'border-slate-100 focus:border-[#1B2654]'}`}
+                                        />
+                                        {errors.nombre && <p className="text-red-500 text-[10px] font-bold ml-2">{errors.nombre}</p>}
+                                    </div>
 
-                            {/* Campo Departamento (Select) */}
-                            <label className="block">
-                                <span className="text-sm font-medium text-gray-700">Departamento: <span className="text-red-500">*</span></span>
-                                <select
-                                    name="Puestos_idDepartamento"
-                                    value={positionData.Puestos_idDepartamento || ''}
-                                    onChange={handleChange}
-                                    className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.Puestos_idDepartamento ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
-                                >
-                                    <option value="" disabled>Selecciona un departamento</option>
-                                    {departments.map((dept) => (
-                                        <option
-                                            key={dept.Departamentos_id}
-                                            value={dept.Departamentos_id}
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-2">Departamento</label>
+                                        <select
+                                            name="IdDepartamento"
+                                            value={positionData.IdDepartamento}
+                                            onChange={handleChange}
+                                            className={`w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 transition-all font-bold ${errors.IdDepartamento ? 'border-red-500' : 'border-slate-100 focus:border-[#1B2654]'}`}
                                         >
-                                            {dept.Departamentos_nombre}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.Puestos_idDepartamento && <p className="text-red-500 text-xs mt-1">{errors.Puestos_idDepartamento}</p>}
-                            </label>
+                                            <option value="">SELECCIONE...</option>
+                                            {departments.map((dept) => (
+                                                <option key={dept.IdDepartamento} value={dept.IdDepartamento}>{dept.nombre}</option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                            <div className="flex justify-center w-full"> {/* <-- Contenedor agregado y clases de centrado */}
-                                <label className="flex items-center space-x-2">
-                                    <input
-                                        type="checkbox"
-                                        name="Puestos_estatus"
-                                        checked={positionData.Puestos_estatus == 1} // Usamos == para manejar 1 o '1'
-                                        onChange={handleChange}
-                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                    />
-                                    <span className="text-sm font-medium text-gray-700">Estatus</span>
-                                </label>
+                                    <div className="flex items-center justify-between bg-slate-50 px-6 py-4 rounded-2xl border border-slate-100">
+                                        <span className="text-[11px] font-black text-slate-500 uppercase">¿Aplica Horas Extra?</span>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="TieneHorasExtra" checked={positionData.TieneHorasExtra == 1} onChange={handleChange} className="sr-only peer" />
+                                            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex items-center justify-between bg-slate-900 px-6 py-4 rounded-2xl">
+                                        <span className="text-[11px] font-black text-slate-400 uppercase">Estatus Activo</span>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" name="estatus" checked={positionData.estatus == 1} onChange={handleChange} className="sr-only peer" />
+                                            <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#A61A18]"></div>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex gap-4 pt-4">
+                                        <button type="button" onClick={closeModal} className="flex-1 py-4 text-slate-400 font-black text-xs uppercase tracking-widest">Cancelar</button>
+                                        <button type="submit" className="flex-[2] py-4 bg-[#1B2654] text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg">
+                                            {action === 'create' ? 'Registrar' : 'Guardar'}
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
-
-
-                            <div className="col-span-1 flex justify-end gap-3 pt-4 border-t mt-4">
-                                <button
-                                    type="button"
-                                    onClick={closeModal}
-                                    disabled={loading}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
-                                >
-                                    {loading ? (action === 'create' ? 'Registrando...' : 'Actualizando...') : (action === 'create' ? 'Guardar Puesto' : 'Actualizar Puesto')}
-                                </button>
-                            </div>
-                        </form>
-                    </DialogPanel>
+                        </DialogPanel>
+                    </TransitionChild>
                 </div>
             </Dialog>
         </Transition>
-    )
+    );
 }
-
-// --- Componente Principal ---
 
 export default function Puestos() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [positions, setPositions] = useState([]); // Lista de puestos
-    const [departments, setDepartments] = useState([]); // Lista de departamentos
+    const [positions, setPositions] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [action, setAction] = useState('create');
     const [positionData, setPositionData] = useState(initialPositionData);
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(true);
 
-    const openCreateModal = () => {
-        setAction('create');
-        setPositionData(initialPositionData);
-        setErrors({});
-        setIsDialogOpen(true);
-    };
-
-    const openEditModal = (position) => {
-        setAction('edit');
-        setPositionData(position);
-        setErrors({});
-        setIsDialogOpen(true);
-    };
-
-    const closeModal = () => {
-        setIsDialogOpen(false);
-        setPositionData(initialPositionData);
-        setErrors({});
-    };
-
-    const submit = async (data) => {
-        setErrors({});
-        const validationResult = validateInputs(positionValidations, data);
-
-        if (!validationResult.isValid) {
-            setErrors(validationResult.errors);
-            toast.error("Por favor, corrige los errores en el formulario.");
-            throw new Error("Validation Failed");
-        }
-
-        const isEdit = data.Puestos_id;
-        const ruta = isEdit
-            ? route("puestos.update", { Puestos_id: data.Puestos_id }) // ¡Ruta de puestos!
-            : route("puestos.store"); // ¡Ruta de puestos!
-
-        const method = isEdit ? "PUT" : "POST";
-        const successMessage = isEdit ? "Puesto actualizado con éxito." : "Puesto creado con éxito.";
-
-        try {
-            const payload = {
-                Puestos_nombre: data.Puestos_nombre,
-                Puestos_estatus: data.Puestos_estatus,
-                Puestos_idDepartamento: data.Puestos_idDepartamento, // Incluir la clave foránea
-            };
-
-            await request(ruta, method, payload);
-            await getPositions(); // Recargar la tabla de puestos
-            toast.success(successMessage);
-            closeModal(); // Cerrar solo si la operación fue exitosa
-
-        } catch (error) {
-            console.error("Error al guardar el puesto:", error);
-            toast.error("Hubo un error al guardar el puesto.");
-            throw error;
-        }
-    };
-
-
     const getDepartments = async () => {
         try {
-            // Obtenemos todos los departamentos para el <select>
             const data = await fetch(route("DepartamentosActivos")).then(res => res.json());
             setDepartments(data);
-        } catch (error) {
-            console.error('Error al obtener los departamentos:', error);
-            toast.error("Error al cargar la lista de departamentos.");
-        }
-    }
+        } catch (e) { console.error(e); }
+    };
 
     const getPositions = async () => {
         try {
             setIsLoading(true);
             const data = await fetch(route("puestos.index")).then(res => res.json());
             setPositions(data);
-            setIsLoading(false);
-
-        } catch (error) {
-            console.error('Error al obtener los puestos:', error);
-            setIsLoading(false);
-            toast.error("Error al cargar la lista de puestos.");
-        }
-    }
+        } catch (e) { console.error(e); }
+        finally { setIsLoading(false); }
+    };
 
     useEffect(() => {
         getDepartments();
         getPositions();
-    }, [])
+    }, []);
 
-    // Definición de las columnas de la tabla
-    const columns = [
-        {
-            header: "Estatus",
-            accessor: "estatus",
-            cell: ({ item: { estatus } }) => {
-                const color = String(estatus) === "1"
-                    ? "bg-green-300" // Si es "1"
-                    : "bg-red-300";  // Si NO es "1" (incluyendo "2", "0", null, etc.)
+    const openCreateModal = () => {
+        setAction('create');
+        setPositionData(initialPositionData);
+        setIsDialogOpen(true);
+    };
 
-                return (
-                    <span className={`inline-flex items-center justify-center rounded-full ${color} w-4 h-4`} />
-                );
-            },
-        },
-        { header: 'Nombre del Puesto', accessor: 'nombre' },
-        { header: 'Departamento', accessor: 'departamento.nombre' },
-        {
-            header: "Acciones", accessor: "Acciones", cell: (eprops) => (<div className="flex space-x-2">
-                <button
-                    onClick={() => openEditModal(eprops.item)}
-                    className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200"
-                >
-                    Editar
-                </button>
-            </div>)
-        },
-    ];
+    const openEditModal = (item) => {
+        setAction('edit');
+        // Mapeo exacto basado en el JSON que me mostraste
+        setPositionData({
+            IdPuesto: item.IdPuesto,
+            nombre: item.nombre,
+            IdDepartamento: String(item.IdDepartamento),
+            estatus: String(item.estatus),
+            TieneHorasExtra: String(item.TieneHorasExtra)
+        });
+        setIsDialogOpen(true);
+    };
+
+    const submit = async (formData) => {
+        const validation = validateInputs(formData);
+        if (!validation.isValid) {
+            setErrors(validation.errors);
+            toast.error("Revisa los campos.");
+            throw new Error("Validation Error");
+        }
+
+        // Si hay IdPuesto es un update, si no, store
+        const isEdit = action === 'edit';
+        const url = isEdit ? route("puestos.update", { IdPuesto: formData.IdPuesto }) : route("puestos.store");
+        
+        const payload = {
+            nombre: formData.nombre,
+            estatus: formData.estatus,
+            IdDepartamento: formData.IdDepartamento,
+            TieneHorasExtra: formData.TieneHorasExtra
+        };
+
+        try {
+            await request(url, isEdit ? "PUT" : "POST", payload);
+            toast.success("¡Listo, rey!");
+            getPositions();
+            setIsDialogOpen(false);
+        } catch (e) {
+            toast.error("Error en el servidor.");
+            throw e;
+        }
+    };
 
     return (
-        <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
-            {isLoading ? (
-                <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>
-            ) : (
+        <div className="h-full p-4 overflow-auto">
+            {isLoading ? <div className="flex h-full items-center justify-center"><LoadingDiv /></div> : (
                 <Datatable
                     data={positions}
-                    add={() => {
-                        openCreateModal()
-                    }}
+                    add={openCreateModal}
                     virtual={true}
-                    columns={columns}
+                    columns={[
+                        { 
+                            header: "Estatus", 
+                            accessor: "estatus",
+                            cell: ({ item }) => (
+                                <span className={`inline-flex w-3 h-3 rounded-full ${item.estatus == 1 ? 'bg-green-400' : 'bg-red-400'}`} />
+                            )
+                        },
+                        { header: 'Puesto', accessor: 'nombre' },
+                        { header: 'Departamento', accessor: 'departamento.nombre' },
+                        {
+                            header: "Acciones", cell: (props) => (
+                                <button onClick={() => openEditModal(props.item)} className="text-blue-600 font-bold text-xs uppercase">Editar</button>
+                            )
+                        }
+                    ]}
                 />
             )}
-
-            <PositionFormDialog
-                isOpen={isDialogOpen}
-                closeModal={closeModal}
+            <PositionFormDialog 
+                isOpen={isDialogOpen} 
+                closeModal={() => setIsDialogOpen(false)} 
                 onSubmit={submit}
                 positionToEdit={positionData}
                 action={action}
                 errors={errors}
                 setErrors={setErrors}
-                departments={departments} // Pasamos la lista de departamentos
+                departments={departments}
             />
-
         </div>
     );
 }

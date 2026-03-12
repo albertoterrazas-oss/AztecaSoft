@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import LoadingDiv from "@/Components/LoadingDiv";
 import axios from "axios";
-import { 
-    Plus, Minus, Check, Save, Loader2, AlertTriangle, 
+import {
+    Plus, Minus, Check, Save, Loader2, AlertTriangle,
     Package, ArrowLeft, Truck, ClipboardCheck, Search, X, MessageSquare
 } from 'lucide-react';
 
@@ -52,9 +52,9 @@ export default function CombinedDashboard() {
     const [sessionData, setSessionData] = useState({ IdProveedor: "", RazonSocial: "" });
     const [selectedProducts, setSelectedProducts] = useState([]);
     const [itemValues, setItemValues] = useState({});
-    
+
     // Estado para Checklist: Maneja el booleano y el comentario por ID
-    const [checklistData, setChecklistData] = useState({}); 
+    const [checklistData, setChecklistData] = useState({});
 
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
@@ -74,21 +74,21 @@ export default function CombinedDashboard() {
 
                 setDbProviders(resProv.data.data || resProv.data);
                 setDbProducts((resProd.data.data || resProd.data).filter(p => p.EsSubproducto == 0));
-                
+
                 const listData = resCheck.data.data || resCheck.data;
                 setDbChecklistItems(listData);
 
                 // Inicializar estado de checklist: { [id]: { cumple: false, comentario: "" } }
-                const initialCheck = listData.reduce((acc, item) => ({ 
-                    ...acc, 
-                    [item.IdLista]: { cumple: false, comentario: "" } 
+                const initialCheck = listData.reduce((acc, item) => ({
+                    ...acc,
+                    [item.IdLista]: { cumple: false, comentario: "" }
                 }), {});
                 setChecklistData(initialCheck);
 
-            } catch (error) { 
-                toast.error("Error de conexión"); 
-            } finally { 
-                setIsLoading(false); 
+            } catch (error) {
+                toast.error("Error de conexión");
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchCatalogos();
@@ -120,11 +120,11 @@ export default function CombinedDashboard() {
         }));
     };
 
-                const user = JSON.parse(localStorage.getItem('perfil'))?.IdUsuario || 1;
+    const user = JSON.parse(localStorage.getItem('perfil'))?.IdUsuario || 1;
 
     const handleSave = async () => {
         setIsSaving(true);
-        
+
         const productosData = selectedProducts.map(p => ({
             IdProducto: p.IdProducto,
             Nombre: p.Nombre,
@@ -145,26 +145,26 @@ export default function CombinedDashboard() {
                 fecha: new Date().toISOString().split('T')[0],
                 productos: productosData,
                 inspeccion: inspeccionData,
-                idUsuarioLocal:user
+                idUsuarioLocal: user
             });
-            
+
             setIsConfirmModalOpen(false);
             setIsSuccessModalOpen(true);
             setStep(1);
             setSelectedProducts([]);
             setItemValues({});
             setSearchTerm("");
-        } catch (error) { 
-            toast.error("Error al guardar"); 
-        } finally { 
-            setIsSaving(false); 
+        } catch (error) {
+            toast.error("Error al guardar");
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    if (isLoading) return <div className="h-screen flex items-center justify-center"><LoadingDiv /></div>;
+    if (isLoading) return <div className="h-[100%] flex items-center justify-center"><LoadingDiv /></div>;
 
     return (
-        <div className="min-h-screen bg-slate-50 p-3 sm:p-8 font-sans">
+        <div className="h-[100%] bg-slate-50 p-3 sm:p-8 font-sans">
             <AnimatePresence>
                 {isSaving && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center text-white">
@@ -207,8 +207,8 @@ export default function CombinedDashboard() {
                         </div>
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <input 
-                                type="text" 
+                            <input
+                                type="text"
                                 placeholder="BUSCAR PRODUCTO..."
                                 className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-[10px] font-black focus:ring-2 focus:ring-red-500"
                                 value={searchTerm}
@@ -227,9 +227,8 @@ export default function CombinedDashboard() {
                                         <button
                                             key={p.IdProducto}
                                             onClick={() => toggleProduct(p)}
-                                            className={`relative flex sm:flex-col items-center sm:items-start p-3 sm:p-6 rounded-xl sm:rounded-[2.5rem] text-left transition-all border-2 sm:border-4 ${
-                                                isSelected ? "border-red-600 bg-white shadow-md" : "border-transparent bg-white/70"
-                                            }`}
+                                            className={`relative flex sm:flex-col items-center sm:items-start p-3 sm:p-6 rounded-xl sm:rounded-[2.5rem] text-left transition-all border-2 sm:border-4 ${isSelected ? "border-red-600 bg-white shadow-md" : "border-transparent bg-white/70"
+                                                }`}
                                         >
                                             <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center mr-3 sm:mr-0 sm:mb-2 ${isSelected ? "bg-red-600 text-white" : "bg-slate-100 text-slate-400"}`}>
                                                 {isSelected ? <Check className="w-5 h-5" /> : <Package className="w-5 h-5" />}
@@ -254,24 +253,24 @@ export default function CombinedDashboard() {
                                     {dbChecklistItems.map((item) => (
                                         <div key={item.IdLista} className="space-y-1">
                                             <button
-                                                onClick={() => setChecklistData(prev => ({ 
-                                                    ...prev, 
-                                                    [item.IdLista]: { ...prev[item.IdLista], cumple: !prev[item.IdLista].cumple } 
+                                                onClick={() => setChecklistData(prev => ({
+                                                    ...prev,
+                                                    [item.IdLista]: { ...prev[item.IdLista], cumple: !prev[item.IdLista].cumple }
                                                 }))}
-                                                className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
-                                                    checklistData[item.IdLista]?.cumple ? "bg-blue-600 border-blue-700 text-white" : "bg-slate-50 border-slate-100 text-slate-400"
-                                                }`}
+                                                style={{ backgroundColor: '#1B2654' }}
+                                                className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all  text-white ${checklistData[item.IdLista]?.cumple ? "" : ""
+                                                    }`}
                                             >
                                                 <span className="font-black text-[9px] uppercase">{item.Nombre}</span>
-                                                <div className={`w-4 h-4 rounded-full border ${checklistData[item.IdLista]?.cumple ? "bg-white text-blue-600 flex items-center justify-center" : "bg-white"}`}>
+                                                <div className={`w-4 h-4 rounded-full border ${checklistData[item.IdLista]?.cumple ? "bg-white text-red-600 flex items-center justify-center" : "bg-white"}`}>
                                                     {checklistData[item.IdLista]?.cumple && <Check className="w-3 h-3" strokeWidth={4} />}
                                                 </div>
                                             </button>
-                                            
+
                                             {/* Input para comentarios si NO cumple o si quieres que siempre esté */}
                                             <div className="relative">
                                                 <MessageSquare className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300" />
-                                                <input 
+                                                <input
                                                     type="text"
                                                     placeholder="Comentarios (opcional)..."
                                                     value={checklistData[item.IdLista]?.comentario || ""}
@@ -294,6 +293,8 @@ export default function CombinedDashboard() {
                         <button
                             disabled={selectedProducts.length === 0}
                             onClick={() => setIsConfirmModalOpen(true)}
+                            style={{ backgroundColor: '#1B2654' }}
+
                             className="w-full max-w-md bg-slate-900 text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-2xl active:scale-95 disabled:bg-slate-300 flex items-center justify-center gap-3"
                         >
                             <span className="text-xs">Revisar Selección ({selectedProducts.length})</span>
@@ -312,7 +313,7 @@ export default function CombinedDashboard() {
                             <DialogTitle className="text-sm sm:text-xl font-black uppercase mb-4 text-slate-800 text-center flex items-center justify-center gap-2">
                                 <Save className="w-5 h-5 text-red-600" /> Detalle Final de Carga
                             </DialogTitle>
-                            
+
                             <div className="overflow-y-auto space-y-3 flex-1 pr-1 custom-scrollbar">
                                 {selectedProducts.map((p) => (
                                     <QuantityItem
@@ -343,8 +344,10 @@ export default function CombinedDashboard() {
                             <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Check className="w-8 h-8" strokeWidth={4} />
                             </div>
-                            <DialogTitle className="text-lg font-black uppercase text-slate-800">¡Éxito!</DialogTitle>
-                            <button onClick={() => setIsSuccessModalOpen(false)} className="mt-6 w-full py-4 bg-slate-900 text-white font-black rounded-xl uppercase text-[10px]">Aceptar</button>
+                            <DialogTitle className="text-lg font-black uppercase text-slate-800">¡Se guardo con exito el lote!</DialogTitle>
+                            <button onClick={() => setIsSuccessModalOpen(false)}
+                                style={{ backgroundColor: '#1B2654' }}
+                                className="mt-6 w-full py-4 text-white font-black rounded-xl uppercase text-[10px]">Aceptar</button>
                         </DialogPanel>
                     </div>
                 </Dialog>

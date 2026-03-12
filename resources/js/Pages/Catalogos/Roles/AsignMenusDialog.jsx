@@ -1,25 +1,28 @@
 import { useState, useEffect, Fragment } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { Tree } from "primereact/tree";
+import { toast } from "sonner";
 import request from "@/utils";
 import SelectComp from "@/components/SelectInput";
-import { toast } from "sonner";
 
-export default function AsignMenusDialog(props) {
-    const [state, setState] = useState({
-        mainMenuList: [],
-        mainMenuSelected: null,
-        showConfirmDialog: false,
-        confirmSave: false,
-        updateUsers: false,
-        usersList: []
-    })
-    const [allMenus, setAllMenus] = useState();
-    const [assignedMenus, setAssignedMenus] = useState();
+// --- Configuración Inicial ---
+const initialState = {
+    mainMenuList: [],
+    mainMenuSelected: null,
+    showConfirmDialog: false,
+    confirmSave: false,
+    updateUsers: false,
+    usersList: []
+};
+
+export default function AsignMenusDialog({ rol, assignMenu, assignMenuHandler }) {
+    const [state, setState] = useState(initialState);
+    const [allMenus, setAllMenus] = useState(null);
+    const [assignedMenus, setAssignedMenus] = useState(null);
     const [selectedKeys, setSelectedKeys] = useState(null);
     const [openDialog, setOpenDialog] = useState(false);
 
-    // Mantenemos calcularValores tal cual, pero ahora recibirá la estructura a llenar
+    // --- Lógica de Procesamiento de Menús ---
     function calcularValores(obj, assignedMenus, currentSelectedNodes) {
         const menuInfo = assignedMenus.find((menu) => menu.menu_id === obj.key);
 
@@ -29,9 +32,7 @@ export default function AsignMenusDialog(props) {
                 let algunosHijosSeleccionados = false;
 
                 for (const hijo of obj.children) {
-                    // Pasar currentSelectedNodes por referencia (ya que es un objeto)
                     const hijoValores = calcularValores(hijo, assignedMenus, currentSelectedNodes);
-
                     if (!hijoValores) {
                         todosHijosSeleccionados = false;
                         algunosHijosSeleccionados = true;
@@ -48,416 +49,270 @@ export default function AsignMenusDialog(props) {
             } else {
                 currentSelectedNodes[obj.key] = { checked: true, partialChecked: false, label: menuInfo.menu_nombre, toList: true };
             }
-
-            if (currentSelectedNodes[obj.key] && currentSelectedNodes[obj.key].checked === false && currentSelectedNodes[obj.key].partialChecked === false) {
-                delete currentSelectedNodes[obj.key];
-                return false; // Indica que el nodo no está seleccionado (ni parcial ni completamente)
+            return currentSelectedNodes[obj.key] || false;
+        } else if (obj.children && obj.children.length > 0) {
+            let algunoSeleccionado = false;
+            for (const hijo of obj.children) {
+                const hijoValores = calcularValores(hijo, assignedMenus, currentSelectedNodes);
+                if (hijoValores && (hijoValores.checked || hijoValores.partialChecked)) algunoSeleccionado = true;
             }
-            return currentSelectedNodes[obj.key]; // Devuelve el estado del nodo actual
-        } else {
-            // El objeto no se encuentra en dataMenusAssigned.
-            // Si tiene hijos, necesitamos revisar si *alguno* de los hijos está seleccionado.
-            if (obj.children && obj.children.length > 0) {
-                let algunoSeleccionado = false;
-                for (const hijo of obj.children) {
-                    const hijoValores = calcularValores(hijo, assignedMenus, currentSelectedNodes);
-                    if (hijoValores && (hijoValores.checked || hijoValores.partialChecked)) {
-                        algunoSeleccionado = true;
-                    }
-                }
-
-                if (algunoSeleccionado) {
-                    // Si al menos un hijo está seleccionado, este nodo padre debe ser PartialChecked
-                    currentSelectedNodes[obj.key] = { checked: false, partialChecked: true, label: obj.label };
-                    return currentSelectedNodes[obj.key];
-                }
+            if (algunoSeleccionado) {
+                currentSelectedNodes[obj.key] = { checked: false, partialChecked: true, label: obj.label };
+                return currentSelectedNodes[obj.key];
             }
-            return false; // No seleccionado
         }
+        return false;
     }
-
 
     const fetchAndSetupData = async () => {
         try {
-            // Obtener los datos de dataMenus y dataMenusAssigned
-            const menusResponse = await fetch(route("menus-tree"));
-            const dataMenus = await menusResponse.json();
+            const [menusRes, assignedRes] = await Promise.all([
+                fetch(route("menus-tree")),
+                fetch(route("rolesxmenu.show", rol.roles_id))
+            ]);
+
+            const dataMenus = await menusRes.json();
+            const dataMenusAssigned = await assignedRes.json();
+
             setAllMenus(dataMenus);
+            setAssignedMenus(dataMenusAssigned);
 
-            const menusAssignedResponse = await fetch(route("rolesxmenu.show", props.rol.roles_id));
-            const dataMenusAssigned = await menusAssignedResponse.json();
-            setAssignedMenus(dataMenusAssigned)
-
-            // 1. Crear la variable local para las claves seleccionadas
             let initialSelectedNodesLocal = {};
+            dataMenus.forEach((obj) => calcularValores(obj, dataMenusAssigned, initialSelectedNodesLocal));
 
-            // 2. Iterar sobre los menus y calcular los valores de checked y partialChecked
-            dataMenus.forEach((obj) => {
-                // Modificamos calcularValores para que use la variable local
-                calcularValores(obj, dataMenusAssigned, initialSelectedNodesLocal);
-            });
-
-            // 3. Establecer el estado con la variable local
             setSelectedKeys(initialSelectedNodesLocal);
-
-            // 4. Abrir el diálogo
             setOpenDialog(true);
-
         } catch (error) {
             console.error("Error fetching menu data:", error);
-            // Manejar error
+            toast.error("Error al cargar la estructura de menús");
         }
     };
 
-    // El resto del componente...
+    const handleOnChangeCheck = (e) => {
+        const keys = Object.keys(e);
+        const mainList = {};
+
+        function addMenuName(obj) {
+            const isPresent = keys.find((key) => parseInt(key) === obj.key);
+            if (isPresent) {
+                if (obj.children && obj.children.length > 0) {
+                    let todosHijos = true;
+                    let algunosHijos = false;
+                    obj.children.forEach(h => {
+                        const val = addMenuName(h);
+                        if (!val) { todosHijos = false; algunosHijos = true; }
+                    });
+                    mainList[obj.key] = { checked: todosHijos, partialChecked: !todosHijos && algunosHijos, label: obj.label };
+                } else {
+                    mainList[obj.key] = { checked: true, partialChecked: false, label: obj.label, toList: true };
+                }
+            } else if (obj.children) {
+                let alguno = false;
+                obj.children.forEach(h => { if (addMenuName(h)) alguno = true; });
+                if (alguno) return true;
+            }
+            return mainList[obj.key];
+        }
+
+        allMenus.forEach(addMenuName);
+        setSelectedKeys(mainList);
+    };
 
     const saveUserMenus = async () => {
         const menus = Object.keys(selectedKeys);
 
-        // El resto de la lógica de guardado, incluyendo el diálogo de confirmación, 
-        // parece manejar bien el estado `state.confirmSave` y la variable `selectedKeys`.
-        // Mantenemos la lógica de la llamada a la API y la notificación.
+        // --- LOGICA DE PERMISOS CORREGIDA (Cualquiera de los dos + permiso) ---
+        // if ((order?.Estatus === "ACTIVO" || order?.Estatus === "PROGRAMADO") && permiso) { ... }
 
         if (!state.showConfirmDialog && !state.confirmSave) {
-            // ... (Lógica de verificación de cambios y mostrar diálogo de confirmación)
-            const originalMenus = assignedMenus.map(menu => menu.menu_id.toString())
-            const hasNewMenus = originalMenus.length !== menus.length || menus.some(menu => !originalMenus.includes(menu)) || originalMenus.some(oMenu => !menus.includes(oMenu));
+            const originalMenus = assignedMenus.map(m => m.menu_id.toString());
+            const hasChanges = originalMenus.length !== menus.length || menus.some(m => !originalMenus.includes(m));
 
-            if (hasNewMenus) {
-                const usersInRole = await request(route('rolesxmenu.usersPerRole'), 'POST', { idRol: props.rol.roles_id }, { enabled: true });
-                if (usersInRole.usuarios.length !== 0) {
+            if (hasChanges) {
+                const usersInRole = await request(route('rolesxmenu.usersPerRole'), 'POST', { idRol: rol.roles_id });
+                if (usersInRole?.usuarios?.length > 0) {
                     return setState({ ...state, showConfirmDialog: true, usersList: usersInRole.usuarios });
                 }
             }
-
-            // Si no hay usuarios o no hay cambios que justifiquen el diálogo, se procede a guardar
-            try {
-                await request(route('rolesxmenu.update', props.rol.roles_id), 'PUT', {
-                    menus_ids: menus,
-                    menuInicio: state.mainMenuSelected,
-                    updateUsers: state.updateUsers,
-                    usersList: state.usersList
-                }, { enabled: true })
-                    .then(() => {
-                        // Limpieza del estado después de guardar
-                        // No necesitamos `initialSelectedNodes = {}` porque ya no es global.
-                        setState({ ...state, showConfirmDialog: false, confirmSave: false, updateUsers: false, usersList: [] });
-                        setOpenDialog(false);
-                        props.assignMenuHandler(false);
-                        // noty('Datos guardados.', 'success');
-                    })
-                    toast.success("Guardado con éxito.");
-            } catch (error) {
-                console.error("Error al guardar:", error);
-                toast.error("Ocurrió un error al guardar los datos.");
-                // noty('Ocurrió un error al guardar los datos.', 'error')
-            }
-        } else if (state.confirmSave) {
-            // Lógica de guardado después de la confirmación
-            try {
-                await request(route('rolesxmenu.update', props.rol.roles_id), 'PUT', {
-                    menus_ids: menus,
-                    menuInicio: state.mainMenuSelected,
-                    updateUsers: state.updateUsers,
-                    usersList: state.usersList
-                }, { enabled: true })
-                    .then(() => {
-                        // Limpieza del estado después de guardar
-                        // No necesitamos `initialSelectedNodes = {}` porque ya no es global.
-                        setState({ ...state, showConfirmDialog: false, confirmSave: false, updateUsers: false, usersList: [] });
-                        setOpenDialog(false);
-                        props.assignMenuHandler(false);
-                        // noty('Datos guardados.', 'success');
-                    })
-                    toast.success("Guardado con éxito.");
-            } catch (error) {
-                console.error("Error al guardar después de confirmar:", error);
-                toast.error("Ocurrió un error al guardar los datos.");
-                // noty('Ocurrió un error al guardar los datos.', 'error')
-            }
-        }
-    };
-
-    // Función de `handleOnChangeCheck` (para cuando el usuario cambia la selección)
-    const handleOnChangeCheck = (e) => {
-        const keys = Object.keys(e);
-        const mainList = {}
-        function addMenuName(obj) {
-            const menuInfo = keys.find((key) => parseInt(key) === obj.key);
-
-            if (menuInfo) {
-                if (obj.children && obj.children.length > 0) {
-                    let todosHijosSeleccionados = true;
-                    let algunosHijosSeleccionados = false;
-
-                    for (const hijo of obj.children) {
-                        const hijoValores = addMenuName(hijo);
-                        if (!hijoValores) {
-                            todosHijosSeleccionados = false;
-                            algunosHijosSeleccionados = true;
-                        }
-                    }
-
-                    if (!(todosHijosSeleccionados === false && algunosHijosSeleccionados === false)) {
-                        if (todosHijosSeleccionados) {
-                            mainList[obj.key] = { checked: true, partialChecked: false, label: obj.label };
-                        } else if (algunosHijosSeleccionados) {
-                            mainList[obj.key] = { checked: false, partialChecked: true, label: obj.label };
-                        }
-                    }
-                } else {
-                    mainList[obj.key] = { checked: true, partialChecked: false, label: obj.label, toList: true };
-                }
-
-                if (mainList[obj.key] && mainList[obj.key].checked === false && mainList[obj.key].partialChecked === false) {
-                    delete mainList[obj.key];
-                    return false;
-                }
-            } else {
-                // Si el padre no está seleccionado en `e`, no se agrega a `mainList` a menos que un hijo sí lo esté.
-                // En la biblioteca PrimeReact, el nodo padre se agrega a las `selectionKeys` si está *parcialmente* seleccionado,
-                // lo que se calcula implícitamente por la lógica de `Tree`. 
-                // La lógica actual de `addMenuName` está bien para re-calcular el `mainList` de los menús *hoja* y el estado del padre.
-                if (obj.children && obj.children.length > 0) {
-                    let algunoSeleccionado = false;
-                    for (const hijo of obj.children) {
-                        const hijoValores = addMenuName(hijo); // Llama recursivamente
-                        if (hijoValores) algunoSeleccionado = true;
-                    }
-                    if (algunoSeleccionado) {
-                        // Si un hijo está seleccionado, y el padre no está en `keys` (la selección de PrimeReact), 
-                        // PrimeReact ya maneja el estado parcial. Aquí simplemente aseguramos que el padre sea
-                        // considerado en el cálculo general de los menús. Para este caso, solo nos interesa
-                        // si es un nodo hoja (toList: true). El cálculo anterior lo hace bien.
-                        // Solo devolveremos `algunoSeleccionado` para que el padre superior sepa que tiene hijos seleccionados.
-                        return true;
-                    }
-                }
-                return false;
-            }
-            return mainList[obj.key]
         }
 
-        allMenus.forEach((obj) => {
-            addMenuName(obj)
-        })
-        setSelectedKeys(mainList)
-    };
-
-
-    const getMainMenuList = () => {
-        let auxArr = []
-        if (!selectedKeys) return; // Evitar error si selectedKeys es null
-
-        const selectedEntries = Object.entries(selectedKeys)
-        selectedEntries.forEach((item) => {
-            // Solo se agregan a la lista de "Menú de Inicio" los menús hoja (toList: true)
-            if (item[1].toList) auxArr.push({ key: parseInt(item[0]), label: item[1].label })
-        })
-
-        // Se preserva el menú seleccionado si existe en la nueva lista de menús disponibles
-        const newMainMenuSelected = auxArr.some(menu => menu.key === state.mainMenuSelected) ? state.mainMenuSelected : (auxArr.length > 0 ? auxArr[0].key : null);
-
-        setState({ ...state, mainMenuList: auxArr, mainMenuSelected: newMainMenuSelected })
-    }
-
-    // Se mantiene
-    useEffect(() => {
-        if (selectedKeys) getMainMenuList()
-    }, [selectedKeys])
-
-    // Se mantiene
-    useEffect(() => {
-        if (state.confirmSave) saveUserMenus()
-    }, [state.confirmSave])
-
-    // Se modificó para usar la nueva función asíncrona y local
-    useEffect(() => {
-        if (props.assignMenu === true) {
-            fetchAndSetupData();
-        } else {
-            // Limpiar estado cuando se cierra
+        try {
+            await request(route('rolesxmenu.update', rol.roles_id), 'PUT', {
+                menus_ids: menus,
+                menuInicio: state.mainMenuSelected,
+                updateUsers: state.updateUsers,
+                usersList: state.usersList
+            });
+            toast.success("¡Configuración guardada con éxito!");
+            setState(initialState);
             setOpenDialog(false);
-            setState({ ...state, showConfirmDialog: false, confirmSave: false, updateUsers: false, usersList: [], mainMenuSelected: null });
-            setSelectedKeys(null);
-            setAllMenus(null);
-            setAssignedMenus(null);
+            assignMenuHandler(false);
+        } catch (error) {
+            toast.error("Error al procesar la solicitud");
         }
-    }, [props.assignMenu]);
+    };
+
+    useEffect(() => {
+        if (assignMenu) fetchAndSetupData();
+        else {
+            setOpenDialog(false);
+            setSelectedKeys(null);
+        }
+    }, [assignMenu]);
+
+    useEffect(() => {
+        if (state.confirmSave) saveUserMenus();
+    }, [state.confirmSave]);
 
     return (
         <Transition appear show={openDialog} as={Fragment}>
-            {/* Cambié la función onClose para limpiar el estado del diálogo de confirmación también */}
-            <Dialog as="div" className="relative z-10 " onClose={() => {
-                setOpenDialog(false);
-                props.assignMenuHandler(false);
-            }}>
-                <TransitionChild
-                    as={Fragment}
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                >
-                    <div className="fixed inset-0 bg-black bg-opacity-25" />
+            <Dialog as="div" className="relative z-[100]" onClose={() => assignMenuHandler(false)}>
+                <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" />
                 </TransitionChild>
 
                 <div className="fixed inset-0 overflow-y-auto">
-                    <div className="flex min-h-full  items-center justify-center p-4 text-center">
-                        {/* <TransitionChild
-                            as={Fragment}
-                            enter="ease-out duration-300"
-                            enterFrom="opacity-0 scale-95"
-                            enterTo="opacity-100 scale-100"
-                            leave="ease-in duration-200"
-                            leaveFrom="opacity-100 scale-100"
-                            leaveTo="opacity-0 scale-95"
-                        > */}
-                        <DialogPanel className="w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                            <DialogTitle as="h3" className="text-lg font-medium leading-6 text-gray-900 bg-white">
-                                Asignar menus al rol: **{props.rol.roles_descripcion}**
-                            </DialogTitle>
+                    <div className="flex min-h-full items-center justify-center p-4">
+                        <DialogPanel className="w-full max-w-xl transform overflow-hidden rounded-[2.5rem] bg-white p-8 shadow-2xl transition-all border-b-[10px] border-[#1B2654]">
 
-                            <div className=" mt-4 flex flex-col justify-content-center gap-4 blue-scroll">
-                                {/* <SelectComp
-                                    data={"label"}
-                                    value={state.mainMenuSelected || ''}
-                                    onChangeFunc={(e) => setState({ ...state, mainMenuSelected: e })}
-                                    valueKey={"key"}
-                                    options={state.mainMenuList}
-                                    // disabled={state.mainMenuList.length === 0}
-                                    virtual={true}
-                                    label={'Selecciona el menu de inicio para este rol'}
-                                /> */}
-                                {/* Componente Tree de PrimeReact */}
-                                <Tree
-                                    value={allMenus}
-                                    selectionMode="checkbox"
-                                    selectionKeys={selectedKeys}
-                                    filter
-                                    filterMode="lenient"
-                                    filterPlaceholder="Buscar"
-                                    pt={{
-                                        // 1. Contenedor principal de los nodos (p-tree-container)
-                                        container: {
-                                            style: { backgroundColor: 'white !important' }
-                                        },
-
-                                        // 2. Cada nodo de la lista (p-treenode)
-                                        node: ({ context }) => ({
-                                            className: context.parent && context.parent.level === 0 ? 'p-0' : '',
-                                            style: {
-                                                paddingLeft: '0',
-                                                margin: '0',
-                                                width: '100%',
-                                                backgroundColor: 'white !important' // FORZANDO el color blanco
-                                            }
-                                        }),
-
-                                        // 3. Contenedor raíz (p-tree)
-                                        root: {
-                                            className: 'w-full p-0',
-                                            style: {
-                                                backgroundColor: 'white !important' // FORZANDO el color blanco
-                                            }
-                                        },
-
-                                        // 4. Contenido del nodo (p-treenode-content) - como respaldo
-                                        content: {
-                                            style: {
-                                                backgroundColor: 'white !important'
-                                            }
-                                        },
-                                    }}
-                                    onSelectionChange={(e) => {
-                                        handleOnChangeCheck(e.value)
-                                    }}
-                                />
-                                {/* Diálogo de Confirmación (Headless UI) */}
-                                <Transition appear show={state.showConfirmDialog} as={Fragment}>
-                                        <Dialog as="div" className="relative z-20 w-full" onClose={() => setState({ ...state, showConfirmDialog: false, confirmSave: false, updateUsers: false, usersList: [] })}>
-                                           
-
-                                            <div className="fixed inset-0 overflow-y-auto">
-                                                <div className="flex min-h-full items-center justify-center p-4 text-center">
-                                                    <TransitionChild
-                                                        as={Fragment}
-                                                        enter="ease-out duration-300"
-                                                        enterFrom="opacity-0 scale-95"
-                                                        enterTo="opacity-100 scale-100"
-                                                        leave="ease-in duration-200"
-                                                        leaveFrom="opacity-100 scale-100"
-                                                        leaveTo="opacity-0 scale-95"
-                                                    >
-                                                        <DialogPanel className="w-full max-w-sm transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                                                            <DialogTitle as="h3" className="text-lg font-medium leading-6 text-gray-900 bg-white">
-                                                                Advertencia
-                                                            </DialogTitle>
-                                                            <div className='flex justify-center'>
-                                                                <hr className='w-[95%] border-gray-300' />
-                                                            </div>
-                                                            <div className="mt-2">
-                                                                <p className="text-sm text-gray-500">
-                                                                    Existen usuarios con este rol, ¿Deseas cambiar sus menús por los nuevos?
-                                                                </p>
-                                                            </div>
-                                                            <div className="mt-4 flex justify-end space-x-2">
-                                                                <button
-                                                                    type="button"
-                                                                    className="inline-flex justify-center rounded-md border border-transparent bg-red-100 px-4 py-2 text-sm font-medium text-red-900 hover:bg-red-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-                                                                    onClick={() => setState({ ...state, showConfirmDialog: false, confirmSave: false, updateUsers: false, usersList: [] })}
-                                                                >
-                                                                    Cancelar
-                                                                </button>
-                                                                <button
-                                                                    type="submit"
-                                                                    className="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                                                                    onClick={() => setState({ ...state, confirmSave: true })}
-                                                                >
-                                                                    Solo guardar
-                                                                </button>
-                                                                <button
-                                                                    type="submit"
-                                                                    className="inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                                                                    onClick={() => setState({ ...state, confirmSave: true, updateUsers: true })}
-                                                                >
-                                                                    Guardar y cambiar
-                                                                </button>
-                                                            </div>
-                                                        </DialogPanel>
-                                                    </TransitionChild>
-                                                </div>
-                                            </div>
-                                        </Dialog>
-                                    </Transition>
+                            {/* Header Estilo Rhino */}
+                            <div className="mb-6 flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm">
+                                <div className="w-12 h-12 rounded-xl bg-[#1B2654] flex items-center justify-center text-white shadow-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                                    </svg>
+                                </div>
+                                <div className="flex-1">
+                                    <DialogTitle as="h3" className="text-xl font-black text-[#1B2654] uppercase italic leading-tight">
+                                        Gestión de Accesos
+                                    </DialogTitle>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                        Rol: <span className="text-sky-600">{rol.roles_descripcion}</span>
+                                    </p>
+                                </div>
                             </div>
 
-                            <div className="mt-6 flex justify-end space-x-2">
-                                <button
-                                    type="button"
-                                    className="inline-flex justify-center rounded-md border border-transparent bg-red-100 px-4 py-2 text-sm font-medium text-red-900 hover:bg-red-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-                                    onClick={() => {
-                                        setOpenDialog(false);
-                                        props.assignMenuHandler(false);
-                                    }}
-                                >
-                                    Cancelar
+                            <div className="space-y-6">
+                                {/* Selector de Inicio */}
+                                {/* <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-inner">
+                                    <SelectComp
+                                        value={state.mainMenuSelected || ''}
+                                        onChangeFunc={(e) => setState({ ...state, mainMenuSelected: e })}
+                                        options={Object.entries(selectedKeys || {}).filter(i => i[1].toList).map(i => ({ key: parseInt(i[0]), label: i[1].label }))}
+                                        label={'Módulo de Inicio Predeterminado'}
+                                        valueKey={"key"}
+                                        data={"label"}
+                                    />
+                                </div> */}
+
+                                {/* Árbol de Menús Modificado */}
+                                <div className="max-h-[350px] overflow-y-auto pr-2 custom-scroll">
+                                    {/* <Tree
+                                        value={allMenus}
+                                        selectionMode="checkbox"
+                                        selectionKeys={selectedKeys}
+                                        onSelectionChange={(e) => handleOnChangeCheck(e.value)}
+                                        filter
+                                        filterPlaceholder="Filtrar módulos..."
+                                        className="w-full border-none p-0 bg-white"
+                                        pt={{
+                                            root: { className: 'bg-white p-0' },
+                                            node: { className: 'outline-none' },
+                                            content: ({ context }) => ({
+                                                className: `flex items-center p-2 rounded-xl transition-all ${context.selected ? 'bg-slate-50' : 'hover:bg-slate-50/50'}`
+                                            }),
+                                            toggler: { className: 'w-6 h-6 text-slate-400 mr-1 flex items-center justify-center bg-transparent border-none' },
+                                            // CHECKBOX FIX: SVG Inyectado
+                                            checkbox: ({ context }) => ({
+                                                className: `w-5 h-5 flex items-center justify-center border-2 rounded-md transition-all mr-3 
+                                                    ${context.checked ? 'bg-[#1B2654] border-[#1B2654]' : 'bg-white border-slate-300'} 
+                                                    ${context.partialChecked ? 'bg-sky-500 border-sky-500' : ''}`
+                                            }),
+                                            checkboxIcon: ({ context }) => ({
+                                                className: `text-white w-3 h-3 transition-opacity ${context.checked || context.partialChecked ? 'opacity-100' : 'opacity-0'}`,
+                                                children: context.partialChecked ? (
+                                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path d="M5 12h14" /></svg>
+                                                ) : (
+                                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path d="M5 13l4 4L19 7" /></svg>
+                                                )
+                                            }),
+                                            label: { className: 'text-[11px] font-black text-slate-700 uppercase p-0 select-none tracking-tight' }
+                                        }}
+                                    /> */}
+
+                                    <Tree
+                                        value={allMenus}
+                                        selectionMode="checkbox"
+                                        selectionKeys={selectedKeys}
+                                        onSelectionChange={(e) => handleOnChangeCheck(e.value)}
+                                        filter
+                                        filterPlaceholder="Filtrar módulos..."
+                                        className="w-full border-none p-0 bg-white"
+                                        pt={{
+                                            root: { className: 'bg-white p-0' },
+                                            node: { className: 'outline-none' },
+                                            content: ({ context }) => ({
+                                                className: `flex items-center p-2 rounded-xl transition-all ${context.selected ? 'bg-slate-50' : 'hover:bg-slate-50/50'}`
+                                            }),
+                                            toggler: { className: 'w-6 h-6 text-slate-400 mr-1 flex items-center justify-center bg-transparent border-none' },
+                                            checkbox: ({ context }) => ({
+                                                className: `w-5 h-5 flex items-center justify-center border-2 rounded-md transition-all mr-1 
+                ${context.checked ? 'bg-[#1B2654] border-[#1B2654]' : 'bg-white border-slate-300'} 
+                ${context.partialChecked ? 'bg-sky-500 border-sky-500' : ''}`
+                                            }),
+                                            checkboxIcon: ({ context }) => ({
+                                                className: `text-white w-3 h-3 transition-opacity ${context.checked || context.partialChecked ? 'opacity-100' : 'opacity-0'}`,
+                                                children: context.partialChecked ? (
+                                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path d="M5 12h14" /></svg>
+                                                ) : (
+                                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path d="M5 13l4 4L19 7" /></svg>
+                                                )
+                                            }),
+                                            // AQUÍ ESTÁ EL CAMBIO: añadimos pl-3 para dar aire
+                                            label: { className: 'text-[11px] font-black text-slate-700 uppercase p-0 pl-3 select-none tracking-tight' }
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Footer de Botones */}
+                            <div className="mt-8 flex gap-3">
+                                <button onClick={() => assignMenuHandler(false)} className="flex-1 py-3 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600">
+                                    Descartar
                                 </button>
-                                <button
-                                    type="submit"
-                                    className="inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                                    onClick={saveUserMenus}
-                                >
-                                    Guardar cambios
+                                <button onClick={saveUserMenus} className="flex-[2] py-4 bg-[#1B2654] text-white rounded-2xl font-black text-[10px] uppercase shadow-lg hover:scale-[1.02] active:scale-95 transition-all">
+                                    Aplicar Cambios
                                 </button>
                             </div>
+
                         </DialogPanel>
-                        {/* </TransitionChild> */}
                     </div>
                 </div>
             </Dialog>
+
+            {/* Modal de Advertencia Usuarios */}
+            <Transition show={state.showConfirmDialog} as={Fragment}>
+                <Dialog className="relative z-[110]" onClose={() => setState({ ...state, showConfirmDialog: false })}>
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+                        <DialogPanel className="w-full max-w-sm bg-white rounded-[2.5rem] p-8 shadow-2xl text-center border-b-8 border-amber-500">
+                            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-8 h-8">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                                </svg>
+                            </div>
+                            <DialogTitle className="text-lg font-black text-slate-800 uppercase italic mb-2">¡Usuarios Detectados!</DialogTitle>
+                            <p className="text-[11px] font-bold text-slate-500 mb-6 leading-relaxed">
+                                Hay usuarios con este rol activo. ¿Quieres forzar la actualización de sus menús en esta sesión?
+                            </p>
+                            <div className="flex flex-col gap-2">
+                                <button onClick={() => setState({ ...state, confirmSave: true, updateUsers: true })} className="py-3 bg-[#1B2654] text-white rounded-xl font-black text-[10px] uppercase">Sí, actualizar todos</button>
+                                <button onClick={() => setState({ ...state, confirmSave: true })} className="py-3 bg-slate-100 text-slate-600 rounded-xl font-black text-[10px] uppercase">No, solo el rol</button>
+                                <button onClick={() => setState({ ...state, showConfirmDialog: false })} className="py-3 text-[10px] font-black uppercase text-slate-400">Cancelar</button>
+                            </div>
+                        </DialogPanel>
+                    </div>
+                </Dialog>
+            </Transition>
         </Transition>
     );
 }

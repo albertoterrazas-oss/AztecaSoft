@@ -1,291 +1,246 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Fragment, memo } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { toast } from 'sonner';
+import { 
+    Camera, X, User, MapPin, Fingerprint, UserPlus, Pencil, Save, Hash, Home
+} from "lucide-react";
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
 
-const route = (name, params = {}) => {
-    const id = params.IdPersona;
-    const routeMap = {
-        "personas.index": "/api/personas",
-        "personas.store": "/api/personas",
-        "personas.update": `/api/personas/${id}`,
-        "estados.index": "/api/estados",
-        "municipios.index": "/api/municipios",
-        "colonias.index": "/api/colonias", // Este ahora aceptará ?IdMunicipio=...
-        "puestos.index": "/api/puestos",
-    };
-    return routeMap[name] || `/${name}`;
-};
-
-const initialPersonaData = {
-    IdPersona: null, IdEstado: "", IdMunicipio: "", IdColonia: "", IdPuesto: "",
-    Nombres: "", ApePat: "", ApeMat: "", Calle: "", CasaNum: "", Telefono: "",
-    FechaNacimiento: "", FechaIngreso: "", Sexo: "M", NSS: "", RFC: "",
-    Curp: "", CodigoPostal: "", SalarioReal: 0, Estatus: true, EsEmpleado: true,
-    PathFotoEmpleado: ""
-};
-
-// --- COMPONENTES AUXILIARES ---
-
-const Field = ({ label, name, value, onChange, type = "text", error, readOnly = false }) => (
-    <div>
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
-        <input type={type} name={name} value={value || ""} onChange={onChange} readOnly={readOnly}
-            className={`w-full mt-1 border rounded p-2 text-sm transition-all ${error ? 'border-red-500 bg-red-50' : 'border-gray-300'} ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`} />
-        {error && <p className="text-red-500 text-[10px] mt-1 font-bold italic">{error[0]}</p>}
-    </div>
-);
-
-const Select = ({ label, name, value, options, onChange, displayKey, valueKey, disabled = false, isLoading = false }) => (
-    <div>
-        <label className="block text-sm font-medium text-gray-700">
-            {isLoading ? "Cargando..." : label}
+// --- COMPONENTES ATÓMICOS RHINO ---
+const RhinoInput = memo(({ label, icon: Icon, error, ...props }) => (
+    <div className="space-y-1">
+        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4 flex items-center gap-2">
+            {Icon && <Icon size={12} className="text-[#1B2654]" />}
+            {label}
         </label>
-        <select name={name} value={value} onChange={onChange} disabled={disabled || isLoading} 
-            className="w-full border border-gray-300 rounded p-2 text-sm mt-1 disabled:bg-gray-100">
-            <option value="">{isLoading ? "Cargando opciones..." : "Seleccione..."}</option>
-            {options.map(o => <option key={o[valueKey]} value={o[valueKey]}>{o[displayKey]}</option>)}
+        <input
+            {...props}
+            className={`w-full px-6 py-4 rounded-2xl bg-slate-100 border-2 transition-all font-bold text-slate-700 outline-none text-sm 
+            ${error ? 'border-red-500 bg-red-50' : 'border-transparent focus:border-[#1B2654] focus:bg-white'}`}
+        />
+        {error && <p className="text-red-500 text-[9px] font-black uppercase mt-1 ml-4">{error[0] || error}</p>}
+    </div>
+));
+
+const RhinoSelect = memo(({ label, icon: Icon, options, displayKey, valueKey, ...props }) => (
+    <div className="space-y-1">
+        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4 flex items-center gap-2">
+            {Icon && <Icon size={12} className="text-[#1B2654]" />}
+            {label}
+        </label>
+        <select
+            {...props}
+            className="w-full px-6 py-4 rounded-2xl bg-slate-100 border-2 border-transparent transition-all font-bold text-slate-700 outline-none text-sm focus:border-[#1B2654] focus:bg-white appearance-none disabled:opacity-50"
+        >
+            <option value="">SELECCIONAR...</option>
+            {options?.map(o => (
+                <option key={o[valueKey]} value={o[valueKey]}>{o[displayKey]}</option>
+            ))}
         </select>
     </div>
-);
+));
 
-// --- MODAL FORMULARIO ---
-
-function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, estados, municipios, puestos }) {
-    const [formData, setFormData] = useState(initialPersonaData);
-    const [colonias, setColonias] = useState([]); // Estado local para colonias filtradas
+// --- MODAL FORMULARIO PERSONAS (SIN COLONIAS API) ---
+function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, estados, municipios }) {
+    const [formData, setFormData] = useState({});
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
-    const [loadingCols, setLoadingCols] = useState(false);
     const fileInputRef = useRef(null);
 
-    // Resetear form al abrir
     useEffect(() => {
         if (isOpen) {
-            setFormData(dataToEdit?.IdPersona ? { ...dataToEdit } : initialPersonaData);
+            setFormData(dataToEdit?.IdPersona ? { ...dataToEdit } : {
+                IdPersona: null, IdEstado: "", IdMunicipio: "", Colonia: "",
+                Nombres: "", ApePat: "", ApeMat: "", Calle: "", CasaNum: "", 
+                Sexo: "M", RFC: "", Curp: "", CodigoPostal: "", PathFotoEmpleado: ""
+            });
             setErrors({});
-            setColonias([]);
         }
     }, [isOpen, dataToEdit]);
 
-    // EFECTO CLAVE: Cargar colonias cuando cambie el municipio
-    useEffect(() => {
-        const fetchColoniasPorMunicipio = async () => {
-            if (!formData.IdMunicipio) {
-                setColonias([]);
-                return;
-            }
-            setLoadingCols(true);
-            try {
-                // Se asume que tu API filtra por IdMunicipio
-                const res = await fetch(`${route("colonias.index")}?IdMunicipio=${formData.IdMunicipio}`);
-                const json = await res.json();
-                setColonias(json.data || json);
-            } catch (e) {
-                toast.error("Error al cargar colonias de este municipio");
-            } finally {
-                setLoadingCols(false);
-            }
-        };
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        const upperVal = value.toUpperCase();
 
-        fetchColoniasPorMunicipio();
-    }, [formData.IdMunicipio]);
+        setFormData(prev => ({ 
+            ...prev, 
+            [name]: upperVal,
+            // Si cambia estado, limpiamos municipio por lógica
+            ...(name === 'IdEstado' ? { IdMunicipio: "" } : {})
+        }));
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => setFormData(prev => ({ ...prev, PathFotoEmpleado: reader.result }));
-            reader.readAsDataURL(file);
+        if (errors[name]) {
+            setErrors(prev => {
+                const n = {...prev};
+                delete n[name];
+                return n;
+            });
         }
     };
 
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        const val = type === 'checkbox' ? checked : value;
-        
-        setFormData(prev => {
-            const newData = { ...prev, [name]: val };
-            
-            // Lógica de cascada
-            if (name === 'IdEstado') {
-                newData.IdMunicipio = "";
-                newData.IdColonia = "";
-                newData.CodigoPostal = "";
-            }
-            if (name === 'IdMunicipio') {
-                newData.IdColonia = "";
-                newData.CodigoPostal = "";
-            }
-            if (name === 'IdColonia') {
-                const col = colonias.find(c => String(c.Colonia_Id) === String(value));
-                newData.CodigoPostal = col ? col.c_CodigoPostal : "";
-            }
-            return newData;
-        });
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        try { await onSubmit(formData); }
-        catch (err) { setErrors(err.response?.data?.errors || {}); toast.error("Error de validación."); }
-        finally { setLoading(false); }
-    };
-
     return (
-        <Transition show={isOpen}>
-            <Dialog onClose={closeModal} className="relative z-50">
-                <TransitionChild enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
-                    <div className="fixed inset-0 bg-black/30" />
+        <Transition show={isOpen} as={Fragment}>
+            <Dialog onClose={loading ? () => {} : closeModal} className="relative z-[200]">
+                <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md" />
                 </TransitionChild>
-                <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <DialogPanel className="w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-8 shadow-2xl relative">
-                        {loading && <LoadingDiv />}
-                        <DialogTitle className="text-2xl font-bold mb-6 border-b pb-2 text-indigo-900 flex justify-between items-center">
-                            {action === 'create' ? 'Nueva Persona' : 'Editar Persona'}
-                        </DialogTitle>
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* FOTO */}
-                            <div className="flex flex-col items-center bg-indigo-50 p-6 rounded-xl border-2 border-dashed border-indigo-200">
-                                <div className="relative group">
-                                    <div className="w-32 h-32 rounded-full overflow-hidden bg-white border-4 border-white shadow-xl flex items-center justify-center">
-                                        {formData.PathFotoEmpleado ? (
-                                            <img src={formData.PathFotoEmpleado} className="w-full h-full object-cover" alt="Perfil" />
-                                        ) : (
-                                            <div className="text-gray-300 text-xs font-black uppercase text-center">Sin Foto</div>
-                                        )}
+                <div className="fixed inset-0 flex items-center justify-center p-4">
+                    <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95 translate-y-4" enterTo="opacity-100 scale-100 translate-y-0" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+                        <DialogPanel className="w-full max-w-4xl rounded-[3rem] bg-white p-10 shadow-2xl relative overflow-hidden border-b-[12px] border-[#1B2654]">
+                            
+                            <div className="flex flex-col items-center mb-8">
+                                <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center text-[#1B2654] mb-4 shadow-inner relative group border-2 border-white overflow-hidden">
+                                    {formData.PathFotoEmpleado ? (
+                                        <img src={formData.PathFotoEmpleado} className="w-full h-full object-cover" />
+                                    ) : <User size={40} className="opacity-20" />}
+                                    <button type="button" onClick={() => fileInputRef.current.click()} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                                        <Camera size={20} />
+                                    </button>
+                                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => setFormData(p => ({...p, PathFotoEmpleado: reader.result}));
+                                            reader.readAsDataURL(file);
+                                        }
+                                    }} />
+                                </div>
+                                <DialogTitle className="text-2xl font-black text-slate-800 uppercase tracking-tighter text-center italic leading-none">
+                                    Registro de <span className="text-[#1B2654]">Personal</span>
+                                </DialogTitle>
+                            </div>
+
+                            <form onSubmit={async (e) => {
+                                e.preventDefault();
+                                setLoading(true);
+                                try { await onSubmit(formData); }
+                                catch (err) { setErrors(err.response?.data?.errors || {}); }
+                                finally { setLoading(false); }
+                            }} className="space-y-6 overflow-y-auto max-h-[60vh] px-4 blue-scroll">
+                                
+                                {/* DATOS PERSONALES */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <RhinoInput label="Nombres" name="Nombres" value={formData.Nombres || ''} onChange={handleChange} error={errors.Nombres} icon={Fingerprint} />
+                                    <RhinoInput label="Paterno" name="ApePat" value={formData.ApePat || ''} onChange={handleChange} error={errors.ApePat} />
+                                    <RhinoInput label="Materno" name="ApeMat" value={formData.ApeMat || ''} onChange={handleChange} />
+                                    <RhinoInput label="RFC" name="RFC" value={formData.RFC || ''} onChange={handleChange} error={errors.RFC} />
+                                    <RhinoInput label="CURP" name="Curp" value={formData.Curp || ''} onChange={handleChange} error={errors.Curp} />
+                                    <RhinoSelect label="Género" name="Sexo" value={formData.Sexo || 'M'} onChange={handleChange} options={[{v:'M', d:'MASCULINO'}, {v:'F', d:'FEMENINO'}]} valueKey="v" displayKey="d" />
+                                </div>
+
+                                {/* UBICACIÓN MANUAL (SIN TRABAS) */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-6 rounded-[2.5rem] border-2 border-white shadow-inner">
+                                    <RhinoSelect label="Estado" name="IdEstado" value={formData.IdEstado || ''} onChange={handleChange} options={estados} valueKey="idEstado" displayKey="descripcionEstado" icon={MapPin} />
+                                    <RhinoSelect label="Municipio" name="IdMunicipio" value={formData.IdMunicipio || ''} onChange={handleChange} 
+                                        options={municipios.filter(m => String(m.idestado) === String(formData.IdEstado))} 
+                                        valueKey="idMunicipio" displayKey="descripcionMunicipio" disabled={!formData.IdEstado} />
+                                    
+                                    <RhinoInput label="Colonia" name="Colonia" value={formData.Colonia || ''} onChange={handleChange} icon={Home} placeholder="ESCRIBE LA COLONIA" />
+
+                                    <div className="md:col-span-2">
+                                        <RhinoInput label="Calle y Número" name="Calle" value={formData.Calle || ''} onChange={handleChange} />
                                     </div>
-                                    <button type="button" onClick={() => fileInputRef.current.click()} className="absolute bottom-1 right-1 bg-indigo-600 text-white p-2 rounded-full shadow-lg hover:bg-indigo-700">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
+                                    <RhinoInput label="C.P." name="CodigoPostal" value={formData.CodigoPostal || ''} onChange={handleChange} icon={Hash} maxLength={5} />
+                                </div>
+
+                                <div className="flex gap-4 pt-6 border-t border-slate-100">
+                                    <button type="button" onClick={closeModal} className="flex-1 py-4 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-red-600 transition-colors">
+                                        Cancelar
+                                    </button>
+                                    <button type="submit" disabled={loading} className="flex-[2] py-4 bg-[#1B2654] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-[#A61A18] transition-all disabled:bg-slate-300 flex items-center justify-center gap-2">
+                                        <Save size={16} />
+                                        {loading ? 'Procesando...' : 'Confirmar Registro'}
                                     </button>
                                 </div>
-                                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <h3 className="md:col-span-3 font-bold text-gray-400 uppercase text-xs">Datos Personales</h3>
-                                <Field label="Nombres" name="Nombres" value={formData.Nombres} onChange={handleChange} error={errors.Nombres} />
-                                <Field label="Apellido Paterno" name="ApePat" value={formData.ApePat} onChange={handleChange} error={errors.ApePat} />
-                                <Field label="Apellido Materno" name="ApeMat" value={formData.ApeMat} onChange={handleChange} error={errors.ApeMat} />
-                                <Field label="RFC" name="RFC" value={formData.RFC} onChange={handleChange} error={errors.RFC} />
-                                <Field label="CURP" name="Curp" value={formData.Curp} onChange={handleChange} error={errors.Curp} />
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Sexo</label>
-                                    <select name="Sexo" value={formData.Sexo} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm mt-1">
-                                        <option value="M">Masculino</option><option value="F">Femenino</option><option value="O">Otro</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg border">
-                                <h3 className="md:col-span-3 font-bold text-indigo-700 uppercase text-xs">Domicilio</h3>
-                                <Select label="Estado" name="IdEstado" value={formData.IdEstado} options={estados} onChange={handleChange} displayKey="descripcionEstado" valueKey="idEstado" />
-                                
-                                <Select label="Municipio" name="IdMunicipio" value={formData.IdMunicipio} 
-                                    options={municipios.filter(m => String(m.idestado) === String(formData.IdEstado))} 
-                                    onChange={handleChange} displayKey="descripcionMunicipio" valueKey="idMunicipio" 
-                                    disabled={!formData.IdEstado} />
-                                
-                                <Select label="Colonia" name="IdColonia" value={formData.IdColonia} 
-                                    options={colonias} // Usamos el estado local de colonias
-                                    onChange={handleChange} displayKey="Colonia_Nombre" valueKey="Colonia_Id" 
-                                    disabled={!formData.IdMunicipio} 
-                                    isLoading={loadingCols} />
-
-                                <Field label="Calle" name="Calle" value={formData.Calle} onChange={handleChange} />
-                                <Field label="Num. Exterior" name="CasaNum" value={formData.CasaNum} onChange={handleChange} />
-                                <Field label="CP" name="CodigoPostal" value={formData.CodigoPostal} readOnly />
-                            </div>
-
-                            <div className="flex justify-end gap-3 pt-6 border-t mt-4">
-                                <button type="button" onClick={closeModal} className="px-6 py-2 bg-gray-100 text-gray-700 rounded-md">Cancelar</button>
-                                <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-md font-bold shadow-md hover:bg-indigo-700">Guardar Cambios</button>
-                            </div>
-                        </form>
-                    </DialogPanel>
+                            </form>
+                        </DialogPanel>
+                    </TransitionChild>
                 </div>
             </Dialog>
         </Transition>
     );
 }
 
-// --- COMPONENTE PRINCIPAL ---
-
+// --- VISTA PRINCIPAL ---
 export default function Personas() {
     const [data, setData] = useState([]);
-    const [cats, setCats] = useState({ est: [], mun: [], pue: [] }); // Quitamos col de aquí
+    const [cats, setCats] = useState({ est: [], mun: [] });
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState({ open: false, action: 'create', item: null });
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Ya no cargamos colonias masivamente
-            const [resP, resE, resM, resPue] = await Promise.all([
-                fetch(route("personas.index")), 
-                fetch(route("estados.index")),
-                fetch(route("municipios.index")), 
-                fetch(route("puestos.index"))
+            const [p, e, m] = await Promise.all([
+                request("/api/personas"), request("/api/estados"), request("/api/municipios")
             ]);
-            
-            const [p, e, m, pue] = await Promise.all([resP.json(), resE.json(), resM.json(), resPue.json()]);
-            
-            setData(p.data || []);
-            setCats({ 
-                est: e, 
-                mun: m.data || m, 
-                pue: pue.data || pue 
-            });
-        } catch (e) { 
-            toast.error("Error al cargar datos principales."); 
-        } finally { 
-            setLoading(false); 
-        }
+            setData(p.data || p);
+            setCats({ est: e, mun: m.data || m });
+        } catch (e) { toast.error("Error al sincronizar datos"); }
+        finally { setLoading(false); }
     };
 
     useEffect(() => { fetchData(); }, []);
 
-    const handleSave = async (formData) => {
-        const isEdit = !!formData.IdPersona;
-        const url = isEdit ? route("personas.update", { IdPersona: formData.IdPersona }) : route("personas.store");
-        await request(url, isEdit ? "PUT" : "POST", formData);
-        toast.success("Operación exitosa");
-        fetchData();
-        setModal({ open: false });
-    };
-
     return (
-        <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
-            {loading ? (
-                <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>
-            ) : (
-                <Datatable data={data}
-                    virtual={true}
-                    add={() => setModal({ open: true, action: 'create', item: null })}
-                    columns={[
-                        { header: 'Nombre Completo', cell: (p) => <span className="font-bold text-gray-700">{`${p.item.Nombres} ${p.item.ApePat}`}</span> },
-                        { header: 'RFC', accessor: 'RFC' },
-                        {
-                            header: 'Acciones', cell: (p) => (
-                                <button onClick={() => setModal({ open: true, action: 'edit', item: p.item })} className="bg-indigo-500 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-bold">Editar</button>
-                            )
-                        }
-                    ]} />
-            )}
+        <div className="h-full bg-[#f8fafc] p-8 flex flex-col font-sans">
+            {/* <div className="mb-8 flex justify-between items-center bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
+                <div className="flex items-center gap-4">
+                    <div className="bg-[#1B2654] p-4 rounded-3xl shadow-lg shadow-blue-900/20">
+                        <User size={28} className="text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-black text-[#1B2654] uppercase tracking-tighter italic">Personal</h1>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Rhino Unit DB</p>
+                    </div>
+                </div>
+                <button onClick={() => setModal({ open: true, action: 'create', item: null })} className="bg-[#1B2654] text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-[#A61A18] transition-all shadow-xl flex items-center gap-3">
+                    <UserPlus size={20} />
+                    Nuevo Registro
+                </button>
+            </div> */}
 
-            <PersonaFormDialog 
-                isOpen={modal.open} 
-                closeModal={() => setModal({ open: false })} 
-                action={modal.action} 
-                dataToEdit={modal.item} 
-                onSubmit={handleSave} 
-                estados={cats.est} 
-                municipios={cats.mun} 
-                puestos={cats.pue} 
+            <div className="flex-1  overflow-hidden">
+                {loading ? <div className="h-full flex items-center justify-center"><LoadingDiv /></div> : (
+                    <Datatable 
+                        data={data}
+                        virtual={true}
+                        columns={[
+                            // { header: 'ID', accessor: 'IdPersona', cell: (p) => <span className="font-black text-slate-300">#{p.item.IdPersona}</span> },
+                            { header: 'Colaborador', cell: (p) => <span className="font-bold text-slate-700 uppercase tracking-tight">{`${p.item.Nombres} ${p.item.ApePat}`}</span> },
+                            { header: 'Identificación', cell: (p) => <span className="text-[11px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg font-mono">{p.item.RFC}</span> },
+                            {
+                                header: 'Acciones', 
+                                cell: (p) => (
+                                    <button onClick={() => setModal({ open: true, action: 'edit', item: p.item })} className="p-3 bg-slate-100 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-200">
+                                        <Pencil size={16} />
+                                    </button>
+                                )
+                            }
+                        ]} 
+                    />
+                )}
+            </div>
+
+            <PersonaFormDialog
+                isOpen={modal.open}
+                closeModal={() => setModal({ open: false })}
+                action={modal.action}
+                dataToEdit={modal.item}
+                onSubmit={async (val) => {
+                    const isEdit = !!val.IdPersona;
+                    const res = await request(isEdit ? `/api/personas/${val.IdPersona}` : "/api/personas", isEdit ? 'PUT' : 'POST', val);
+                    if(res) {
+                        toast.success("DATOS ACTUALIZADOS");
+                        fetchData();
+                        setModal({ open: false });
+                    }
+                }}
+                estados={[]}
+                municipios={[]}
             />
         </div>
     );

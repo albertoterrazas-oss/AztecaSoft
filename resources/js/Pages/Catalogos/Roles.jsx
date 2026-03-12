@@ -8,8 +8,9 @@ import LoadingDiv from "@/components/LoadingDiv";
 import Datatable from "@/components/Datatable";
 import { useEffect, useState } from "react";
 import { useForm } from "@inertiajs/react";
-import { Dialog, DialogPanel, DialogTitle, Transition } from '@headlessui/react';
+// import { Dialog, DialogPanel, DialogTitle, Transition } from '@headlessui/react';
 import { Width } from "devextreme-react/chart";
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 
 const rolesValidation = { roles_descripcion: ['required', 'max:150'] }
 // Datos de ejemplo para el estado inicial del formulario de Roles
@@ -43,11 +44,9 @@ const validateInputs = (validations, data) => {
 // Componente del Formulario de Rol (Modal de Headless UI)
 // Cambiado de UnitFormDialog a RoleFormDialog
 function RoleFormDialog({ isOpen, closeModal, onSubmit, roleToEdit, action, errors, setErrors }) {
-    // Cambiado de unitData a roleData
     const [roleData, setRoleData] = useState(initialRoleData);
     const [loading, setLoading] = useState(false);
 
-    // Sincroniza los datos al abrir el modal o cambiar el rol a editar
     useEffect(() => {
         if (isOpen) {
             const dataToLoad = action === 'edit' && roleToEdit
@@ -57,7 +56,7 @@ function RoleFormDialog({ isOpen, closeModal, onSubmit, roleToEdit, action, erro
                 }
                 : initialRoleData;
             setRoleData(dataToLoad);
-            setErrors({}); // Limpia errores al abrir
+            setErrors({});
         }
     }, [isOpen, roleToEdit, action, setErrors]);
 
@@ -65,13 +64,12 @@ function RoleFormDialog({ isOpen, closeModal, onSubmit, roleToEdit, action, erro
         const { name, value } = e.target;
         setRoleData(prevData => ({
             ...prevData,
-            [name]: value
+            [name]: value.toUpperCase() // Forzamos mayúsculas para mantener el look industrial
         }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         const result = validateInputs(rolesValidation, roleData);
         if (!result.isValid) {
             setErrors(result.errors);
@@ -89,61 +87,88 @@ function RoleFormDialog({ isOpen, closeModal, onSubmit, roleToEdit, action, erro
         }
     };
 
-    const dialogTitle = action === 'create' ? 'Crear Nuevo Rol' : 'Editar Rol';
-
     return (
-        <Dialog open={isOpen} onClose={closeModal} className="relative z-50">
-            {/* Overlay de fondo */}
-            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <Transition show={isOpen}>
+            <Dialog onClose={closeModal} className="relative z-[100]">
+                {/* Fondo con Blur */}
+                <TransitionChild
+                    enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100"
+                    leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0"
+                >
+                    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md" aria-hidden="true" />
+                </TransitionChild>
 
-            {/* Contenedor del Modal */}
-            <div className="fixed inset-0 flex items-center justify-center p-4">
-                <DialogPanel className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl relative">
+                <div className="fixed inset-0 flex items-center justify-center p-4">
+                    <TransitionChild
+                        enter="ease-out duration-300" enterFrom="opacity-0 scale-95 translate-y-4"
+                        enterTo="opacity-100 scale-100 translate-y-0"
+                        leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95"
+                    >
+                        <DialogPanel className="w-full max-w-lg bg-white rounded-[3rem] p-10 shadow-2xl relative overflow-hidden border-b-[12px] border-[#1B2654]">
 
-                    {/* Indicador de carga */}
-                    {loading && <LoadingDiv />}
+                            {/* Overlay de carga */}
+                            {loading && (
+                                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
+                                    <LoadingDiv />
+                                </div>
+                            )}
 
-                    <DialogTitle className="text-2xl font-bold mb-4 text-gray-900 border-b pb-2">
-                        {dialogTitle}
-                    </DialogTitle>
+                            {/* Encabezado Estilo Rhino */}
+                            <div className="flex flex-col items-center mb-8">
+                                <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-[#1B2654] mb-4 shadow-inner">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                                    </svg>
+                                </div>
+                                <DialogTitle className="text-2xl font-black text-slate-800 uppercase tracking-tighter text-center">
+                                    {action === 'create' ? 'Nuevo Rol de Usuario' : 'Editar Permisos de Rol'}
+                                </DialogTitle>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1 text-center">Gestión de Privilegios</p>
+                            </div>
 
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4">
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                {/* Campo Descripción */}
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Descripción del Rol *</label>
+                                    <input
+                                        type="text"
+                                        name="roles_descripcion"
+                                        value={roleData.roles_descripcion}
+                                        onChange={handleChange}
+                                        placeholder="EJ: ADMINISTRADOR GENERAL"
+                                        className={`w-full px-6 py-4 rounded-2xl bg-slate-100 border-2 transition-all font-bold text-slate-700 outline-none uppercase ${errors.roles_descripcion ? 'border-red-500' : 'border-transparent focus:border-[#1B2654] focus:bg-white'
+                                            }`}
+                                    />
+                                    {errors.roles_descripcion && (
+                                        <p className="text-red-500 text-[10px] font-bold ml-2 uppercase mt-1">{errors.roles_descripcion}</p>
+                                    )}
+                                </div>
 
-                        <label className="block">
-                            <span className="text-sm font-medium text-gray-700">Descripción del rol: <span className="text-red-500">*</span></span>
-                            <input
-                                type="text"
-                                name="roles_descripcion"
-                                value={roleData.roles_descripcion}
-                                onChange={handleChange}
-                                className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.roles_descripcion ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
-                            />
-                            {errors.roles_descripcion && <p className="text-red-500 text-xs mt-1">{errors.roles_descripcion}</p>}
-                        </label>
-
-                        {/* Botones */}
-                        <div className="flex justify-end gap-3 pt-4 border-t mt-4">
-                            <button
-                                type="button"
-                                onClick={closeModal}
-                                disabled={loading}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
-                            >
-                                {loading ? (action === 'create' ? 'Registrando...' : 'Actualizando...') : (action === 'create' ? 'Guardar Rol' : 'Actualizar Rol')}
-                            </button>
-                        </div>
-                    </form>
-                </DialogPanel>
-            </div>
-        </Dialog>
-    )
+                                {/* Botones de Acción */}
+                                <div className="flex gap-4 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={closeModal}
+                                        disabled={loading}
+                                        className="flex-1 py-4 text-slate-400 font-black text-xs uppercase hover:text-slate-600 transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="flex-[2] py-4 bg-[#1B2654] text-white rounded-2xl font-black text-xs uppercase shadow-xl hover:bg-[#A61A18] transition-all disabled:opacity-50"
+                                    >
+                                        {loading ? 'Procesando...' : (action === 'create' ? 'Guardar Rol' : 'Actualizar Rol')}
+                                    </button>
+                                </div>
+                            </form>
+                        </DialogPanel>
+                    </TransitionChild>
+                </div>
+            </Dialog>
+        </Transition>
+    );
 }
 
 export default function Roles() {
@@ -218,7 +243,7 @@ export default function Roles() {
         <div className="relative h-[100%] pb-4 px-3 overflow-auto blue-scroll">
             {loading && <div className='flex items-center justify-center h-[100%] w-full'> <LoadingDiv /> </div>}
 
-          
+
             <RoleFormDialog
                 isOpen={isDialogOpen}
                 closeModal={closeModal}
@@ -237,27 +262,62 @@ export default function Roles() {
                         virtual={true}
                         data={roles}
                         columns={[
-                            { header: "Nombre", Width: '80%', accessor: "roles_descripcion", type: 'text' },
+                            { header: "Nombre",  accessor: "roles_descripcion", type: 'text' },
+                            // {
+                            //     header: "Acciones",
+                            //     accessor: "Acciones",
+                            //     Width: '20%',
+                            //     cell: (eprops) => (
+                            //         <div className="flex space-x-2"> {/* Contenedor div con espacio entre elementos */}
+                            //             <button
+                            //                 onClick={() => {
+                            //                     openEditModal(eprops.item);
+                            //                 }}
+                            //                 className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md"
+                            //             >
+                            //                 Editar Rol
+                            //             </button>
+                            //             <button
+                            //                 onClick={() => {
+                            //                     setAssignMenu(true);
+                            //                     setDataForAssign({ ...eprops.item });
+                            //                 }}
+                            //                 className="px-3 py-1 text-sm font-medium text-purple-600 bg-purple-100 rounded-md"
+                            //             >
+                            //                 Asignar Menú
+                            //             </button>
+                            //         </div>
+                            //     )
+                            // }
                             {
                                 header: "Acciones",
                                 accessor: "Acciones",
-                                Width: '80%',
+                                // Width: '20%',
                                 cell: (eprops) => (
-                                    <div className="flex space-x-2"> {/* Contenedor div con espacio entre elementos */}
+                                    <div className="flex space-x-2">
+                                        {/* Botón Editar */}
                                         <button
-                                            onClick={() => {
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
                                                 openEditModal(eprops.item);
                                             }}
-                                            className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md"
+                                            className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
                                         >
                                             Editar Rol
                                         </button>
+
+                                        {/* Botón Asignar Menú */}
                                         <button
-                                            onClick={() => {
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
                                                 setAssignMenu(true);
                                                 setDataForAssign({ ...eprops.item });
                                             }}
-                                            className="px-3 py-1 text-sm font-medium text-purple-600 bg-purple-100 rounded-md"
+                                            className="px-3 py-1 text-sm font-medium text-purple-600 bg-purple-100 rounded-md hover:bg-purple-200 transition-colors"
                                         >
                                             Asignar Menú
                                         </button>

@@ -53,7 +53,16 @@ function EstadoFormDialog({ isOpen, closeModal, onSubmit, estadoToEdit, action, 
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setEstadoData(prev => ({ ...prev, [name]: value }));
+        // Automáticamente a mayúsculas para mantener orden en la DB
+        setEstadoData(prev => ({ ...prev, [name]: value.toUpperCase() }));
+
+        if (errors[name]) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -61,78 +70,107 @@ function EstadoFormDialog({ isOpen, closeModal, onSubmit, estadoToEdit, action, 
         setLoading(true);
         try {
             await onSubmit(estadoData);
-        } catch (error) {
-            // Error manejado en el padre
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <Transition show={isOpen}>
-            <Dialog onClose={closeModal} className="relative z-50">
-                <TransitionChild
-                    enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100"
-                    leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0"
-                >
-                    <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <Transition show={isOpen} as={Fragment}>
+            <Dialog onClose={loading ? () => { } : closeModal} className="relative z-[200]">
+                {/* Backdrop Rhino */}
+                <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md" aria-hidden="true" />
                 </TransitionChild>
 
                 <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <DialogPanel className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl relative">
-                        {loading && <LoadingDiv />}
+                    <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95 translate-y-4" enterTo="opacity-100 scale-100 translate-y-0" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+                        <DialogPanel className="w-full max-w-md rounded-[3rem] bg-white p-10 shadow-2xl relative overflow-hidden border-b-[12px] border-[#1B2654]">
 
-                        <DialogTitle className="text-2xl font-bold mb-4 text-gray-900 border-b pb-2">
-                            {action === 'create' ? 'Crear Nuevo Estado' : 'Editar Estado'}
-                        </DialogTitle>
+                            {loading && (
+                                <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm">
+                                    <LoadingDiv />
+                                    <span className="mt-4 text-[10px] font-black text-[#1B2654] uppercase tracking-[0.3em] animate-pulse">Actualizando</span>
+                                </div>
+                            )}
 
-                        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4">
-                            {/* Clave Estado */}
-                            <label className="block">
-                                <span className="text-sm font-medium text-gray-700">Clave Estado:</span>
-                                <input
-                                    type="text"
-                                    name="cveEstado"
-                                    value={estadoData.cveEstado}
-                                    onChange={handleChange}
-                                    className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.cveEstado ? 'border-red-500' : 'border-gray-300'}`}
-                                />
-                                {errors.cveEstado && <p className="text-red-500 text-xs mt-1">{errors.cveEstado}</p>}
-                            </label>
-
-                            {/* Clave País */}
-                            <label className="block">
-                                <span className="text-sm font-medium text-gray-700">Clave País:</span>
-                                <input
-                                    type="text"
-                                    name="cvePais"
-                                    value={estadoData.cvePais}
-                                    onChange={handleChange}
-                                    className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.cvePais ? 'border-red-500' : 'border-gray-300'}`}
-                                />
-                            </label>
-
-                            {/* Descripción */}
-                            <label className="block">
-                                <span className="text-sm font-medium text-gray-700">Descripción:</span>
-                                <input
-                                    type="text"
-                                    name="descripcionEstado"
-                                    value={estadoData.descripcionEstado}
-                                    onChange={handleChange}
-                                    className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.descripcionEstado ? 'border-red-500' : 'border-gray-300'}`}
-                                />
-                                {errors.descripcionEstado && <p className="text-red-500 text-xs mt-1">{errors.descripcionEstado}</p>}
-                            </label>
-
-                            <div className="flex justify-end gap-3 pt-4 border-t mt-4">
-                                <button type="button" onClick={closeModal} className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-md">Cancelar</button>
-                                <button type="submit" disabled={loading} className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md">
-                                    {loading ? 'Procesando...' : 'Guardar'}
-                                </button>
+                            {/* Cabecera Estilizada */}
+                            <div className="flex flex-col items-center mb-8">
+                                <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-[#1B2654] mb-4 shadow-inner">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                                    </svg>
+                                </div>
+                                <DialogTitle className="text-2xl font-black text-slate-800 uppercase tracking-tighter text-center italic leading-none">
+                                    {action === 'create' ? 'Nuevo' : 'Editar'} <br />
+                                    <span className="text-[#1B2654]">Estado</span>
+                                </DialogTitle>
                             </div>
-                        </form>
-                    </DialogPanel>
+
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* Clave Estado */}
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Clave Estado</label>
+                                        <input
+                                            type="text"
+                                            name="cveEstado"
+                                            value={estadoData.cveEstado}
+                                            onChange={handleChange}
+                                            placeholder="COA"
+                                            className={`w-full px-6 py-4 rounded-2xl bg-slate-100 border-2 transition-all font-bold text-slate-700 outline-none uppercase text-sm ${errors.cveEstado ? 'border-red-500 bg-red-50' : 'border-transparent focus:border-[#1B2654] focus:bg-white'}`}
+                                        />
+                                        {errors.cveEstado && <p className="text-red-500 text-[9px] font-black uppercase mt-1 ml-2">{errors.cveEstado}</p>}
+                                    </div>
+
+                                    {/* Clave País */}
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Clave País</label>
+                                        <input
+                                            type="text"
+                                            name="cvePais"
+                                            value={estadoData.cvePais}
+                                            onChange={handleChange}
+                                            placeholder="MEX"
+                                            className={`w-full px-6 py-4 rounded-2xl bg-slate-100 border-2 transition-all font-bold text-slate-700 outline-none uppercase text-sm border-transparent focus:border-[#1B2654] focus:bg-white`}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Descripción */}
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Nombre del Estado</label>
+                                    <input
+                                        type="text"
+                                        name="descripcionEstado"
+                                        value={estadoData.descripcionEstado}
+                                        onChange={handleChange}
+                                        placeholder="EJ. COAHUILA"
+                                        className={`w-full px-6 py-4 rounded-2xl bg-slate-100 border-2 transition-all font-bold text-slate-700 outline-none uppercase text-sm ${errors.descripcionEstado ? 'border-red-500 bg-red-50' : 'border-transparent focus:border-[#1B2654] focus:bg-white'}`}
+                                    />
+                                    {errors.descripcionEstado && <p className="text-red-500 text-[9px] font-black uppercase mt-1 ml-2">{errors.descripcionEstado}</p>}
+                                </div>
+
+                                {/* Botones Rhino */}
+                                <div className="flex gap-4 pt-4 border-t border-slate-100">
+                                    <button
+                                        type="button"
+                                        onClick={closeModal}
+                                        className="flex-1 py-4 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-600 transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="flex-[2] py-4 bg-[#1B2654] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-[#A61A18] transition-all disabled:bg-slate-300"
+                                    >
+                                        {loading ? 'Procesando...' : 'Confirmar'}
+                                    </button>
+                                </div>
+                            </form>
+                        </DialogPanel>
+                    </TransitionChild>
                 </div>
             </Dialog>
         </Transition>

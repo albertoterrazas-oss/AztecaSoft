@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
@@ -32,10 +32,9 @@ const validateInputs = (validations, data) => {
 const initialListData = {
     IdLista: null,
     Nombre: "",
-    Estatus: "1", 
+    Estatus: "1",
 };
 
-// --- COMPONENTE: MODAL FORMULARIO ---
 function ListaVerificacionFormDialog({ isOpen, closeModal, onSubmit, listToEdit, action, errors, setErrors }) {
     const [listData, setListData] = useState(initialListData);
     const [loading, setLoading] = useState(false);
@@ -57,11 +56,7 @@ function ListaVerificacionFormDialog({ isOpen, closeModal, onSubmit, listToEdit,
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        let finalValue = value;
-
-        if (type === 'checkbox') {
-            finalValue = checked ? "1" : "0";
-        }
+        let finalValue = type === 'checkbox' ? (checked ? "1" : "0") : value.toUpperCase();
 
         setListData(prev => ({ ...prev, [name]: finalValue }));
 
@@ -88,71 +83,108 @@ function ListaVerificacionFormDialog({ isOpen, closeModal, onSubmit, listToEdit,
     };
 
     return (
-        <Dialog open={isOpen} onClose={closeModal} className="relative z-50">
-            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-            <div className="fixed inset-0 flex items-center justify-center p-4">
-                <DialogPanel className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl relative overflow-hidden">
-                    
-                    {/* Loading centrado sobre el formulario */}
-                    {loading && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60">
-                            <LoadingDiv />
-                        </div>
-                    )}
+        <Transition show={isOpen}>
+            <Dialog onClose={closeModal} className="relative z-[100]">
+                {/* Backdrop con Blur Industrial */}
+                <TransitionChild
+                    enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100"
+                    leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0"
+                >
+                    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md" aria-hidden="true" />
+                </TransitionChild>
 
-                    <DialogTitle className="text-2xl font-bold mb-4 text-gray-900 border-b pb-2">
-                        {action === 'create' ? 'Crear Nueva Lista' : 'Editar Lista'}
-                    </DialogTitle>
+                <div className="fixed inset-0 flex items-center justify-center p-4">
+                    <TransitionChild
+                        enter="ease-out duration-300" enterFrom="opacity-0 scale-95 translate-y-4"
+                        enterTo="opacity-100 scale-100 translate-y-0"
+                        leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95"
+                    >
+                        <DialogPanel className="w-full max-w-lg bg-white rounded-[3rem] p-10 shadow-2xl relative overflow-hidden border-b-[12px] border-[#1B2654]">
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                                Nombre de la Lista: <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                name="Nombre"
-                                value={listData.Nombre}
-                                onChange={handleChange}
-                                className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.Nombre ? 'border-red-500' : 'border-gray-300'}`}
-                            />
-                            {errors.Nombre && <p className="text-red-500 text-xs mt-1">{errors.Nombre}</p>}
-                        </div>
+                            {/* OVERLAY DE CARGA CORREGIDO */}
+                            {loading && (
+                                <div className="absolute inset-0 z-[60] flex items-center justify-center bg-white/70 backdrop-blur-[2px] rounded-[3rem]">
+                                    <LoadingDiv />
+                                </div>
+                            )}
 
-                        <div className="flex items-center">
-                            <input
-                                type="checkbox"
-                                name="Estatus"
-                                id="Estatus"
-                                checked={listData.Estatus === "1"}
-                                onChange={handleChange}
-                                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                            />
-                            <label htmlFor="Estatus" className="ml-2 text-sm font-medium text-gray-700">Activo</label>
-                        </div>
+                            {/* Encabezado */}
+                            <div className="flex flex-col items-center mb-8">
+                                <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-[#1B2654] mb-4 shadow-inner">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m.75-12h4.5a2.25 2.25 0 0 1 2.25 2.25v10.5A2.25 2.25 0 0 1 18 21.75H6.25A2.25 2.25 0 0 1 4 19.5V6.75A2.25 2.25 0 0 1 6.25 4.5h4.5m.75-1.5h3a.75.75 0 0 1 .75.75V4.5h-4.5V3.75a.75.75 0 0 1 .75-.75Z" />
+                                    </svg>
+                                </div>
+                                <DialogTitle className="text-2xl font-black text-slate-800 uppercase tracking-tighter text-center">
+                                    {action === 'create' ? 'Nueva Lista' : 'Editar Lista'}
+                                </DialogTitle>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1 text-center">Protocolos de Verificación</p>
+                            </div>
 
-                        <div className="flex justify-end gap-3 pt-4 border-t">
-                            <button
-                                type="button"
-                                onClick={closeModal}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
-                            >
-                                {action === 'create' ? 'Guardar' : 'Actualizar'}
-                            </button>
-                        </div>
-                    </form>
-                </DialogPanel>
-            </div>
-        </Dialog>
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                {/* Nombre de la Lista */}
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Nombre del Protocolo *</label>
+                                    <input
+                                        type="text"
+                                        name="Nombre"
+                                        value={listData.Nombre}
+                                        onChange={handleChange}
+                                        placeholder="EJ: REVISIÓN DE EMBARQUE"
+                                        className={`w-full px-6 py-4 rounded-2xl bg-slate-100 border-2 transition-all font-bold text-slate-700 outline-none uppercase ${errors.Nombre ? 'border-red-500' : 'border-transparent focus:border-[#1B2654] focus:bg-white'
+                                            }`}
+                                    />
+                                    {errors.Nombre && (
+                                        <p className="text-red-500 text-[10px] font-bold ml-2 uppercase mt-1">{errors.Nombre}</p>
+                                    )}
+                                </div>
+
+                                {/* Estatus Toggle */}
+                                <div className="flex justify-center bg-slate-50 py-4 rounded-2xl border-2 border-dashed border-slate-200">
+                                    <label className="group flex items-center space-x-3 cursor-pointer select-none">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Inactiva</span>
+                                        <div className="relative">
+                                            <input
+                                                type="checkbox"
+                                                name="Estatus"
+                                                id="Estatus"
+                                                checked={listData.Estatus === "1"}
+                                                onChange={handleChange}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-14 h-7 bg-slate-300 rounded-full peer peer-checked:bg-[#1B2654] transition-colors shadow-inner"></div>
+                                            <div className="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-7 shadow-md"></div>
+                                        </div>
+                                        <span className="text-[10px] font-black text-[#1B2654] uppercase tracking-widest">Activa</span>
+                                    </label>
+                                </div>
+
+                                {/* Botones */}
+                                <div className="flex gap-4 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={closeModal}
+                                        disabled={loading}
+                                        className="flex-1 py-4 text-slate-400 font-black text-xs uppercase hover:text-slate-600 transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="flex-[2] py-4 bg-[#1B2654] text-white rounded-2xl font-black text-xs uppercase shadow-xl hover:bg-[#A61A18] transition-all disabled:opacity-50"
+                                    >
+                                        {loading ? 'Guardando...' : (action === 'create' ? 'Guardar Lista' : 'Actualizar Lista')}
+                                    </button>
+                                </div>
+                            </form>
+                        </DialogPanel>
+                    </TransitionChild>
+                </div>
+            </Dialog>
+        </Transition>
     );
 }
-
 // --- COMPONENTE PRINCIPAL ---
 export default function ListaVerificacion() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);

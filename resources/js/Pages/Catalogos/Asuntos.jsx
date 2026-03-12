@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogPanel, DialogTitle, Transition } from '@headlessui/react';
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
@@ -27,7 +27,6 @@ const initialAsuntoData = {
     Descripcion: "",
 };
 
-// --- Modal Form Component ---
 function AsuntoFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, errors, setErrors }) {
     const [formData, setFormData] = useState(initialAsuntoData);
     const [loading, setLoading] = useState(false);
@@ -49,10 +48,9 @@ function AsuntoFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, er
         e.preventDefault();
         setLoading(true);
         try {
-            // El cierre del modal ahora lo controla el éxito del submit
             await onSubmit(formData);
         } catch (error) {
-            // Error capturado por el padre (toast)
+            // Error capturado por el padre
         } finally {
             setLoading(false);
         }
@@ -60,38 +58,82 @@ function AsuntoFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, er
 
     return (
         <Transition show={isOpen}>
-            <Dialog open={isOpen} onClose={closeModal} className="relative z-50">
-                <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+            <Dialog onClose={closeModal} className="relative z-[100]">
+                {/* Backdrop con Blur Industrial */}
+                <TransitionChild
+                    enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100"
+                    leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0"
+                >
+                    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md" aria-hidden="true" />
+                </TransitionChild>
+
                 <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <DialogPanel className="w-full max-w-xl rounded-xl bg-white p-6 shadow-2xl relative">
-                        {loading && <LoadingDiv />}
-                        <DialogTitle className="text-2xl font-bold mb-4 text-gray-900 border-b pb-2">
-                            {action === 'create' ? 'Crear Nuevo Asunto' : 'Editar Asunto'}
-                        </DialogTitle>
+                    <TransitionChild
+                        enter="ease-out duration-300" enterFrom="opacity-0 scale-95 translate-y-4"
+                        enterTo="opacity-100 scale-100 translate-y-0"
+                        leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95"
+                    >
+                        <DialogPanel className="w-full max-w-lg bg-white rounded-[3rem] p-10 shadow-2xl relative overflow-hidden border-b-[12px] border-[#1B2654]">
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Nombre del Asunto:</label>
-                                <input
-                                    type="text"
-                                    name="Descripcion"
-                                    value={formData.Descripcion}
-                                    onChange={handleChange}
-                                    className={`mt-1 block w-full rounded-md border p-2 text-sm ${errors.Descripcion ? 'border-red-500' : 'border-gray-300'}`}
-                                />
-                                {errors.Descripcion && <p className="text-red-500 text-xs mt-1">{errors.Descripcion}</p>}
+                            {/* Overlay de Carga */}
+                            {loading && (
+                                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
+                                    <LoadingDiv />
+                                </div>
+                            )}
+
+                            {/* Encabezado */}
+                            <div className="flex flex-col items-center mb-8">
+                                <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-[#1B2654] mb-4 shadow-inner">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                    </svg>
+                                </div>
+                                <DialogTitle className="text-2xl font-black text-slate-800 uppercase tracking-tighter text-center">
+                                    {action === 'create' ? 'Nuevo Asunto' : 'Editar Asunto'}
+                                </DialogTitle>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1 text-center">Clasificación de Ticket / Trámite</p>
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t">
-                                <button type="button" onClick={closeModal} className="px-4 py-2 text-sm bg-gray-100 rounded-md hover:bg-gray-200">
-                                    Cancelar
-                                </button>
-                                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-                                    {action === 'create' ? 'Guardar' : 'Actualizar'}
-                                </button>
-                            </div>
-                        </form>
-                    </DialogPanel>
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                {/* Nombre del Asunto */}
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Nombre del Asunto *</label>
+                                    <input
+                                        type="text"
+                                        name="Descripcion"
+                                        value={formData.Descripcion}
+                                        onChange={handleChange}
+                                        placeholder="EJ: SOPORTE TÉCNICO BÁSCULAS"
+                                        className={`w-full px-6 py-4 rounded-2xl bg-slate-100 border-2 transition-all font-bold text-slate-700 outline-none uppercase ${errors.Descripcion ? 'border-red-500' : 'border-transparent focus:border-[#1B2654] focus:bg-white'
+                                            }`}
+                                    />
+                                    {errors.Descripcion && (
+                                        <p className="text-red-500 text-[10px] font-bold ml-2 uppercase mt-1">{errors.Descripcion}</p>
+                                    )}
+                                </div>
+
+                                {/* Botones */}
+                                <div className="flex gap-4 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={closeModal}
+                                        disabled={loading}
+                                        className="flex-1 py-4 text-slate-400 font-black text-xs uppercase hover:text-slate-600 transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="flex-[2] py-4 bg-[#1B2654] text-white rounded-2xl font-black text-xs uppercase shadow-xl hover:bg-[#A61A18] transition-all disabled:opacity-50"
+                                    >
+                                        {loading ? 'Guardando...' : (action === 'create' ? 'Crear Asunto' : 'Actualizar Asunto')}
+                                    </button>
+                                </div>
+                            </form>
+                        </DialogPanel>
+                    </TransitionChild>
                 </div>
             </Dialog>
         </Transition>
