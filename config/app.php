@@ -70,8 +70,7 @@ return [
     |
     */
 
-    'timezone' => 'America/Mexico_City',
-
+    'timezone' => 'America/Monterrey',
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
