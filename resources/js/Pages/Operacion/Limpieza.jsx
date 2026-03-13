@@ -8,7 +8,7 @@ import BasculaModal from '../../Components/BasculaPesa.jsx';
 const route = (name) => {
     const routeMap = {
         "LotesLimpieza": "/api/LotesLimpieza",
-        "pesaje.store": "/api/pesaje/guardar-lote",
+        // "pesaje.store": "/api/pesaje/guardar-lote",
         "pesaje.guardar-traspaso": "/api/pesaje/guardar-traspaso",
         "AlmacenesListar": "/api/almacenes",
         "ProductosLotesHistorial": "/api/ProductosLotesHistorial",
