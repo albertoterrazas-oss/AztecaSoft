@@ -33,6 +33,26 @@ class ProductosController extends Controller
         }
     }
 
+    public function getsubproductos()
+    {
+        try {
+            // has('hijos') filtra los padres que NO tienen hijos
+            $productos = Productos::has('hijos')
+                ->with(['hijos' => function ($query) {
+                    $query->orderBy('Nombre', 'asc');
+                }])
+                ->where('EsSubproducto', 0)
+                ->orderBy('Nombre', 'asc')
+                ->get();
+
+            return response()->json($productos, 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener estructura',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
     /**
      * Crear un nuevo producto
      */

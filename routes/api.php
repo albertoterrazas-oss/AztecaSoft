@@ -281,6 +281,10 @@ Route::resource('personas', controller: PersonasController::class)->only([
 
 Route::get('getKilosDashboard', [ProcesosDashboardController::class, 'getKilosDashboard'])->name('getKilosDashboard');
 
+Route::get('getsubproductos', [ProductosController::class, 'getsubproductos'])->name('getsubproductos');
+
+Route::get('MovimientoPrimerPesaje', [RecepcionController::class, 'MovimientoPrimerPesaje'])->name('MovimientoPrimerPesaje');
+
 // });
 
 Route::post('CodigoverificacionEstado', [CodigosController::class, 'CodigoverificacionEstado'])->name('CodigoverificacionEstado');

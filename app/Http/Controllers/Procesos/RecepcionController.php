@@ -99,6 +99,32 @@ class RecepcionController extends Controller
         }
     }
 
+    public function MovimientoPrimerPesaje(Request $request)
+    {
+        try {
+            // 1. Validación básica o asignación con valores por defecto
+            // $opc       = $request->input('opcion', 'L');
+
+            // 2. Ejecución del SP
+            // Es mejor usar nombres de parámetros si el SP los requiere o asegurar el orden
+            $resultado = DB::select('EXEC sp_movimientosPrimerPesaje ', []);
+
+            // 3. Retornar respuesta
+            // Si el SP no devuelve nada, DB::select retorna un array vacío [].
+            return response()->json($resultado, 200);
+        } catch (\Exception $e) {
+            // Loguear el error es buena práctica para depuración
+            \Log::error("Error en ProductosLotes: " . $e->getMessage());
+
+            return response()->json([
+                'error'   => 'Error al obtener lotes',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
 
 
 

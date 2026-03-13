@@ -19,4 +19,16 @@ class Productos extends Model
         'idUsuario',
         'ProductoPadre'
     ];
+
+    // Relación: Un subproducto pertenece a un producto padre
+    public function padre()
+    {
+        return $this->belongsTo(Productos::class, 'ProductoPadre', 'IdProducto');
+    }
+
+    // Relación: Un producto puede tener muchos subproductos
+    public function hijos()
+    {
+        return $this->hasMany(Productos::class, 'ProductoPadre', 'IdProducto');
+    }
 }
