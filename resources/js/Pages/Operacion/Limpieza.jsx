@@ -9,12 +9,14 @@ const route = (name) => {
     const routeMap = {
         "LotesLimpieza": "/api/LotesLimpieza",
         "pesaje.store": "/api/pesaje/guardar-lote",
+        "pesaje.guardar-traspaso": "/api/pesaje/guardar-traspaso",
         "AlmacenesListar": "/api/almacenes",
         "ProductosLotesHistorial": "/api/ProductosLotesHistorial",
         "ProductosLotes": "/api/ProductosLotes",
     };
     return routeMap[name] || `/${name}`;
 };
+// Route::post('/pesaje/guardar-traspaso', [SalidaController::class, 'guardarTraspaso'])->name('pesaje.guardar-traspaso');
 
 // --- MODAL DE ÉXITO ---
 const SuccessModal = ({ isOpen, onClose, message, registeredWeight }) => {
@@ -145,7 +147,7 @@ export default function WeighingDashboardLimpieza() {
                 idusuario: user
             };
 
-            const res = await axios.post(route("pesaje.store"), payload);
+            const res = await axios.post(route("pesaje.guardar-traspaso"), payload);
             
             setLastRegisteredWeight(pesoNetoFinal);
             
