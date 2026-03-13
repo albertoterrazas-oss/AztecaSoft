@@ -80,7 +80,7 @@ export default function WeighingDashboardLimpieza() {
 
     const fetchProductosLote = async (idLote) => {
         try {
-            const res = await axios.post(route("ProductosLotes"), { opcion: 'L', idLote: idLote, idAlmacen: 2 });
+            const res = await axios.post(route("ProductosLotesHistorial"), { opcion: 'A', idLote: idLote, idAlmacen: 2 });
             setDbProducts((res.data || []).map(p => ({
                 IdProducto: String(p.idProducto),
                 Nombre: p.Producto,

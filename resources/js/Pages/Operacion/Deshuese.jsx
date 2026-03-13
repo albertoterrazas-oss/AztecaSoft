@@ -52,7 +52,7 @@ export default function DeshueseDashboard() {
     const handleLoteSelect = async (lote) => {
         setSelectedLote(lote);
         try {
-            const res = await axios.post("/api/ProductosLotes", { opcion: 'L', Lote: lote.Lote, idAlmacen: 3 });
+            const res = await axios.post("/api/ProductosLotesHistorial", { opcion: 'A', Lote: lote.Lote, idAlmacen: 3 });
             setRecords(res.data || []);
             setTimeout(() => setShowTaraModal(true), 400);
         } catch (e) { toast.error("Error al cargar existencias"); }
