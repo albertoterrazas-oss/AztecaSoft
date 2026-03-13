@@ -35,7 +35,8 @@ class SalidaController extends Controller
                     $request->cantidad,               // @PesoReal (netWeight del front)
                     $request->piezas ?? 0,            // @Piezas
                     $request->idusuario ?? 0,            // @Piezas
-                    $request->id_area_entrada ?? 6, // Si no viene, por defecto es 6
+                    $request->id_area_salida ?? 6, // Si no viene, por defecto es 6
+                   
                 ]);
 
                 // DB::statement('EXEC sp_RegistrarTraspaso ?, ?, ?, ?, ?, ?, ?', [
