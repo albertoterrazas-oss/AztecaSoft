@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
+import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
 
 // --- Configuración y Utilidades ---
 
@@ -269,7 +270,7 @@ export default function Departamentos() {
                         {
                             header: "Estatus",
                             accessor: "estatus",
-                            width: '10%',
+                            // width: '10%',
                             cell: ({ item: { estatus } }) => (
                                 <div className="flex justify-center">
                                     <span className={`inline-flex items-center justify-center rounded-full w-4 h-4 shadow-sm ${Number(estatus) === 1 ? "bg-green-400" : "bg-red-400"
@@ -284,17 +285,13 @@ export default function Departamentos() {
                         },
                         {
                             header: "Acciones",
-                            accessor: "actions",
-                            width: '15%',
                             cell: (props) => (
-                                <div className="flex space-x-2">
-                                    <button
-                                        onClick={() => openEditModal(props.item)}
-                                        className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
-                                    >
-                                        Editar
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={() => openEditModal(props.item)}
+                                    className="p-3 bg-slate-50 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-100"
+                                >
+                                    <Pencil size={16} />
+                                </button>
                             )
                         },
                     ]}

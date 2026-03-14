@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
+import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
 
 // --- Helpers de simulación ---
 const route = (name, params = null) => {
@@ -303,14 +304,40 @@ export default function Usuarios() {
                         { header: 'Username', accessor: 'Username' },
                         { header: 'Nombre Completo', accessor: 'nombre_completo' },
                         { header: 'Rol', accessor: 'rol.roles_descripcion' },
+                        // {
+                        //     header: "Acciones",
+                        //     cell: (props) => (
+                        //         <button
+                        //             onClick={() => openEditModal(props.item)}
+                        //             className="text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded transition-colors"
+                        //         >
+                        //             Editar
+                        //         </button>
+                        //     )
+                        // },
+
+                        // {
+                        //     header: "Acciones",
+                        //     cell: (props) => (
+                        //         <button
+                        //             onClick={() => openEditModal(props.item)}
+                        //             className="p-3 bg-slate-50 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-100"
+                        //         >
+                        //             <Pencil size={16} />
+                        //         </button>
+                        //     )
+                        // },
+
+                        // import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
+
                         {
                             header: "Acciones",
                             cell: (props) => (
                                 <button
                                     onClick={() => openEditModal(props.item)}
-                                    className="text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded transition-colors"
+                                    className="p-3 bg-slate-50 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-100"
                                 >
-                                    Editar
+                                    <Pencil size={16} />
                                 </button>
                             )
                         },

@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
+import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
 
 const route = (name, params = {}) => {
     const routeMap = {
@@ -321,15 +322,29 @@ export default function Motivos() {
                         { header: 'Nombre', accessor: 'Motivos_nombre' },
                         // { header: 'Tipo', accessor: 'Motivos_tipo' },
                         { header: 'Descripción', accessor: 'Motivos_descripcion' },
+                        // {
+                        //     header: "Acciones", accessor: "Acciones", cell: (eprops) => (<>
+                        //         <button
+                        //             onClick={() => openEditModal(eprops.item)}
+                        //             className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 transition"
+                        //         >
+                        //             Editar
+                        //         </button>
+                        //     </>)
+                        // },
+
+                        // import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
+
                         {
-                            header: "Acciones", accessor: "Acciones", cell: (eprops) => (<>
+                            header: "Acciones",
+                            cell: (props) => (
                                 <button
-                                    onClick={() => openEditModal(eprops.item)}
-                                    className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 transition"
+                                    onClick={() => openEditModal(props.item)}
+                                    className="p-3 bg-slate-50 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-100"
                                 >
-                                    Editar
+                                    <Pencil size={16} />
                                 </button>
-                            </>)
+                            )
                         },
                     ]}
                 />

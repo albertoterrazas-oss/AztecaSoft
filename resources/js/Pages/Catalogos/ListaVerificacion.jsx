@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
+import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
 
 // --- HELPERS ---
 const route = (name, params = {}) => {
@@ -260,14 +261,27 @@ export default function ListaVerificacion() {
                         add={openCreateModal}
                         columns={[
                             { header: 'Nombre', accessor: 'Nombre' },
+                            // {
+                            //     header: "Acciones",
+                            //     cell: (eprops) => (
+                            //         <button
+                            //             onClick={() => openEditModal(eprops.item)}
+                            //             className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100"
+                            //         >
+                            //             Editar
+                            //         </button>
+                            //     )
+                            // },
+                            // import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
+
                             {
                                 header: "Acciones",
-                                cell: (eprops) => (
+                                cell: (props) => (
                                     <button
-                                        onClick={() => openEditModal(eprops.item)}
-                                        className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100"
+                                        onClick={() => openEditModal(props.item)}
+                                        className="p-3 bg-slate-50 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-100"
                                     >
-                                        Editar
+                                        <Pencil size={16} />
                                     </button>
                                 )
                             },

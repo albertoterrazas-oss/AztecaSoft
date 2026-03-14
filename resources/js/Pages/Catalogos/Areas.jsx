@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
+import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
 
 // --- Configuración y Utilidades ---
 
@@ -255,19 +256,32 @@ export default function Areas() {
                             accessor: 'areas_nombre',
                             cell: ({ item }) => <span className="font-semibold text-gray-800">{item.areas_nombre}</span>
                         },
-                        {
+                        // {
+                        //     header: "Acciones",
+                        //     accessor: "actions",
+                        //     width: '15%',
+                        //     cell: (props) => (
+                        //         <div className="flex space-x-2">
+                        //             <button
+                        //                 onClick={() => openEditModal(props.item)}
+                        //                 className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-200 rounded hover:bg-blue-600 hover:text-white transition-all"
+                        //             >
+                        //                 Editar
+                        //             </button>
+                        //         </div>
+                        //     )
+                        // },
+// import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
+
+                         {
                             header: "Acciones",
-                            accessor: "actions",
-                            width: '15%',
                             cell: (props) => (
-                                <div className="flex space-x-2">
-                                    <button
-                                        onClick={() => openEditModal(props.item)}
-                                        className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-200 rounded hover:bg-blue-600 hover:text-white transition-all"
-                                    >
-                                        Editar
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={() => openEditModal(props.item)}
+                                    className="p-3 bg-slate-50 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-100"
+                                >
+                                    <Pencil size={16} />
+                                </button>
                             )
                         },
                     ]}

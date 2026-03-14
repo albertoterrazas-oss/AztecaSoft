@@ -11,6 +11,7 @@ import { useForm } from "@inertiajs/react";
 // import { Dialog, DialogPanel, DialogTitle, Transition } from '@headlessui/react';
 import { Width } from "devextreme-react/chart";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
+import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
 
 const rolesValidation = { roles_descripcion: ['required', 'max:150'] }
 // Datos de ejemplo para el estado inicial del formulario de Roles

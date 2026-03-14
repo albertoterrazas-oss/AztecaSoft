@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
+import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
 
 // --- Configuración y Utilidades ---
 
@@ -244,19 +245,38 @@ export default function Proveedores() {
                     columns={[
                         { header: 'Razón Social', accessor: 'RazonSocial' },
                         { header: 'RFC', accessor: 'RFC' },
+                        // {
+                        //     header: "Acciones",
+                        //     accessor: "actions",
+                        //     cell: (props) => (
+                        //         <button
+                        //             onClick={() => {
+                        //                 setAction('edit');
+                        //                 setCurrent(props.item);
+                        //                 setIsDialogOpen(true);
+                        //             }}
+                        //             className="px-3 py-1 text-sm font-medium text-indigo-600 bg-indigo-100 rounded-md hover:bg-indigo-200 transition-colors"
+                        //         >
+                        //             Editar
+                        //         </button>
+                        //     )
+                        // },
+
+                        // import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
+
                         {
                             header: "Acciones",
-                            accessor: "actions",
                             cell: (props) => (
                                 <button
+                                    // onClick={() => openEditModal(props.item)}
                                     onClick={() => {
                                         setAction('edit');
                                         setCurrent(props.item);
                                         setIsDialogOpen(true);
                                     }}
-                                    className="px-3 py-1 text-sm font-medium text-indigo-600 bg-indigo-100 rounded-md hover:bg-indigo-200 transition-colors"
+                                    className="p-3 bg-slate-50 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-100"
                                 >
-                                    Editar
+                                    <Pencil size={16} />
                                 </button>
                             )
                         },

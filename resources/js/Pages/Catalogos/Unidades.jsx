@@ -6,6 +6,7 @@ import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
 import { useEffect, useState } from "react";
 import request from "@/utils";
+import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
 
 // DUMMY FUNCTIONS (Reemplazar con tus implementaciones reales)
 const route = (name, params = {}) => {

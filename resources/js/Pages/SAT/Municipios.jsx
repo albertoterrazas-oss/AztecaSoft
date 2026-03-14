@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
+import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
 
 // --- Configuración de Rutas ---
 const route = (name, params = {}) => {
@@ -263,13 +264,24 @@ export default function Municipios() {
                     columns={[
                         { header: 'Clave', accessor: 'claveMunicipio' },
                         { header: 'Municipio', accessor: 'descripcionMunicipio' },
-                        { header: 'ID Estado', accessor: 'idestado' },
+                        // { header: 'ID Estado', accessor: 'idestado' },
+                        // {
+                        //     header: "Acciones",
+                        //     accessor: "actions",
+                        //     cell: (props) => (
+                        //         <button onClick={() => openEditModal(props.item)} className="px-3 py-1 text-sm text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200">
+                        //             Editar
+                        //         </button>
+                        //     )
+                        // },
                         {
                             header: "Acciones",
-                            accessor: "actions",
                             cell: (props) => (
-                                <button onClick={() => openEditModal(props.item)} className="px-3 py-1 text-sm text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200">
-                                    Editar
+                                <button
+                                    onClick={() => openEditModal(props.item)}
+                                    className="p-3 bg-slate-50 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-100"
+                                >
+                                    <Pencil size={16} />
                                 </button>
                             )
                         },

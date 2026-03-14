@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
-
+import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
 // --- Helpers ---
 // Corregido: Ahora acepta 'id' y construye la URL dinámicamente
 const route = (name, params = {}) => {
@@ -220,14 +220,28 @@ export default function Asuntos() {
                     }}
                     columns={[
                         { header: 'Nombre', accessor: 'Descripcion' },
-                        {
+                        // {
+                        //     header: "Acciones",
+                        //     cell: (props) => (
+                        //         <button
+                        //             onClick={() => openEditModal(props.item)}
+                        //             className="text-blue-600 bg-blue-50 px-3 py-1 rounded hover:bg-blue-100 transition-colors"
+                        //         >
+                        //             Editar
+                        //         </button>
+                        //     )
+                        // },
+
+                        // import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
+
+                         {
                             header: "Acciones",
                             cell: (props) => (
                                 <button
                                     onClick={() => openEditModal(props.item)}
-                                    className="text-blue-600 bg-blue-50 px-3 py-1 rounded hover:bg-blue-100 transition-colors"
+                                    className="p-3 bg-slate-50 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-100"
                                 >
-                                    Editar
+                                    <Pencil size={16} />
                                 </button>
                             )
                         },

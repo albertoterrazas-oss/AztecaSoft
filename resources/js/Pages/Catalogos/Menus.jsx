@@ -15,12 +15,13 @@ import {
     Feather, FileText, FlaskConical, Folder, Gift, Globe, Hammer, Image,
     Info, Minus, MoreHorizontal, Move, Music, Package, Paperclip, Pause,
     PenTool, Pin, Plane, Printer, QrCode, Radar, Send, Server, Tablet,
-    Tag, Terminal, ThumbsUp, ToggleLeft, Watch, Wifi, Zap, ZoomIn, ZoomOut
+    Tag, Terminal, ThumbsUp, ToggleLeft, Watch, Wifi, Zap, ZoomIn, ZoomOut, Pencil
 } from 'lucide-react';
 
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
+// import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
 
 // ----------------------------------------------------
 // I. UTILERÍAS Y CONSTANTES
@@ -240,8 +241,8 @@ function MenuFormDialog({ isOpen, closeModal, onSubmit, menuToEdit, action, erro
                                         <div onClick={() => setIsIconModalOpen(true)} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-[#1B2654] transition-all shadow-sm">
                                             <div className="flex items-center gap-3">
                                                 <div className="text-[#1B2654]">
-                                                    {ICON_COMPONENTS[menuData.menu_tooltip] ? 
-                                                        (() => { const Icon = ICON_COMPONENTS[menuData.menu_tooltip]; return <Icon size={20} />; })() 
+                                                    {ICON_COMPONENTS[menuData.menu_tooltip] ?
+                                                        (() => { const Icon = ICON_COMPONENTS[menuData.menu_tooltip]; return <Icon size={20} />; })()
                                                         : <AlertCircle size={20} />}
                                                 </div>
                                                 <span className="font-bold text-slate-700 text-sm uppercase">{menuData.menu_tooltip}</span>
@@ -333,7 +334,7 @@ export default function Menus() {
                         { header: 'URL', accessor: 'menu_url' },
                         {
                             header: 'Padre',
-                            cell: ({ item }) => (<span>{item.menu_idPadre === 0 || item.menu_idPadre === null ? 'Raíz' : (item.menu_padre?.menu_nombre || '...') }</span>)
+                            cell: ({ item }) => (<span>{item.menu_idPadre === 0 || item.menu_idPadre === null ? 'Raíz' : (item.menu_padre?.menu_nombre || '...')}</span>)
                         },
                         {
                             header: 'Ícono',
@@ -343,10 +344,24 @@ export default function Menus() {
                                 return <div className="flex justify-center text-slate-400"><Icon size={18} /></div>;
                             }
                         },
+                        // {
+                        //     header: "Acciones",
+                        //     cell: ({ item }) => (
+                        //         <button 
+                        //         onClick={() => { setAction('edit'); setMenuData(item); setIsDialogOpen(true); }} 
+                        //         className="px-4 py-1 text-xs font-black uppercase text-[#1B2654] bg-slate-100 rounded-lg hover:bg-[#1B2654] hover:text-white transition-all">Editar</button>
+                        //     )
+                        // },
+
                         {
                             header: "Acciones",
-                            cell: ({ item }) => (
-                                <button onClick={() => { setAction('edit'); setMenuData(item); setIsDialogOpen(true); }} className="px-4 py-1 text-xs font-black uppercase text-[#1B2654] bg-slate-100 rounded-lg hover:bg-[#1B2654] hover:text-white transition-all">Editar</button>
+                            cell: (props) => (
+                                <button
+                                    onClick={() => { setAction('edit'); setMenuData(props); setIsDialogOpen(true); }}
+                                    className="p-3 bg-slate-50 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-100"
+                                >
+                                    <Pencil size={16} />
+                                </button>
                             )
                         },
                     ]}
