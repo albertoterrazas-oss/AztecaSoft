@@ -226,6 +226,26 @@ class RecepcionController extends Controller
         }
     }
 
+    public function LotesCongelacion()
+    {
+        try {
+            // Ejecutamos el Store Procedure
+            $resultado = DB::select('EXEC sp_LotesEnAlmacen ?, ?', ["A", 5]);
+
+            // DB::select devuelve un array. Si está vacío, retornamos array vacío.
+            // Usamos empty() de PHP que es más rápido para arrays nativos.
+            return response()->json($resultado ?: [], 200);
+        } catch (\Exception $e) {
+            // Loguear el error es buena práctica para no perder el rastro en producción
+            Log::error("Error en LotesLimpieza: " . $e->getMessage());
+
+            return response()->json([
+                'error'   => 'Error al procesar la limpieza de lotes',
+                'details' => config('app.debug') ? $e->getMessage() : 'Consulte al administrador'
+            ], 500);
+        }
+    }
+
     public function LotesAreasDeshuese()
     {
         try {
@@ -257,27 +277,6 @@ class RecepcionController extends Controller
             ], 500);
         }
     }
-
-
-    // public function LoteDetalles(Request $request)
-    // {
-    //     try {
-    //         // Validamos que el ID venga en la petición
-    //         if (!$request->has('id')) {
-    //             return response()->json(['error' => 'El ID del encabezado es requerido'], 400);
-    //         }
-
-    //         $detalles = Detalle::where('id_encabezado', $request->id)
-    //             ->where('estatus', false)->get();
-
-    //         return response()->json($detalles, 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'error' => 'Error al obtener detalles',
-    //             'details' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
 
     public function GuardarLote(Request $request)
     {

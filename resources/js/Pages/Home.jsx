@@ -170,7 +170,7 @@ const routesConfig = [
     { path: "/unidades", component: lazy(() => import('./Catalogos/Unidades')) },
     { path: "/usuarios", component: lazy(() => import('./Catalogos/Usuarios')) },
     { path: "/motivos", component: lazy(() => import('./Catalogos/Motivos')) },
-    { path: "/areas", component: lazy(() => import('./Catalogos/Areas')) },
+    // { path: "/areas", component: lazy(() => import('./Catalogos/Areas')) },
     { path: "/reportes", component: lazy(() => import('./Catalogos/Reportes')) },
     { path: "/menus", component: lazy(() => import('./Catalogos/Menus')) },
     { path: "/listaverificacion", component: lazy(() => import('./Catalogos/ListaVerificacion')) },
@@ -186,16 +186,19 @@ const routesConfig = [
     { path: "/personas", component: lazy(() => import('./Catalogos/Personas')) },
     { path: "/provedores", component: lazy(() => import('./Catalogos/Provedores')) },
     { path: "/clientes", component: lazy(() => import('./Catalogos/Clientes')) },
+    { path: "/refrigeradores", component: lazy(() => import('./Catalogos/Refrigeradores')) },
     { path: "/almacenes", component: lazy(() => import('./Catalogos/Almacenes')) },
+
     { path: "/Recepcion", component: lazy(() => import('./Operacion/Recepcion')) },
     { path: "/Entrada", component: lazy(() => import('./Operacion/Entrada')) },
     { path: "/Limpieza", component: lazy(() => import('./Operacion/Limpieza')) },
     { path: "/Deshuese", component: lazy(() => import('./Operacion/Deshuese')) },
     { path: "/empaque", component: lazy(() => import('./Operacion/Venta')) },
     { path: "/basculas", component: lazy(() => import('./Catalogos/Basculas')) },
+    { path: "/congelacion", component: lazy(() => import('./Operacion/Congelacion')) },
 
 
-    
+
 ];
 
 export default function Home({ auth }) {
@@ -240,7 +243,7 @@ export default function Home({ auth }) {
         return () => document.removeEventListener('fullscreenchange', handleFS);
     }, []);
 
-   
+
     const toggleFS = () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen?.().catch(() => { });

@@ -35,10 +35,11 @@ export default function DeshueseDashboard() {
     const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
-            const [resL, resA, resP] = await Promise.all([
+            const [resL, resA, resP, resR,conges] = await Promise.all([
                 axios.get("/api/LotesDeshuese"),
                 axios.get("/api/almacenes"),
-                axios.get("/api/getsubproductos")
+                axios.get("/api/getsubproductos"),
+                axios.get("/api/AlmacenesRefrigerados")
             ]);
             setLotes(resL.data || []);
             setDbProducts(resP.data || []);
@@ -134,26 +135,6 @@ export default function DeshueseDashboard() {
 
     if (!selectedLote) {
         return (
-            // <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
-            //     <div className="max-w-4xl w-full">
-            //         <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">Panel Deshuese</h1>
-            //         <div className="grid gap-4">
-            //             {lotes.map((lote) => (
-            //                 <button key={lote.Lote} onClick={() => handleLoteSelect(lote)} className="bg-white p-6 rounded-[2.5rem] flex items-center justify-between border-4 border-transparent hover:border-red-600 transition-all shadow-xl group">
-            //                     <div className="text-left font-black">
-            //                         <span className="text-xs text-red-600 tracking-widest">LOTE #{lote.Lote}</span>
-            //                         <h3 className="text-2xl text-slate-700">{lote.Proveedor}</h3>
-            //                     </div>
-            //                     <div className="bg-slate-100 group-hover:bg-red-600 group-hover:text-white p-5 rounded-3xl transition-all">
-            //                         <ChevronRight size={32} strokeWidth={4} />
-            //                     </div>
-            //                 </button>
-            //             ))}
-            //             {lotes.length === 0 && <p className="text-center text-slate-400">No hay lotes pendientes para deshuese.</p>}
-            //         </div>
-            //     </div>
-            // </div>
-
 
             <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
                 <div className="max-w-4xl w-full">

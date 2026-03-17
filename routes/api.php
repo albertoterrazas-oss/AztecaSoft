@@ -214,9 +214,9 @@ Route::post('ProductosLotesHistorial', [RecepcionController::class, 'ProductosLo
 
 
 Route::get('LotesEntrada', [RecepcionController::class, 'LotesEntrada'])->name('LotesEntrada');
-
 Route::get('LotesDeshuese', [RecepcionController::class, 'LotesDeshuese'])->name('LotesDeshuese');
 Route::get('LotesLimpieza', [RecepcionController::class, 'LotesLimpieza'])->name('LotesLimpieza');
+Route::get('LotesCongelacion', [RecepcionController::class, 'LotesCongelacion'])->name('LotesCongelacion');
 
 Route::get('/getInventario', [InventariosController::class, 'getInventario'])->name('getInventario');
 
@@ -287,6 +287,10 @@ Route::get('getKilosDashboard', [ProcesosDashboardController::class, 'getKilosDa
 Route::get('getsubproductos', [ProductosController::class, 'getsubproductos'])->name('getsubproductos');
 
 Route::get('MovimientoPrimerPesaje', [RecepcionController::class, 'MovimientoPrimerPesaje'])->name('MovimientoPrimerPesaje');
+
+
+Route::get('AlmacenesRefrigerados', [AlmacenesController::class, 'AlmacenesRefrigerados'])->name('AlmacenesRefrigerados');
+
 
 // });
 

@@ -1,9 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Fragment } from "react";
 import { toast } from 'sonner';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
-import { Fragment } from "react";
-
-// Íconos
 import {
     X, Search, ChevronLeft, ChevronRight, SquarePen, AlertCircle,
     Home, Settings, User, Menu, LogOut, Award, BarChart, Bell, Book,
@@ -21,7 +18,6 @@ import {
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
-// import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
 
 // ----------------------------------------------------
 // I. UTILERÍAS Y CONSTANTES
@@ -52,17 +48,18 @@ const route = (name, params = {}) => {
     return routeMap[name] || `/${name}`;
 };
 
+// Ícono inicial como null para que no fuerce "Home" si no quieres
 const initialMenuData = {
     menu_id: null,
     menu_nombre: "",
     menu_idPadre: 0,
     menu_url: "",
-    menu_tooltip: "Home",
+    menu_tooltip: null, 
     menu_estatus: "1",
 };
 
 // ----------------------------------------------------
-// II. COMPONENTE: MODAL SELECTOR DE ÍCONOS (Capa Superior)
+// II. COMPONENTE: MODAL SELECTOR DE ÍCONOS
 // ----------------------------------------------------
 
 function IconGridPickerModal({ isOpen, closeModal, onSelect, selectedIconName }) {
@@ -106,6 +103,16 @@ function IconGridPickerModal({ isOpen, closeModal, onSelect, selectedIconName })
                             </div>
 
                             <div className="grid grid-cols-4 gap-4 max-h-80 overflow-y-auto p-2 blue-scroll">
+                                {/* Opción para dejar sin icono */}
+                                <button
+                                    type="button"
+                                    onClick={() => { onSelect(null); closeModal(); }}
+                                    className={`flex flex-col items-center p-4 rounded-3xl transition-all border-2 ${!selectedIconName ? 'border-[#1B2654] bg-slate-50' : 'border-transparent bg-slate-50 hover:bg-slate-100'}`}
+                                >
+                                    <Minus size={28} className="text-slate-300" />
+                                    <span className="text-[9px] mt-2 font-black text-slate-500 uppercase">Ninguno</span>
+                                </button>
+
                                 {currentIcons.map((name) => {
                                     const Icon = ICON_COMPONENTS[name];
                                     const isSelected = name === selectedIconName;
@@ -151,7 +158,7 @@ function MenuFormDialog({ isOpen, closeModal, onSubmit, menuToEdit, action, erro
             setMenuData(menuToEdit ? {
                 ...menuToEdit,
                 menu_idPadre: menuToEdit.menu_idPadre ? Number(menuToEdit.menu_idPadre) : 0,
-                menu_tooltip: menuToEdit.menu_tooltip || "Home",
+                menu_tooltip: menuToEdit.menu_tooltip || null, // Respetamos el null
                 menu_estatus: String(menuToEdit.menu_estatus) === "1" ? "1" : "0",
             } : initialMenuData);
             setErrors({});
@@ -241,11 +248,13 @@ function MenuFormDialog({ isOpen, closeModal, onSubmit, menuToEdit, action, erro
                                         <div onClick={() => setIsIconModalOpen(true)} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-[#1B2654] transition-all shadow-sm">
                                             <div className="flex items-center gap-3">
                                                 <div className="text-[#1B2654]">
-                                                    {ICON_COMPONENTS[menuData.menu_tooltip] ?
+                                                    {menuData.menu_tooltip && ICON_COMPONENTS[menuData.menu_tooltip] ?
                                                         (() => { const Icon = ICON_COMPONENTS[menuData.menu_tooltip]; return <Icon size={20} />; })()
-                                                        : <AlertCircle size={20} />}
+                                                        : <Minus size={20} className="text-slate-300" />}
                                                 </div>
-                                                <span className="font-bold text-slate-700 text-sm uppercase">{menuData.menu_tooltip}</span>
+                                                <span className="font-bold text-slate-700 text-sm uppercase">
+                                                    {menuData.menu_tooltip || "Sin Ícono"}
+                                                </span>
                                             </div>
                                             <SquarePen size={16} className="text-slate-400" />
                                         </div>
@@ -323,7 +332,7 @@ export default function Menus() {
                     columns={[
                         {
                             header: "Estatus",
-                            accessor: "menu_status",
+                            accessor: "menu_estatus",
                             cell: ({ item }) => (
                                 <div className="flex justify-center">
                                     <div className={`w-3 h-3 rounded-full ${String(item.menu_estatus) === "1" ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`} />
@@ -340,24 +349,24 @@ export default function Menus() {
                             header: 'Ícono',
                             headerClassName: 'text-center',
                             cell: ({ item }) => {
-                                const Icon = ICON_COMPONENTS[item.menu_tooltip] || AlertCircle;
-                                return <div className="flex justify-center text-slate-400"><Icon size={18} /></div>;
+                                // Blindamos la celda de la tabla
+                                const Icon = item.menu_tooltip ? ICON_COMPONENTS[item.menu_tooltip] : null;
+                                return (
+                                    <div className="flex justify-center text-slate-400">
+                                        {Icon ? <Icon size={18} /> : <span className="text-slate-200">-</span>}
+                                    </div>
+                                );
                             }
                         },
-                        // {
-                        //     header: "Acciones",
-                        //     cell: ({ item }) => (
-                        //         <button 
-                        //         onClick={() => { setAction('edit'); setMenuData(item); setIsDialogOpen(true); }} 
-                        //         className="px-4 py-1 text-xs font-black uppercase text-[#1B2654] bg-slate-100 rounded-lg hover:bg-[#1B2654] hover:text-white transition-all">Editar</button>
-                        //     )
-                        // },
-
                         {
                             header: "Acciones",
-                            cell: (props) => (
+                            cell: ({ item }) => (
                                 <button
-                                    onClick={() => { setAction('edit'); setMenuData(props); setIsDialogOpen(true); }}
+                                    onClick={() => {
+                                        setAction('edit');
+                                        setMenuData(item);
+                                        setIsDialogOpen(true);
+                                    }}
                                     className="p-3 bg-slate-50 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-100"
                                 >
                                     <Pencil size={16} />

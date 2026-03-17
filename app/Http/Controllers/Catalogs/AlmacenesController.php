@@ -11,9 +11,18 @@ class AlmacenesController extends Controller
 {
     public function index()
     {
-        $asuntos = Almacenes::orderBy('Nombre', 'asc')->get();
+        $asuntos = Almacenes::orderBy('Nombre', 'asc')->where('Tipo', 'ALMACEN')->get();
         return response()->json($asuntos);
     }
+
+
+    public function AlmacenesRefrigerados()
+    {
+        $asuntos = Almacenes::orderBy('Nombre', 'asc')->where('Tipo', 'REFRIGERADO')->get();
+        return response()->json($asuntos);
+    }
+
+
     /**
      * Almacena un nuevo almacén.
      */
