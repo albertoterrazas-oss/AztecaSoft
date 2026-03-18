@@ -246,6 +246,31 @@ class RecepcionController extends Controller
         }
     }
 
+
+    public function LotesRefirgeradores(Request $request)
+    {
+        try {
+
+            $idAlmacen = $request->Almacen;
+
+            // Ejecutamos el Store Procedure
+            $resultado = DB::select('EXEC sp_LotesEnAlmacen ?, ?', ["A", $idAlmacen]);
+
+            // DB::select devuelve un array. Si está vacío, retornamos array vacío.
+            // Usamos empty() de PHP que es más rápido para arrays nativos.
+            return response()->json($resultado ?: [], 200);
+        } catch (\Exception $e) {
+            // Loguear el error es buena práctica para no perder el rastro en producción
+            Log::error("Error en LotesLimpieza: " . $e->getMessage());
+
+            return response()->json([
+                'error'   => 'Error al procesar la limpieza de lotes',
+                'details' => config('app.debug') ? $e->getMessage() : 'Consulte al administrador'
+            ], 500);
+        }
+    }
+
+
     public function LotesAreasDeshuese()
     {
         try {

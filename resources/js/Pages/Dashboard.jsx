@@ -30,6 +30,7 @@ const VacaReal3D = ({ modelo }) => {
         interaction-prompt="none"
         style={{ width: '100%', height: '100%', outline: 'none' }}
         touch-action="pan-y"
+        
       >
         <div slot="poster" className="flex flex-col items-center justify-center text-slate-500">
           <RefreshCcw className="animate-spin mb-2" />

@@ -218,6 +218,8 @@ Route::get('LotesDeshuese', [RecepcionController::class, 'LotesDeshuese'])->name
 Route::get('LotesLimpieza', [RecepcionController::class, 'LotesLimpieza'])->name('LotesLimpieza');
 Route::get('LotesCongelacion', [RecepcionController::class, 'LotesCongelacion'])->name('LotesCongelacion');
 
+
+Route::post('LotesRefirgeradores', [RecepcionController::class, 'LotesRefirgeradores'])->name('LotesRefirgeradores');
 Route::get('/getInventario', [InventariosController::class, 'getInventario'])->name('getInventario');
 
 
