@@ -3,8 +3,10 @@ import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@
 import { toast } from 'sonner';
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
-import { Building2, Fingerprint, Save, UserPlus, Pencil, Building } from "lucide-react";
+import axios from "axios";
+import { Pencil } from "lucide-react";
 import Datatable from "@/Components/Datatable";
+
 // --- Configuración de Rutas ---
 const route = (name, params = {}) => {
     const id = params.id;
@@ -19,11 +21,18 @@ const route = (name, params = {}) => {
 // --- Componente Principal ---
 export default function AlmacenesRefrigerador() {
     const [almacenes, setAlmacenes] = useState([]);
+    const [basculas, setBasculas] = useState([]); // Catálogo de básculas
     const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [currentAlmacen, setCurrentAlmacen] = useState({ IdAlmacen: null, Nombre: "", Tipo: "" });
+    const [currentAlmacen, setCurrentAlmacen] = useState({
+        IdAlmacen: null,
+        Nombre: "",
+        Tipo: "ALMACEN",
+        IdBascula: ""
+    });
     const [action, setAction] = useState('create');
 
+    // Cargar Almacenes
     const getAlmacenes = async () => {
         try {
             setIsLoading(true);
@@ -37,9 +46,22 @@ export default function AlmacenesRefrigerador() {
         }
     };
 
-    useEffect(() => { getAlmacenes(); }, []);
+    // Cargar Catálogo de Básculas
+    const fetchBasculas = async () => {
+        try {
+            const response = await axios.get('/api/basculas');
+            setBasculas(response.data);
+        } catch (error) {
+            toast.error("Error al cargar catálogo de básculas");
+        }
+    };
 
-    const openModal = (item = { IdAlmacen: null, Nombre: "", Tipo: "" }) => {
+    useEffect(() => {
+        getAlmacenes();
+        fetchBasculas();
+    }, []);
+
+    const openModal = (item = { IdAlmacen: null, Nombre: "", Tipo: "ALMACEN", IdBascula: "" }) => {
         setCurrentAlmacen(item);
         setAction(item.IdAlmacen ? 'edit' : 'create');
         setIsDialogOpen(true);
@@ -48,20 +70,22 @@ export default function AlmacenesRefrigerador() {
     const submitAlmacen = async (formData) => {
         const isEdit = !!formData.IdAlmacen;
         const method = isEdit ? "PUT" : "POST";
-        const ruta = isEdit ? route("almacenes.update", { id: formData.IdAlmacen }) : route("almacenes.store");
+        const ruta = isEdit
+            ? route("almacenes.update", { id: formData.IdAlmacen })
+            : route("almacenes.store");
 
         try {
             await request(ruta, method, formData);
-            toast.success("Almacén guardado");
+            toast.success("Almacén guardado exitosamente");
             getAlmacenes();
             setIsDialogOpen(false);
         } catch (e) {
-            toast.error("Error al guardar");
+            toast.error("Error al guardar el almacén");
         }
     };
 
     return (
-        <div className="w-full  h-[100%]p-4 md:p-8">
+        <div className="w-full p-4 md:p-8">
             <div className="px-6 pb-12">
                 {isLoading ? (
                     <div className="h-96 flex items-center justify-center"><LoadingDiv /></div>
@@ -69,12 +93,11 @@ export default function AlmacenesRefrigerador() {
                     <Datatable
                         data={almacenes}
                         virtual={true}
-                        add={() => {
-                            openModal()
-                        }}
+                        add={() => openModal()}
                         columns={[
                             { header: 'Nombre', accessor: 'Nombre' },
                             { header: 'Tipo', accessor: 'Tipo' },
+                            { header: 'Bascula', accessor: 'bascula.Nombre' },
                             {
                                 header: "Acciones",
                                 cell: (props) => (
@@ -91,51 +114,76 @@ export default function AlmacenesRefrigerador() {
                 )}
             </div>
 
-            {/* Modal de Formulario */}
             <AlmacenFormDialog
                 isOpen={isDialogOpen}
                 closeModal={() => setIsDialogOpen(false)}
                 onSubmit={submitAlmacen}
                 dataToEdit={currentAlmacen}
                 action={action}
+                basculas={basculas}
             />
         </div>
     );
 }
 
-function AlmacenFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action }) {
-    const [formData, setFormData] = useState({ Nombre: "", Tipo: "ALMACEN" });
+// --- Componente del Diálogo (Formulario) ---
+function AlmacenFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, basculas }) {
+    const [formData, setFormData] = useState({ Nombre: "", Tipo: "ALMACEN", IdBascula: "" });
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        if (isOpen) setFormData({
-            IdAlmacen: dataToEdit?.IdAlmacen || null,
-            Nombre: dataToEdit?.Nombre || "",
-            Tipo: "ALMACEN"
-        });
+        if (isOpen) {
+            setFormData({
+                IdAlmacen: dataToEdit?.IdAlmacen || null,
+                Nombre: dataToEdit?.Nombre || "",
+                Tipo: dataToEdit?.Tipo || "ALMACEN",
+                IdBascula: dataToEdit?.IdBascula || ""
+            });
+        }
     }, [isOpen, dataToEdit]);
 
     const handleSave = async (e) => {
         e.preventDefault();
         setSaving(true);
-        try { await onSubmit(formData); } finally { setSaving(false); }
+        try {
+            await onSubmit(formData);
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
         <Transition show={isOpen}>
             <Dialog onClose={closeModal} className="relative z-[100]">
-                <TransitionChild enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                <TransitionChild
+                    enter="ease-out duration-300"
+                    enterFrom="opacity-0"
+                    enterTo="opacity-100"
+                    leave="ease-in duration-200"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                >
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-md" />
                 </TransitionChild>
+
                 <div className="fixed inset-0 flex items-center justify-center p-4">
                     <DialogPanel className="w-full max-w-md bg-white rounded-[2rem] p-8 shadow-2xl relative overflow-hidden border-t-8 border-[#1B2654]">
-                        {saving && <div className="absolute inset-0 z-10 bg-white/80 flex items-center justify-center"><LoadingDiv /></div>}
+                        {saving && (
+                            <div className="absolute inset-0 z-10 bg-white/80 flex items-center justify-center">
+                                <LoadingDiv />
+                            </div>
+                        )}
+
                         <DialogTitle className="text-2xl font-black text-gray-800 mb-6 uppercase tracking-tighter">
                             {action === 'create' ? 'Nuevo Almacén' : 'Ajustar Almacén'}
                         </DialogTitle>
+
                         <form onSubmit={handleSave} className="space-y-6">
+                            {/* Nombre del Almacén */}
                             <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nombre del almacen</label>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                                    Nombre del almacén
+                                </label>
                                 <input
                                     type="text"
                                     value={formData.Nombre}
@@ -146,9 +194,41 @@ function AlmacenFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action })
                                 />
                             </div>
 
+                            {/* Selección de Báscula */}
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                                    Báscula Asignada
+                                </label>
+                                <select
+                                    value={formData.IdBascula}
+                                    onChange={e => setFormData({ ...formData, IdBascula: e.target.value })}
+                                    className="w-full mt-1 px-5 py-4 rounded-2xl bg-gray-100 border-none focus:ring-2 focus:ring-blue-500 font-bold text-gray-700"
+                                    required
+                                >
+                                    <option value="">Selecciona una báscula...</option>
+                                    {basculas.map((b) => (
+                                        <option key={b.IdBascula} value={b.IdBascula}>
+                                            {b.Nombre} — {b.puerto}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Botones de Acción */}
                             <div className="flex gap-4 pt-4">
-                                <button type="button" onClick={closeModal} className="flex-1 py-4 text-gray-400 font-black text-xs uppercase hover:text-gray-600 transition-colors">Cancelar</button>
-                                <button type="submit" className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-blue-200 hover:bg-[#1B2654] transition-all">Confirmar</button>
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="flex-1 py-4 text-gray-400 font-black text-xs uppercase hover:text-gray-600 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-blue-200 hover:bg-[#1B2654] transition-all"
+                                >
+                                    Confirmar
+                                </button>
                             </div>
                         </form>
                     </DialogPanel>

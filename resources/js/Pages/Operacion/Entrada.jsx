@@ -9,14 +9,13 @@ const route = (name) => {
         "LotesEntrada": "/api/LotesEntrada",
         "pesaje.store": "/api/pesaje/guardar-lote",
         "AlmacenesListar": "/api/almacenes",
-        "ProductosLotesHistorial": "/api/ProductosLotesHistorial",
         "ProductosLotes": "/api/ProductosLotes",
         "MovimientoPrimerPesaje": "/api/MovimientoPrimerPesaje"
     };
     return routeMap[name] || `/${name}`;
 };
 
-// --- MODAL DE ÉXITO ---
+// --- MODAL DE ÉXITO (Mantenemos tu diseño de 3rem y bordes) ---
 const SuccessModal = ({ isOpen, onClose, message, registeredWeight }) => {
     if (!isOpen) return null;
     return (
@@ -45,98 +44,78 @@ export default function WeighingDashboard() {
     const [dbProducts, setDbProducts] = useState([]);
     const [almacenes, setAlmacenes] = useState([]);
     const [movimientos, setMovimientos] = useState([]);
-
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Estados de pesaje
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [selectedArea, setSelectedArea] = useState(null);
-    const [currentWeight, setCurrentWeight] = useState("0.00");
-    const [tara, setTara] = useState("0.00");
+    const [currentWeight, setCurrentWeight] = useState("0.000");
+    const [tara, setTara] = useState("0.000");
     const [piezas, setPiezas] = useState(0);
 
-    // Modales
     const [showTaraModal, setShowTaraModal] = useState(false);
     const [showGuardarModal, setShowGuardarModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [lastRegisteredWeight, setLastRegisteredWeight] = useState("0.00");
-
+    const [lastRegisteredWeight, setLastRegisteredWeight] = useState("0.000");
+    const [idBasculaConfigurada, setIdBasculaConfigurada] = useState(""); // Puedes dejarla fija o cargarla de un setting
     const hasFetchedInitialData = useRef(false);
 
-    // Cálculos rápidos
+    // Cálculos dinámicos
     const pesoBruto = parseFloat(currentWeight || 0);
     const pesoTara = parseFloat(tara || 0);
-    const netWeight = Math.max(0, (pesoBruto - pesoTara)).toFixed(2);
-    const totalKilosLote = movimientos.reduce((acc, h) => acc + parseFloat(h.Peso || 0), 0).toFixed(2);
-
+    const netWeight = Math.max(0, (pesoBruto - pesoTara)).toFixed(3);
+    const totalKilosLote = movimientos.reduce((acc, h) => acc + parseFloat(h.Peso || 0), 0).toFixed(3);
     const isReadyToOpenGuardar = !isProcessing && selectedProduct && parseFloat(tara) > 0 && selectedArea && piezas > 0;
 
-    // --- FUNCIONES DE CARGA ---
-
-    const fetchLotes = useCallback(async () => {
+    // --- CARGA DE DATOS ---
+    const fetchData = useCallback(async () => {
         try {
-            const res = await axios.get(route("LotesEntrada"));
-            setLotes(Array.isArray(res.data) ? res.data : []);
-        } catch (e) { console.error("Error lotes", e); }
-    }, []);
+            const [resLotes, resMovs, resAlm] = await Promise.all([
+                axios.get(route("LotesEntrada")),
+                axios.get(route("MovimientoPrimerPesaje")),
+                axios.get(route("AlmacenesListar"))
+            ]);
+            setLotes(resLotes.data || []);
+            setMovimientos(resMovs.data || []);
 
-    const getMovimientos = useCallback(async () => {
-        try {
-            const res = await axios.get(route("MovimientoPrimerPesaje"));
-            setMovimientos(Array.isArray(res.data) ? res.data : []);
-        } catch (e) { console.error("Error movs", e); }
+            const entrada = resAlm.data.find(a => a.Nombre?.toUpperCase() === "ENTRADA");
+
+            setIdBasculaConfigurada(entrada.bascula.puerto); // Puedes dejarla fija o cargarla de un setting
+            setAlmacenes(resAlm.data.filter(a => !["ENTRADA", "RECEPCION", 'CONGELACION'].includes(a.Nombre?.toUpperCase())));
+        } catch (e) { console.error("Error inicial", e); }
     }, []);
 
     const fetchProductosLote = async (idLote) => {
         try {
-            const res = await axios.post(route("ProductosLotes"), { opcion: 'L', idLote: idLote, idAlmacen: 1 });
+            const res = await axios.post(route("ProductosLotes"), { opcion: 'L', idLote, idAlmacen: 1 });
             const data = Array.isArray(res.data) ? res.data : [];
             setDbProducts(data.map(p => ({
                 IdProducto: String(p.idProducto),
                 Nombre: p.Producto,
                 PiezasTeoricas: parseInt(p.Piezas) || 0,
             })));
-            return data; // Retornamos para validación en el guardado
-        } catch (e) { 
-            toast.error("Error al cargar productos"); 
-            return [];
-        }
+        } catch (e) { toast.error("Error productos"); }
     };
 
     useEffect(() => {
         if (hasFetchedInitialData.current) return;
-        const init = async () => {
-            setIsLoading(true);
-            try {
-                const resAlmacenes = await axios.get(route("AlmacenesListar"));
-                setAlmacenes(resAlmacenes.data.filter(a => !["ENTRADA", "RECEPCION", 'CONGELACION'].includes(a.Nombre?.toUpperCase())));
-                await Promise.all([fetchLotes(), getMovimientos()]);
-                hasFetchedInitialData.current = true;
-            } finally { setIsLoading(false); }
-        };
-        init();
-    }, [fetchLotes, getMovimientos]);
+        fetchData().then(() => { setIsLoading(false); hasFetchedInitialData.current = true; });
+    }, [fetchData]);
 
     const handleSelectLote = (lote) => {
         setSelectedLote(lote);
-        setTara("0.00");
-        setCurrentWeight("0.00");
-        setSelectedProduct(null);
-        setSelectedArea(null);
+        setTara("0.000");
+        setCurrentWeight("0.000");
         fetchProductosLote(lote.Lote);
         setTimeout(() => setShowTaraModal(true), 400);
     };
 
-    // --- ACCIÓN PRINCIPAL ---
-
     const registrarPesaje = async (brutoConfirmado, taraConfirmada) => {
         setIsProcessing(true);
-        const pesoNetoFinal = (parseFloat(brutoConfirmado) - parseFloat(taraConfirmada)).toFixed(2);
-
+        const pesoNetoFinal = (parseFloat(brutoConfirmado) - parseFloat(taraConfirmada)).toFixed(3);
         try {
             const user = JSON.parse(localStorage.getItem('perfil'))?.IdUsuario || 1;
-            const payload = {
+            const res = await axios.post(route("pesaje.store"), {
                 id_lote: selectedLote.Lote,
                 id_producto: selectedProduct.IdProducto,
                 cantidad: pesoNetoFinal,
@@ -144,44 +123,31 @@ export default function WeighingDashboard() {
                 id_area_entrada: 1,
                 id_area_salida: selectedArea,
                 idusuario: user
-            };
-
-            const res = await axios.post(route("pesaje.store"), payload);
-
+            });
             setLastRegisteredWeight(pesoNetoFinal);
             setShowSuccessModal(true);
-            getMovimientos(); // Actualiza tabla inferior
-
-            // REFRESCAR PRODUCTOS DEL LOTE Y VALIDAR SI QUEDAN
-            const productosRestantes = await fetchProductosLote(selectedLote.Lote);
-
-            if (productosRestantes.length === 0 || res.data.lote_cerrado) {
-                toast.success("¡Lote finalizado!");
+            const resMovs = await axios.get(route("MovimientoPrimerPesaje"));
+            setMovimientos(resMovs.data || []);
+            if (res.data.lote_cerrado) {
                 setSelectedLote(null);
-                fetchLotes(); // Trae LotesEntrada actualizados
+                fetchData();
             } else {
-                // Limpiar selección para el siguiente producto del mismo lote
+                fetchProductosLote(selectedLote.Lote);
                 setSelectedProduct(null);
                 setPiezas(0);
-                setCurrentWeight("0.00");
             }
-
-        } catch (e) {
-            toast.error("Error al guardar el pesaje");
-        } finally {
-            setIsProcessing(false);
-            setShowGuardarModal(false);
-        }
+        } catch (e) { toast.error("Error al guardar"); }
+        finally { setIsProcessing(false); setShowGuardarModal(false); }
     };
 
     if (isLoading) return <div className="h-screen flex items-center justify-center bg-slate-100"><LoadingDiv /></div>;
 
-    // VISTA DE SELECCIÓN DE LOTE
     if (!selectedLote) {
         return (
+
             <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
                 <div className="max-w-4xl w-full">
-                    <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">Panel de Entrada y salida</h1>
+                    <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">Panel de Pesaje: Entrada y salida</h1>
                     <div className="grid gap-4">
                         {lotes.length > 0 ? (
                             lotes.map((lote) => (
@@ -198,7 +164,7 @@ export default function WeighingDashboard() {
                         ) : (
                             <div className="bg-white p-12 rounded-[2.5rem] shadow-xl border-4 border-dashed border-slate-300 flex flex-col items-center">
                                 <span className="text-6xl mb-4 text-slate-300">📦</span>
-                                <h2 className="text-2xl text-slate-400 text-center">No hay lotes de entrada activos</h2>
+                                <h2 className="text-2xl text-slate-400 text-center">No hay lotes en entrada y salida activos</h2>
                             </div>
                         )}
                     </div>
@@ -211,6 +177,7 @@ export default function WeighingDashboard() {
         <div className="flex flex-col lg:flex-row h-screen bg-slate-200 p-4 gap-4 overflow-hidden font-black uppercase">
             <Toaster position="top-center" richColors />
 
+            {/* MODALES CON TU LÓGICA DE PESO */}
             <BasculaModal
                 isOpen={showTaraModal}
                 title="PESAR TARA"
@@ -218,15 +185,9 @@ export default function WeighingDashboard() {
                 currentReading={currentWeight}
                 buttonText="GUARDAR TARA"
                 colorClass="bg-red-600 border-red-900 hover:bg-red-500"
-                disabledConfirm={parseFloat(currentWeight) <= 0}
-                showSimulate={true}
-                onSimulate={() => setCurrentWeight((Math.random() * (1.5 - 0.2) + 0.2).toFixed(2))}
-                onClose={() => { setShowTaraModal(false); setCurrentWeight("0.00"); }}
-                onConfirm={(brutoEditado) => {
-                    setTara(brutoEditado);
-                    setCurrentWeight("0.00");
-                    setShowTaraModal(false);
-                }}
+                onClose={() => setShowTaraModal(false)}
+                basculaId={idBasculaConfigurada} // <-- LE MANDAMOS EL ID REY
+                onConfirm={(b, t) => { setTara(t); setShowTaraModal(false); }}
             />
 
             <BasculaModal
@@ -237,21 +198,15 @@ export default function WeighingDashboard() {
                 tara={tara}
                 buttonText="CONFIRMAR Y GUARDAR"
                 colorClass="bg-emerald-600 border-emerald-900 hover:bg-emerald-500"
-                disabledConfirm={parseFloat(currentWeight) - parseFloat(tara) <= 0}
-                showSimulate={true}
-                onSimulate={() => setCurrentWeight((Math.random() * (40 - 5) + 5).toFixed(2))}
                 destinationName={almacenes.find(a => (a.id || a.IdAlmacen) === selectedArea)?.Nombre}
-                onClose={() => { setShowGuardarModal(false); setCurrentWeight("0.00"); }}
-                onConfirm={(brutoFinal, taraFinal) => registrarPesaje(brutoFinal, taraFinal)}
+                onClose={() => setShowGuardarModal(false)}
+                basculaId={idBasculaConfigurada} // <-- LE MANDAMOS EL ID REY
+                onConfirm={(b, t) => registrarPesaje(b, t)}
             />
 
-            <SuccessModal
-                isOpen={showSuccessModal}
-                onClose={() => setShowSuccessModal(false)}
-                registeredWeight={lastRegisteredWeight}
-                message={`Registro guardado para ${selectedProduct?.Nombre}`}
-            />
+            <SuccessModal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} registeredWeight={lastRegisteredWeight} message={`Registro guardado para ${selectedProduct?.Nombre}`} />
 
+            {/* MAIN DASHBOARD (TU DISEÑO) */}
             <div className="flex-1 flex flex-col min-h-0 gap-4">
                 <header className="flex justify-between items-center bg-white p-6 rounded-[2.5rem] shadow-md border border-slate-300">
                     <div>
@@ -268,12 +223,9 @@ export default function WeighingDashboard() {
                 <div className="flex-1 overflow-y-auto custom-scroll pr-2">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {dbProducts.map((p) => (
-                            <button
-                                key={p.IdProducto}
-                                onClick={() => { setSelectedProduct(p); setPiezas(p.PiezasTeoricas); }}
+                            <button key={p.IdProducto} onClick={() => { setSelectedProduct(p); setPiezas(p.PiezasTeoricas); }}
                                 className={`p-4 rounded-[2rem] text-left border-b-[10px] h-36 flex flex-col justify-between transition-all shadow-md active:translate-y-2 active:border-b-0
-                                    ${selectedProduct?.IdProducto === p.IdProducto ? "border-red-600 bg-white scale-[0.98]" : "border-slate-300 bg-white"}`}
-                            >
+                                    ${selectedProduct?.IdProducto === p.IdProducto ? "border-red-600 bg-white scale-[0.98]" : "border-slate-300 bg-white"}`}>
                                 <span className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-lg w-fit">{p.PiezasTeoricas} PZS</span>
                                 <span className="text-[12px] leading-tight text-slate-800 line-clamp-2">{p.Nombre}</span>
                             </button>
@@ -286,12 +238,12 @@ export default function WeighingDashboard() {
                         <thead className="bg-slate-50 border-b text-[9px] text-slate-400 sticky top-0">
                             <tr><th className="p-4">PRODUCTO</th><th className="p-4 text-center">PZS</th><th className="p-4 text-right">PESO NETO</th></tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 overflow-y-auto">
+                        <tbody className="divide-y divide-slate-100">
                             {movimientos.map((reg, i) => (
                                 <tr key={i} className="text-[11px] font-bold text-slate-700">
                                     <td className="p-4 truncate">{reg.Nombre}</td>
                                     <td className="p-4 text-center">{reg.Piezas}</td>
-                                    <td className="p-4 text-right font-black">{parseFloat(reg.Peso || 0).toFixed(2)} KG</td>
+                                    <td className="p-4 text-right font-black">{parseFloat(reg.Peso || 0).toFixed(3)} KG</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -299,6 +251,7 @@ export default function WeighingDashboard() {
                 </div>
             </div>
 
+            {/* ASIDE (DISEÑO INDUSTRIAL) */}
             <aside className="w-full md:w-1/3 lg:w-[350px] flex flex-col gap-3">
                 <div className="bg-slate-900 rounded-[2rem] p-4 shadow-xl border-4 border-slate-800">
                     <div className="bg-[#0f1713] rounded-[1.5rem] p-4 border-4 border-black text-center">
@@ -307,35 +260,33 @@ export default function WeighingDashboard() {
                     </div>
                     <div className="grid grid-cols-2 gap-2 mt-3">
                         <div className="bg-slate-800 py-2 rounded-xl text-center">
-                            <div className="text-base font-mono text-blue-400">{pesoBruto.toFixed(2)}</div>
-                            <span className="text-slate-500 text-[7px] font-bold">BRUTO</span>
+                            <div className="text-base font-mono text-blue-400">{pesoBruto.toFixed(3)}</div>
+                            <span className="text-slate-500 text-[7px] font-bold uppercase">Bruto</span>
                         </div>
                         <div className="bg-slate-800 py-2 rounded-xl text-center">
-                            <div className="text-base font-mono text-red-400">-{pesoTara.toFixed(2)}</div>
-                            <span className="text-slate-500 text-[7px] font-bold">TARA</span>
+                            <div className="text-base font-mono text-red-400">-{pesoTara.toFixed(3)}</div>
+                            <span className="text-slate-500 text-[7px] font-bold uppercase">Tara</span>
                         </div>
                     </div>
                 </div>
 
                 <div className="bg-white p-4 rounded-[2rem] border-4 border-slate-200 flex flex-col gap-3">
-                    <button onClick={() => { setCurrentWeight("0.00"); setShowTaraModal(true); }} 
-                            className="bg-slate-800 text-white py-3 rounded-xl text-[10px] border-b-4 border-black font-black active:translate-y-1 active:border-b-0">
+                    <button onClick={() => setShowTaraModal(true)}
+                        className="bg-slate-800 text-white py-3 rounded-xl text-[10px] border-b-4 border-black font-black active:translate-y-1 active:border-b-0 uppercase">
                         CAMBIAR TARA
                     </button>
 
                     <div className="w-full px-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block text-center">Piezas</label>
                         <div className="flex gap-2 h-16">
-                            <button onClick={() => setPiezas(Math.max(0, Number(piezas || 0) - 1))} className="flex-1 rounded-2xl bg-slate-100 border-b-4 border-slate-300 font-black text-2xl">-</button>
+                            <button onClick={() => setPiezas(Math.max(0, Number(piezas) - 1))} className="flex-1 rounded-2xl bg-slate-100 border-b-4 border-slate-300 font-black text-2xl">-</button>
                             <input type="number" value={piezas} onChange={e => setPiezas(e.target.value)} className="w-[35%] bg-slate-50 border-b-4 border-slate-200 rounded-2xl text-center text-3xl font-black outline-none" />
-                            <button onClick={() => setPiezas(Number(piezas || 0) + 1)} className="flex-1 rounded-2xl bg-slate-100 border-b-4 border-slate-300 font-black text-2xl">+</button>
+                            <button onClick={() => setPiezas(Number(piezas) + 1)} className="flex-1 rounded-2xl bg-slate-100 border-b-4 border-slate-300 font-black text-2xl">+</button>
                         </div>
                     </div>
 
                     <div>
-                        <label className={`text-[10px] block mb-2 text-center tracking-widest font-black uppercase ${!selectedArea ? 'text-red-500 animate-pulse' : 'text-slate-400'}`}>
-                            {!selectedArea ? "⚠️ Elija Destino" : "Almacen de Salida"}
-                        </label>
+                        <label className="text-[10px] block mb-2 text-center tracking-widest font-black uppercase text-slate-400">Almacen de Salida</label>
                         <div className="flex gap-1">
                             {almacenes.map(a => (
                                 <button key={a.id || a.IdAlmacen} onClick={() => setSelectedArea(a.id || a.IdAlmacen)}
@@ -346,11 +297,8 @@ export default function WeighingDashboard() {
                         </div>
                     </div>
 
-                    <button
-                        onClick={() => { setCurrentWeight("0.00"); setShowGuardarModal(true); }}
-                        disabled={!isReadyToOpenGuardar}
-                        className={`w-full py-5 rounded-[1.5rem] text-lg border-b-[8px] transition-all font-black ${!isReadyToOpenGuardar ? "bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed" : "bg-emerald-600 text-white border-emerald-900 hover:bg-emerald-500 active:translate-y-1 active:border-b-0"}`}
-                    >
+                    <button onClick={() => setShowGuardarModal(true)} disabled={!isReadyToOpenGuardar}
+                        className={`w-full py-5 rounded-[1.5rem] text-lg border-b-[8px] transition-all font-black ${!isReadyToOpenGuardar ? "bg-slate-100 text-slate-300 border-slate-200" : "bg-emerald-600 text-white border-emerald-900 hover:bg-emerald-500 active:translate-y-1 active:border-b-0 uppercase"}`}>
                         {!selectedProduct ? "ELIJA PRODUCTO" : piezas <= 0 ? "INDIQUE PIEZAS" : !selectedArea ? "ELIJA DESTINO" : "Pesar y Guardar"}
                     </button>
                 </div>

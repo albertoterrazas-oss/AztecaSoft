@@ -11,7 +11,7 @@ class AlmacenesController extends Controller
 {
     public function index()
     {
-        $asuntos = Almacenes::orderBy('Nombre', 'asc')->where('Tipo', 'ALMACEN')->get();
+        $asuntos = Almacenes::orderBy('Nombre', 'asc')->with('bascula')->where('Tipo', 'ALMACEN')->get();
         return response()->json($asuntos);
     }
 
@@ -31,6 +31,7 @@ class AlmacenesController extends Controller
         $validator = Validator::make($request->all(), [
             'Nombre' => 'required|string|max:255',
             'Tipo'   => 'nullable|string|max:50', // Ajusta el max según tu DB
+            'IdBascula' => 'nullable|integer' // Asegura que el ID de báscula exista
         ]);
 
         if ($validator->fails()) {
@@ -73,6 +74,8 @@ class AlmacenesController extends Controller
         $validator = Validator::make($request->all(), [
             'Nombre' => 'sometimes|required|string|max:255',
             'Tipo'   => 'nullable|string|max:50',
+            'IdBascula' => 'nullable|integer' // Asegura que el ID de báscula exista
+
         ]);
 
         if ($validator->fails()) {

@@ -18,6 +18,7 @@ use App\Http\Controllers\Catalogs\RegistroEntradaController;
 use App\Http\Controllers\Catalogs\UnidadesController;
 use App\Http\Controllers\Catalogs\AsuntosController;
 use App\Http\Controllers\Catalogs\BasculasController;
+use App\Http\Controllers\Catalogs\CajasController;
 use App\Http\Controllers\Catalogs\ClientesController;
 use App\Http\Controllers\Catalogs\ColoniasController;
 use App\Http\Controllers\Catalogs\DashboardController;
@@ -251,7 +252,7 @@ Route::post('ConfiguracionCorreoStore', [CorreosController::class, 'Configuracio
 Route::post('sendMailTest', [RegistroEntradaController::class, 'sendMailTest'])->name('sendMailTest');
 
 
-
+Route::post('obtenerPorPuerto', [BasculasController::class, 'obtenerPorPuerto'])->name('obtenerPorPuerto');
 
 
 Route::post('ultimos-movimientos-unidad', [RegistroEntradaController::class, 'getUltimosMovimientosUnidad'])->name('ultimos-movimientos-unidad');
@@ -282,6 +283,11 @@ Route::resource('personas', controller: PersonasController::class)->only([
     'update'    // (PUT/PATCH /api/destinos/{destino})
 ]);
 
+Route::resource('cajas', controller: CajasController::class)->only([
+    'index',    // (GET /api/destinos)
+    'store',    // (POST /api/destinos)
+    'update'    // (PUT/PATCH /api/destinos/{destino})
+]);
 
 
 Route::get('getKilosDashboard', [ProcesosDashboardController::class, 'getKilosDashboard'])->name('getKilosDashboard');

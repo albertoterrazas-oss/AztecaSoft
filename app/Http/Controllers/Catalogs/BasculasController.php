@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Catalogos\Basculas;
 use Illuminate\Http\Request;
 use Exception;
-
+use Http;
 class BasculasController extends Controller
 {
     /**
@@ -96,6 +96,39 @@ class BasculasController extends Controller
             return response()->json(['message' => 'Báscula eliminada correctamente']);
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+
+    public function obtenerPorPuerto(Request $request)
+    {
+        try {
+            // Laravel le "pega" a la IP del servicio de la báscula (puerto 5000)
+            // Usamos un timeout por si la báscula está desconectada
+                    // dd(123);
+            $url = "http://192.168.139.89:5000/pesaje/puerto/{$request->puerto}";
+
+            $response = Http::timeout(3)->get($url);
+
+            if ($response->successful()) {
+                // Si la báscula respondió bien, retornamos su JSON
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $response->json()
+                ]);
+            }
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'La báscula no respondió correctamente'
+            ], 502);
+        } catch (\Exception $e) {
+            Log::error("Error de conexión al puerto $puerto: " . $e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No se pudo establecer conexión con el servicio de pesaje local.'
+            ], 500);
         }
     }
 }

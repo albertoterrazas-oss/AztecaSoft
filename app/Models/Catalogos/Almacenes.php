@@ -15,5 +15,13 @@ class Almacenes extends Model
     protected $fillable = [
         'Nombre',
         'Tipo',
+        'IdBascula'
     ];
+
+
+
+    public function bascula()
+    {
+        return $this->belongsTo(Basculas::class, 'IdBascula', 'IdBascula');
+    }
 }

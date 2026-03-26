@@ -30,12 +30,12 @@ export default function DeshueseDashboard() {
     const pesoBruto = parseFloat(currentWeight || 0);
     const pesoTara = parseFloat(taraGlobal || 0);
     const netWeight = useMemo(() => Math.max(0, pesoBruto - pesoTara).toFixed(2), [pesoBruto, pesoTara]);
-
+    const [idBasculaConfigurada, setIdBasculaConfigurada] = useState("");
     // Función para obtener datos (Memorizada para evitar loops)
     const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
-            const [resL, resA, resP, resR,conges] = await Promise.all([
+            const [resL, resA, resP, resR, conges] = await Promise.all([
                 axios.get("/api/LotesDeshuese"),
                 axios.get("/api/almacenes"),
                 axios.get("/api/getsubproductos"),
@@ -43,6 +43,9 @@ export default function DeshueseDashboard() {
             ]);
             setLotes(resL.data || []);
             setDbProducts(resP.data || []);
+
+            const limp = resA.data.find(a => a.Nombre?.toUpperCase() === "DESHUESE");
+            if (limp?.bascula?.puerto) setIdBasculaConfigurada(limp.bascula.puerto);
             const filteredAlmacenes = (resA.data || []).filter(a => !["ENTRADA", "LIMPIEZA", 'RECEPCION', 'DESHUESE', 'VENTA'].some(w => a.Nombre.toUpperCase().includes(w)));
             setAlmacenes(filteredAlmacenes);
             if (filteredAlmacenes.length > 0) setAreaDestino(filteredAlmacenes[0].IdAlmacen);
@@ -167,7 +170,7 @@ export default function DeshueseDashboard() {
     return (
         <div className="relative flex flex-col lg:flex-row h-[100%] bg-slate-200 p-4 gap-4 font-black uppercase overflow-hidden">
 
-            <BasculaModal
+            {/* <BasculaModal
                 isOpen={showTaraModal}
                 title="PASO 1: TARA"
                 currentReading={currentWeight}
@@ -187,7 +190,35 @@ export default function DeshueseDashboard() {
                 onSimulate={() => setCurrentWeight((Math.random() * 15 + 5).toFixed(2))}
                 onClose={() => setShowPesarModal(false)}
                 showSimulate
+            /> */}
+
+
+            <BasculaModal
+                isOpen={showTaraModal}
+                title="PESAR TARA"
+                subtitle="Coloque recipiente vacío"
+                currentReading={currentWeight}
+                buttonText="GUARDAR TARA"
+                colorClass="bg-red-600 border-red-900 hover:bg-red-500"
+                onClose={() => setShowTaraModal(false)}
+                basculaId={idBasculaConfigurada}
+                onConfirm={(b, t) => { setTaraGlobal(t); setShowTaraModal(false); }}
             />
+
+            <BasculaModal
+                isOpen={showPesarModal}
+                title="PESAR PRODUCTO"
+                subtitle={selectedChild?.Nombre}
+                currentReading={currentWeight}
+                tara={taraGlobal}
+                buttonText="CONFIRMAR Y GUARDAR"
+                colorClass="bg-emerald-600 border-emerald-900 hover:bg-emerald-500"
+                // destinationName={almacenes.find(a => (a.id || a.IdAlmacen) === selectedArea)?.Nombre}
+                onClose={() => setShowPesarModal(false)}
+                basculaId={idBasculaConfigurada}
+                onConfirm={(b, t) => agregarAlCarrito(b, t)}
+            />
+
 
             <div className="flex-1 flex flex-col min-h-0 gap-4">
                 <header className="bg-white p-6 rounded-[2.5rem] shadow-md border-b-[10px] border-slate-300 flex justify-between items-center">
@@ -273,14 +304,14 @@ export default function DeshueseDashboard() {
                 </div>
 
                 <div className="bg-white p-6 rounded-[2.5rem] border-b-[10px] border-slate-300 flex flex-col gap-5 shadow-xl">
-                    <div>
+                    {/* <div>
                         <label className="text-[9px] block text-center mb-2 font-black text-slate-400">PIEZAS</label>
                         <div className="flex gap-2 h-14">
                             <button onClick={() => setPiezas(Math.max(0, Number(piezas) - 1))} className="flex-1 rounded-xl bg-slate-100 border-b-4 border-slate-300 font-black hover:bg-red-50">-</button>
                             <input type="number" value={piezas} onChange={e => setPiezas(e.target.value)} className="w-20 text-center font-black bg-slate-50 border-b-4 border-slate-200 rounded-xl outline-none" placeholder="0" />
                             <button onClick={() => setPiezas(Number(piezas) + 1)} className="flex-1 rounded-xl bg-slate-100 border-b-4 border-slate-300 font-black hover:bg-green-50">+</button>
                         </div>
-                    </div>
+                    </div> */}
 
                     <div className="space-y-3 pt-2">
                         <button
