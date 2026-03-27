@@ -181,7 +181,7 @@ const Empaque = () => {
 
     const nuevoItem = {
       id: Date.now(),
-      idProducto: selectedProductoObj.idProducto,
+      idProducto: selectedProductoObj.IdProducto,
       producto: selectedProductoObj.Producto,
       idLote: loteActivoObj.idLote || loteActivoObj.Lote, // Ajustar según tu API
       lote: loteActivoObj.Lote,
