@@ -223,7 +223,7 @@ const Empaque = () => {
       const cajasJSON = itemsEnPaquete.map(item => ({
         caja: "1",
         idLote: item.idLote,
-        idProducto: item.idProducto,
+        idProducto: item.IdProducto,
         idAlmacenOrigen: item.idAlmacenOrigen,
         peso: parseFloat(item.peso),
         piezas: 0
