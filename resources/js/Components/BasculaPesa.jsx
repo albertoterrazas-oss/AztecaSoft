@@ -103,7 +103,7 @@ const BasculaModal = ({
     const inputCleanClass = "bg-transparent outline-none focus:ring-0 border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
     return (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 animate-in fade-in duration-200"style={{zoom:0.9}}>
             <div className="bg-slate-900 w-full max-w-2xl rounded-[4rem] p-10 border-4 border-slate-700 shadow-2xl relative max-h-[95vh]">
 
                 {/* Header */}
@@ -193,7 +193,7 @@ const BasculaModal = ({
                         )}
                     </div>
 
-                    <div className="relative py-4">
+                    <div className="relative py-4" style={{zoom:0.4}}>
                         <div
                             className={`w-full font-mono ${isSimulating ? 'text-amber-400' : 'text-green-400'} leading-none tracking-tighter drop-shadow-[0_0_20px_rgba(74,222,128,0.4)] text-center text-[clamp(3rem,10vw,7rem)] whitespace-nowrap transition-colors`}
                         >
