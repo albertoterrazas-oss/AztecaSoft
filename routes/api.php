@@ -29,9 +29,11 @@ use App\Http\Controllers\Catalogs\ProductosController;
 use App\Http\Controllers\Catalogs\ProvedoresController;
 use App\Http\Controllers\Procesos\DashboardController as ProcesosDashboardController;
 use App\Http\Controllers\Procesos\DespieceController;
+use App\Http\Controllers\Procesos\EmpaqueController;
 use App\Http\Controllers\Procesos\InventariosController;
 use App\Http\Controllers\Procesos\RecepcionController;
 use App\Http\Controllers\Procesos\SalidaController;
+use App\Http\Controllers\Procesos\VentaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -250,7 +252,10 @@ Route::post('/WhoAyudantes',  [RegistroEntradaController::class, 'WhoAyudantes']
 Route::get('indexconfiguracioncorreo', [CorreosController::class, 'indexconfiguracioncorreo'])->name('indexconfiguracioncorreo');
 Route::post('ConfiguracionCorreoStore', [CorreosController::class, 'ConfiguracionCorreoStore'])->name('ConfiguracionCorreoStore');
 Route::post('sendMailTest', [RegistroEntradaController::class, 'sendMailTest'])->name('sendMailTest');
+Route::post('armarCajas', [EmpaqueController::class, 'armarCajas'])->name('armarCajas');
 
+Route::get('CajasIndex', [VentaController::class, 'CajasIndex'])->name('CajasIndex');
+Route::post('venderCajas', [VentaController::class, 'venderCajas'])->name('venderCajas');
 
 Route::post('obtenerPorPuerto', [BasculasController::class, 'obtenerPorPuerto'])->name('obtenerPorPuerto');
 

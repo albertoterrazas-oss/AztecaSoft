@@ -5,10 +5,11 @@ import { toast } from "sonner";
 import LoadingDiv from "@/Components/LoadingDiv";
 import axios from "axios";
 import {
-    Save, Loader2, Truck, Search, ArrowLeft, 
+    Save, Loader2, Truck, Search, ArrowLeft,
     FileText, Check, MessageSquare, ClipboardCheck, Info,
     Plus, Minus
 } from 'lucide-react';
+import logo from './img/logo1.png';
 
 export default function CombinedDashboard() {
     const [isLoading, setIsLoading] = useState(true);
@@ -131,9 +132,25 @@ export default function CombinedDashboard() {
             {step === 1 ? (
                 <div className="flex h-screen items-center justify-center p-4">
                     <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-md bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-200">
-                        <div className="bg-red-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                            <Truck className="text-red-600 w-8 h-8" />
-                        </div>
+                        {/* <div className="bg-red-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto"> */}
+                        {/* <Truck className="text-red-600 w-8 h-8" /> */}
+
+                        <img
+                            src={logo}
+                            alt="Logotipo"
+                            style={{
+                                maxWidth: '45%', // Mantienes el ancho máximo que querías
+                                height: 'auto',  // Mantenemos auto por seguridad, aunque aspectRatio manda
+                                display: 'block', // Necesario para que el margin auto funcione
+
+                                // --- NUEVOS ESTILOS PARA REDONDA Y CENTRADA ---
+                                borderRadius: '50%', // Hace los bordes redondos (50% crea un círculo)
+                                aspectRatio: '1/1',  // Fuerza a que sea un cuadrado perfecto (importante para el círculo)
+                                objectFit: 'cover',   // Corta la imagen para que rellene el círculo sin estirarse
+                                margin: '0 auto'      // Centra horizontalmente el elemento block
+                            }}
+                        />
+                        {/* </div> */}
                         <h2 className="text-center text-2xl font-black uppercase tracking-tight mb-2">Nueva Recepción</h2>
                         <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-4">
                             <select
@@ -154,12 +171,12 @@ export default function CombinedDashboard() {
                 </div>
             ) : (
                 <div className="flex flex-col h-screen overflow-hidden">
-                    
+
                     {/* HEADER CONSOLIDADO: TITULO + TOTALES + BOTON GUARDAR */}
                     <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0 shadow-sm">
                         <div className="flex items-center gap-4">
                             <button onClick={() => setStep(1)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-400">
-                                <ArrowLeft className="w-5 h-5"/>
+                                <ArrowLeft className="w-5 h-5" />
                             </button>
                             <div>
                                 <h1 className="text-lg font-black uppercase leading-none tracking-tighter">Hoja de Entrada de Rastro</h1>
@@ -181,9 +198,9 @@ export default function CombinedDashboard() {
                             </div>
 
                             {/* BOTÓN GUARDAR INTEGRADO */}
-                            <button 
-                                onClick={handleSave} 
-                                disabled={totals.piezas === 0 && totals.decomiso === 0} 
+                            <button
+                                onClick={handleSave}
+                                disabled={totals.piezas === 0 && totals.decomiso === 0}
                                 className="bg-[#1B2654] hover:bg-slate-800 px-6 py-3 rounded-xl text-[10px] font-black text-white uppercase tracking-widest disabled:bg-slate-300 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-blue-900/10 active:scale-95"
                             >
                                 Guardar Lote <Save className="w-4 h-4" />
@@ -193,7 +210,7 @@ export default function CombinedDashboard() {
 
                     <main className="flex-1 overflow-y-auto p-4 bg-slate-50/50">
                         <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4">
-                            
+
                             {/* COLUMNA PRODUCTOS */}
                             <section className="lg:col-span-8 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                                 <div className="p-4 border-b border-slate-100 bg-white space-y-3">
@@ -236,7 +253,7 @@ export default function CombinedDashboard() {
                                                                 <Minus className="w-3 h-3" />
                                                             </button>
                                                             <input type="number" className="w-12 bg-slate-100/50 border-none rounded-lg p-1.5 text-center text-xs font-black focus:ring-1 focus:ring-red-500"
-                                                                value={itemValues[p.IdProducto]?.piezas || ""} onChange={(e) => handleManualChange(p.IdProducto, 'piezas', e.target.value)} placeholder="0"/>
+                                                                value={itemValues[p.IdProducto]?.piezas || ""} onChange={(e) => handleManualChange(p.IdProducto, 'piezas', e.target.value)} placeholder="0" />
                                                             <button onClick={() => handleAdjustValue(p.IdProducto, 'piezas', 1)}
                                                                 className="w-7 h-7 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-600 active:bg-slate-100 transition-all">
                                                                 <Plus className="w-3 h-3" />
@@ -250,7 +267,7 @@ export default function CombinedDashboard() {
                                                                 <Minus className="w-3 h-3" />
                                                             </button>
                                                             <input type="number" className="w-12 bg-red-50/50 border-none rounded-lg p-1.5 text-center text-xs font-black text-red-600 focus:ring-1 focus:ring-red-500"
-                                                                value={itemValues[p.IdProducto]?.decomiso || ""} onChange={(e) => handleManualChange(p.IdProducto, 'decomiso', e.target.value)} placeholder="0"/>
+                                                                value={itemValues[p.IdProducto]?.decomiso || ""} onChange={(e) => handleManualChange(p.IdProducto, 'decomiso', e.target.value)} placeholder="0" />
                                                             <button onClick={() => handleAdjustValue(p.IdProducto, 'decomiso', 1)}
                                                                 className="w-7 h-7 flex items-center justify-center bg-white border border-red-100 text-red-600 active:bg-red-50 transition-all">
                                                                 <Plus className="w-3 h-3" />

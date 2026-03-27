@@ -3,6 +3,7 @@ import { Toaster, toast } from "sonner";
 import LoadingDiv from "@/Components/LoadingDiv";
 import axios from "axios";
 import BasculaModal from '../../Components/BasculaPesa.jsx';
+import logo from './img/logo1.png';
 
 const route = (name) => {
     const routeMap = {
@@ -147,7 +148,15 @@ export default function WeighingDashboard() {
 
             <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
                 <div className="max-w-4xl w-full">
-                    <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">Panel de Pesaje: Entrada y salida</h1>
+
+
+                    {/* <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">Panel de Pesaje:  backgroundColor: '#A61A18' Entrada y salida</h1> */}
+                    <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
+                        Panel de Pesaje:
+                        <span style={{ color: '#A61A18'  }}>
+                            Entrada y salida
+                        </span>
+                    </h1>
                     <div className="grid gap-4">
                         {lotes.length > 0 ? (
                             lotes.map((lote) => (

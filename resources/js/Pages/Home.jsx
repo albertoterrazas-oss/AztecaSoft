@@ -193,7 +193,9 @@ const routesConfig = [
     { path: "/Entrada", component: lazy(() => import('./Operacion/Entrada')) },
     { path: "/Limpieza", component: lazy(() => import('./Operacion/Limpieza')) },
     { path: "/Deshuese", component: lazy(() => import('./Operacion/Deshuese')) },
-    { path: "/empaque", component: lazy(() => import('./Operacion/Venta')) },
+    { path: "/empaque", component: lazy(() => import('./Operacion/Empaque')) },
+    { path: "/venta", component: lazy(() => import('./Operacion/Venta')) },
+
     { path: "/basculas", component: lazy(() => import('./Catalogos/Basculas')) },
     { path: "/congelacion", component: lazy(() => import('./Operacion/Congelacion')) },
     { path: "/cajas", component: lazy(() => import('./Catalogos/Cajas')) },

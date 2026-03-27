@@ -141,7 +141,14 @@ export default function DeshueseDashboard() {
 
             <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
                 <div className="max-w-4xl w-full">
-                    <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">Panel de Deshuese</h1>
+
+                    <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
+                        Panel de Pesaje:
+                        <span style={{ color: '#A61A18' }}>
+                            Deshuese
+                        </span>
+                    </h1>
+                    
                     <div className="grid gap-4">
                         {lotes.length > 0 ? (
                             lotes.map((lote) => (
@@ -169,29 +176,6 @@ export default function DeshueseDashboard() {
 
     return (
         <div className="relative flex flex-col lg:flex-row h-[100%] bg-slate-200 p-4 gap-4 font-black uppercase overflow-hidden">
-
-            {/* <BasculaModal
-                isOpen={showTaraModal}
-                title="PASO 1: TARA"
-                currentReading={currentWeight}
-                onConfirm={(p) => { setTaraGlobal(p); setCurrentWeight("0.00"); setShowTaraModal(false); }}
-                onSimulate={() => setCurrentWeight("5.20")}
-                onClose={() => setSelectedLote(null)}
-                showSimulate
-            />
-
-            <BasculaModal
-                isOpen={showPesarModal}
-                title="PASO 2: PESO NETO"
-                subtitle={selectedChild?.Nombre}
-                currentReading={currentWeight}
-                tara={taraGlobal}
-                onConfirm={agregarAlCarrito}
-                onSimulate={() => setCurrentWeight((Math.random() * 15 + 5).toFixed(2))}
-                onClose={() => setShowPesarModal(false)}
-                showSimulate
-            /> */}
-
 
             <BasculaModal
                 isOpen={showTaraModal}

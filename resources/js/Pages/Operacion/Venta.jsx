@@ -1,322 +1,296 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import BasculaModal from '../../Components/BasculaPesa.jsx';
-
+import { toast, Toaster } from 'sonner';
 import {
-  Thermometer,
-  ChevronLeft,
-  CircleDot,
-  Package,
-  Trash2,
-  Save,
-  Scale,
-  X,
-  Loader2
+  Package, ChevronRight, X, CheckCircle2,
+  User, Truck, Save, Box, Loader2, ArrowLeft,
+  Printer, ArchiveX
 } from 'lucide-react';
+import { Link } from "react-router-dom";
 
-// --- SUB-COMPONENTE: TARJETA DE LOTE ---
-const LoteCard = ({ lote, idAlmacen, onSelectProducto }) => {
-  const [productos, setProductos] = useState([]);
-  const [loading, setLoading] = useState(true);
+const PanelSalidaPacas = () => {
+  // --- ESTADOS ---
+  const [clientes, setClientes] = useState([]);
+  const [pacasInventario, setPacasInventario] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingCajas, setIsLoadingCajas] = useState(false);
+  const [despachador, setDespachador] = useState({ nombre: "Usuario", foto: null });
 
+  const [step, setStep] = useState('inicio');
+  const [clienteSel, setClienteSel] = useState(null);
+  const [pacasSeleccionadas, setPacasSeleccionadas] = useState([]);
+
+  // 1. CARGA INICIAL
   useEffect(() => {
-    const fetchProductos = async () => {
-      try {
-        setLoading(true);
-        const res = await axios.post("/api/ProductosLotesHistorial", {
-          opcion: 'A',
-          Lote: lote.Lote,
-          idAlmacen: idAlmacen
-        });
-        setProductos(Array.isArray(res.data) ? res.data : []);
-      } catch (e) {
-        console.error(`Error en productos del lote ${lote.Lote}`, e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (lote.Lote) fetchProductos();
-  }, [lote.Lote, idAlmacen]);
-
-  return (
-    <div className="mb-12">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="h-4 w-1 bg-blue-600"></div>
-        <h3 className="text-sm font-black italic tracking-widest uppercase text-slate-800">
-          Lote: {lote.Lote} <span className="mx-2 text-slate-300">|</span>
-          <span className="text-blue-600">Proveedor: {lote.Proveedor || 'N/A'}</span>
-        </h3>
-      </div>
-
-      <div className="bg-slate-100 rounded-[3rem] p-8 grid grid-cols-2 lg:grid-cols-3 gap-6 shadow-inner border border-slate-200 min-h-[150px] items-center text-black">
-        {loading ? (
-          <div className="col-span-full flex flex-col items-center justify-center py-4 text-slate-400">
-            <Loader2 className="animate-spin mb-2" size={24} />
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Sincronizando...</span>
-          </div>
-        ) : productos.length > 0 ? (
-          productos.map((p, idx) => (
-            <motion.button
-              key={`${p.idProducto}-${idx}`}
-              whileHover={{ y: -5, scale: 1.02 }}
-              onClick={() => onSelectProducto(p.Producto)}
-              className="bg-[#1B2656] text-white p-8 rounded-[2rem] flex flex-col items-center gap-3 shadow-lg group relative overflow-hidden"
-            >
-              <Package className="text-blue-400 group-hover:scale-110 transition-transform" size={28} />
-              <span className="font-black uppercase text-[10px] tracking-widest text-center leading-tight">
-                {p.Producto}
-              </span>
-              <div className="mt-2 px-3 py-1 bg-white/10 rounded-full">
-                <span className="text-[9px] font-mono text-blue-300 font-bold">{p.KG} KG EN STOCK</span>
-              </div>
-            </motion.button>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-6 text-slate-400 font-bold uppercase text-[10px] italic">
-            Sin productos registrados
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// --- COMPONENTE PRINCIPAL ---
-const SistemaRomaneoSanGabriel = () => {
-  const [view, setView] = useState('grid');
-  const [almacenes, setAlmacenes] = useState([]);
-  const [lotes, setLotes] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Estados de Selección y Pesaje
-  const [selectedCamara, setSelectedCamara] = useState(null);
-  const [selectedProducto, setSelectedProducto] = useState(null);
-  const [itemsEnPaquete, setItemsEnPaquete] = useState([]);
-
-  // Estados de los Modales de Báscula
-  const [showTaraModal, setShowTaraModal] = useState(false);
-  const [showGuardarModal, setShowGuardarModal] = useState(false);
-  const [tara, setTara] = useState(0);
-  const [currentWeight, setCurrentWeight] = useState(0); // Aquí conectarías tu lectura real
-  const [idBasculaConfigurada] = useState(1);
-
-  useEffect(() => {
-    const fetchAlmacenes = async () => {
-      try {
-        setLoading(true);
-        const resAlmacenes = await axios.get(route("AlmacenesRefrigerados"));
-        setAlmacenes(resAlmacenes.data);
-      } catch (error) {
-        console.error("Error cámaras:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAlmacenes();
-  }, []);
-
-  const fetchLotes = useCallback(async (camara) => {
-    try {
-      const idAlmacen = camara.IdAlmacen || camara.id;
-      const res = await axios.post(route("LotesRefirgeradores"), { Almacen: idAlmacen });
-      setLotes(Array.isArray(res.data) ? res.data : []);
-    } catch (e) {
-      console.error("Error lotes:", e);
+    const perfilData = localStorage.getItem('perfil');
+    if (perfilData) {
+      const p = JSON.parse(perfilData);
+      setDespachador({
+        nombre: `${p.Nombres} ${p.ApePat} ${p.ApeMat}`,
+        foto: p.PathFotoEmpleado
+      });
     }
+
+    const fetchClientes = async () => {
+      try {
+        const response = await axios.get(route("clientes.index"));
+        setClientes(response.data);
+      } catch (error) {
+        toast.error("Error al cargar la lista de clientes.");
+      }
+    };
+    fetchClientes();
   }, []);
 
-  const iniciarApertura = (camara) => {
-    setSelectedCamara(camara);
-    setView('apertura');
-    fetchLotes(camara);
-    setTimeout(() => {
-      setView('estanteria');
-    }, 2500);
+  // 2. CARGA DE INVENTARIO
+  const fetchCajas = async () => {
+    try {
+      setIsLoadingCajas(true);
+      const response = await axios.get(route("CajasIndex"));
+      setPacasInventario(response.data);
+      setStep('inventario');
+    } catch (error) {
+      toast.error("Error al obtener el inventario de cajas.");
+    } finally {
+      setIsLoadingCajas(false);
+    }
   };
 
-  // Acción al seleccionar producto: Abrir flujo de báscula
-  const handleSeleccionProducto = (productoNombre) => {
-    setSelectedProducto(productoNombre);
-    setTara(0);
-    setShowTaraModal(true);
+  // 3. LÓGICA DE IMPRESIÓN
+  const handlePrint = () => {
+    window.print();
   };
 
-  // Registro final después del segundo modal
-  const registrarPesaje = (basculaId, pesoBruto) => {
-    const pesoNeto = pesoBruto - tara;
-    const nuevoItem = {
-      id: Date.now(),
-      producto: selectedProducto,
-      peso: pesoNeto.toFixed(2),
-      tara: tara,
-      bruto: pesoBruto
-    };
-    setItemsEnPaquete([nuevoItem, ...itemsEnPaquete]);
-    setShowGuardarModal(false);
+  // 4. ENVÍO AL BACKEND
+  const handleGuardarVenta = async () => {
+    if (!clienteSel) {
+      toast.error("Selecciona un cliente para continuar.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const payload = {
+        IdCliente: clienteSel.IdCliente,
+        user: JSON.parse(localStorage.getItem('perfil'))?.IdUsuario || 1,
+        cajas: pacasSeleccionadas.map(p => p.IdCaja)
+      };
+
+      const response = await axios.post(route("venderCajas"), payload);
+
+      if (response.data.success) {
+        toast.success("Venta procesada correctamente.");
+        // Pequeño delay para que el usuario vea el éxito antes de imprimir o resetear
+        setTimeout(() => {
+          handlePrint(); 
+          setPacasSeleccionadas([]);
+          setClienteSel(null);
+          setStep('inicio');
+        }, 1000);
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.details || "Error al procesar el despacho.";
+      toast.error(errorMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const togglePaca = (paca) => {
+    const existe = pacasSeleccionadas.find(p => p.IdCaja === paca.IdCaja);
+    if (existe) {
+      setPacasSeleccionadas(pacasSeleccionadas.filter(p => p.IdCaja !== paca.IdCaja));
+    } else {
+      setPacasSeleccionadas([...pacasSeleccionadas, paca]);
+    }
+  };
+
+  const totalKilos = useMemo(() => {
+    return pacasSeleccionadas.reduce((acc, p) => acc + parseFloat(p.KilosTotales || 0), 0).toFixed(2);
+  }, [pacasSeleccionadas]);
+
+  const parsearProductos = (stringDetalle) => {
+    if (!stringDetalle) return [];
+    return stringDetalle.split(',').map(item => {
+      const [nombre] = item.split('(');
+      const peso = item.match(/\(([^)]+)\)/)?.[1] || '0.00kg';
+      return {
+        nombre: nombre.trim(),
+        peso: peso.replace(/kg|KG/g, '').trim()
+      };
+    });
   };
 
   return (
-    <div className="h-screen bg-white text-slate-100 font-sans overflow-hidden">
-      <AnimatePresence mode="wait">
+    <div className="h-full bg-slate-50 p-4 md:p-8 font-sans">
+      <Toaster position="top-center" richColors />
 
-        {/* VISTA 1: GRID DE ALMACENES */}
-        {view === 'grid' && (
-          <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-8 w-full h-full overflow-y-auto">
-            <header className="mb-12 border-l-8 border-blue-600 pl-6">
-              <h1 className="text-4xl font-black italic uppercase text-black tracking-tighter">Panel de Empaque</h1>
-              <p className="text-blue-500 font-bold tracking-[0.3em] text-xs uppercase opacity-70">Almacenes refrigerados</p>
-            </header>
-            {loading ? (
-              <div className="flex flex-col items-center justify-center h-64 text-blue-600"><Loader2 className="animate-spin mb-4" size={48} /></div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {almacenes.map((c) => (
-                  <motion.div
-                    key={c.id}
-                    whileHover={{ scale: 1.02, backgroundColor: '#1B2656' }}
-                    onClick={() => iniciarApertura(c)}
-                    style={{ backgroundColor: '#1B2654' }}
-                    className="border-2 border-slate-800 p-10 rounded-[3rem] cursor-pointer text-center group transition-all shadow-2xl relative overflow-hidden"
-                  >
-                    <Thermometer className="mx-auto mb-4 text-blue-400" size={32} />
-                    <h3 className="text-xl font-black italic uppercase tracking-tighter">{c.Nombre}</h3>
-                    <p className="text-xs font-black uppercase tracking-tighter text-red-800">{c.Tipo}</p>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
+      {/* --- ESTILOS DE IMPRESIÓN (OCULTO EN NAVEGADOR) --- */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          body * { visibility: hidden; }
+          #print-section, #print-section * { visibility: visible; }
+          #print-section { position: absolute; left: 0; top: 0; width: 100%; }
+          .no-print { display: none !important; }
+        }
+      `}} />
 
-        {/* VISTA 2: ANIMACIÓN DE APERTURA */}
-        {view === 'apertura' && (
-          <motion.div
-            key="apertura"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ scale: 1.5, opacity: 0, filter: 'blur(20px)' }}
-            className="fixed inset-0 z-50 bg-slate-900 flex items-center justify-between px-[12%]"
-          >
-            <div className="z-10 text-left">
-              <span className="text-blue-500 font-black tracking-[0.5em] uppercase text-sm mb-4 block animate-pulse">Abriendo el almacen...</span>
-              <h2 className="text-7xl font-black italic tracking-tighter uppercase text-white leading-none">
-                {selectedCamara?.Nombre}
-              </h2>
-              <div className="h-2 w-48 bg-red-800 mt-8 rounded-full"></div>
+      {/* --- VISTA 1: INICIO --- */}
+      {step === 'inicio' && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-center min-h-[80vh]">
+          <div className="bg-white rounded-[3rem] p-10 max-w-md w-full text-center shadow-2xl border-b-8 border-slate-900">
+            <div className="w-24 h-24 bg-slate-100 rounded-full mx-auto mb-6 border-4 border-blue-500 overflow-hidden shadow-inner">
+              <img src={despachador.foto} alt="Perfil" className="w-full h-full object-cover" />
             </div>
-
-            <motion.div
-              initial={{ rotate: 0 }}
-              animate={{ rotate: 360 }}
-              transition={{ delay: 0.2, duration: 1.8, ease: "easeInOut" }}
-              className="relative w-80 h-80 rounded-full border-[25px] border-slate-400 bg-slate-800 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex items-center justify-center"
-            >
-              <div className="absolute w-6 h-full bg-slate-500 rounded-full"></div>
-              <div className="absolute w-full h-6 bg-slate-500 rounded-full"></div>
-              <div className="w-20 h-20 rounded-full bg-slate-400 border-8 border-slate-600 flex items-center justify-center shadow-inner">
-                <CircleDot size={40} className="text-white opacity-40" />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {/* VISTA 3: INTERIOR DEL ALMACÉN */}
-        {view === 'estanteria' && (
-          <motion.div key="estanteria" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-full w-full bg-white text-black">
-            <div className="flex-[2] p-8 overflow-y-auto border-r border-slate-200 scrollbar-hide pb-20">
-              <div className="flex justify-between items-center mb-10">
-                <button onClick={() => setView('grid')} className="flex items-center gap-2 font-black uppercase text-xs italic text-slate-400 hover:text-blue-600 transition-colors">
-                  <ChevronLeft size={18} /> Panel General
+            <h2 className="text-2xl font-black italic uppercase tracking-tighter leading-tight">
+              Hola, <br /> {despachador.nombre}
+            </h2>
+            <p className="text-slate-400 font-bold text-[10px] uppercase mt-2 mb-10 tracking-[0.3em]">Gestión de Salidas</p>
+            <div className="space-y-4">
+              <button onClick={fetchCajas} style={{ backgroundColor: '#A61A18' }} className="w-full py-5 text-white rounded-3xl font-black italic transition-all flex justify-between px-8 items-center group">
+                <span>NUEVA SALIDA DE PACAS</span>
+                {isLoadingCajas ? <Loader2 className="animate-spin" /> : <ChevronRight className="group-hover:translate-x-2 transition-transform" />}
+              </button>
+              <Link to="/empaque">
+                <button style={{ backgroundColor: '#A61A18' }} className="w-full py-5 mt-4 text-white rounded-3xl font-black italic flex justify-between px-8 items-center group">
+                  <span>CREAR NUEVAS PACAS</span>
+                  <ChevronRight className="group-hover:translate-x-2 transition-transform" />
                 </button>
-                <h2 className="text-3xl font-black italic border-r-4 border-blue-600 pr-6 uppercase tracking-tighter">{selectedCamara?.Nombre}</h2>
-              </div>
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
-              {lotes.map((lote, index) => (
-                <LoteCard
-                  key={`${lote.Lote}-${index}`}
-                  lote={lote}
-                  idAlmacen={selectedCamara?.IdAlmacen || selectedCamara?.id}
-                  onSelectProducto={handleSeleccionProducto}
-                />
+      {/* --- VISTA 2: INVENTARIO --- */}
+      {step === 'inventario' && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+            <div className="flex items-center gap-4">
+              <button onClick={() => setStep('inicio')} className="p-4 bg-white rounded-full shadow-sm hover:bg-slate-100 transition-colors">
+                <ArrowLeft size={24} />
+              </button>
+              <h1 className="text-4xl font-black italic uppercase tracking-tighter leading-none">Inventario Disponible</h1>
+            </div>
+            <div className="bg-slate-900 text-white p-6 rounded-[2rem] flex items-center gap-8 shadow-xl">
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Carga actual</p>
+                <p className="text-xl font-black italic">{pacasSeleccionadas.length} PACAS / {totalKilos} KG</p>
+              </div>
+              <button disabled={pacasSeleccionadas.length === 0} onClick={() => setStep('venta')} className="bg-blue-600 px-8 py-4 rounded-2xl font-black uppercase italic text-sm hover:bg-blue-500 disabled:bg-slate-700 transition-all">
+                Continuar
+              </button>
+            </div>
+          </div>
+
+          {pacasInventario.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[3rem] border-4 border-dashed border-slate-200">
+              <ArchiveX size={80} className="text-slate-200 mb-4" />
+              <h3 className="text-2xl font-black italic text-slate-400 uppercase">No hay cajas disponibles</h3>
+              <p className="text-slate-400 text-sm">El inventario está vacío en este momento.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {pacasInventario.map(paca => (
+                <motion.div
+                  key={paca.IdCaja}
+                  whileHover={{ scale: 1.02 }}
+                  onClick={() => togglePaca(paca)}
+                  className={`p-6 rounded-[2.5rem] border-4 cursor-pointer transition-all ${pacasSeleccionadas.some(s => s.IdCaja === paca.IdCaja) ? 'border-blue-600 bg-blue-50/50 shadow-lg' : 'border-white bg-white shadow-sm'}`}
+                >
+                   {/* ... contenido de la paca (igual al tuyo) ... */}
+                   <div className="flex justify-between items-start mb-4">
+                    <span className="font-black text-blue-600 italic text-lg uppercase tracking-tighter">{paca.FolioCaja}</span>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${pacasSeleccionadas.some(s => s.IdCaja === paca.IdCaja) ? 'bg-blue-600 border-blue-600' : 'border-slate-100'}`}>
+                      {pacasSeleccionadas.some(s => s.IdCaja === paca.IdCaja) && <CheckCircle2 size={14} className="text-white" />}
+                    </div>
+                  </div>
+                  <div className="space-y-1 mb-4 h-20 overflow-y-auto pr-2 custom-scrollbar text-[10px] font-bold text-slate-500 italic uppercase">
+                    {parsearProductos(paca.ContenidoDetallado).map((prod, i) => (
+                      <div key={i} className="flex justify-between"><span>• {prod.nombre}</span><span>{prod.peso} KG</span></div>
+                    ))}
+                  </div>
+                  <div className="pt-3 border-t border-dashed border-slate-200 flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-300 uppercase">Peso Neto</span>
+                    <span className="font-black italic text-slate-900">{parseFloat(paca.KilosTotales).toFixed(2)} KG</span>
+                  </div>
+                </motion.div>
               ))}
             </div>
+          )}
+        </motion.div>
+      )}
 
-            {/* PANEL DERECHO: RESUMEN DE CARGA */}
-            <div className="flex-1 bg-slate-50 p-8 flex flex-col border-l border-slate-200">
-              <div className="flex items-center gap-3 mb-8 border-b pb-6">
-                <Scale className="text-blue-600" size={24} />
-                <h3 className="font-black italic uppercase text-sm tracking-widest text-black">Carga Actual</h3>
+      {/* --- VISTA 3: RESUMEN Y DESPACHO --- */}
+      {step === 'venta' && (
+        <motion.div id="print-section" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full space-y-10 pb-20 max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-6 no-print">
+            <h1 className="text-6xl font-black italic tracking-tighter uppercase leading-none">Salida de<br />Almacén</h1>
+            <div className="flex gap-4">
+              <button onClick={() => setStep('inventario')} className="bg-white border-4 border-slate-900 px-8 py-5 rounded-3xl font-black italic uppercase text-sm">Editar Carga</button>
+              <button onClick={handleGuardarVenta} disabled={isLoading || !clienteSel} className="bg-green-600 text-white px-12 py-5 rounded-3xl font-black italic shadow-2xl flex items-center gap-3 uppercase">
+                {isLoading ? <Loader2 className="animate-spin" /> : <Save />}
+                {isLoading ? 'Procesando...' : 'Confirmar y Salir'}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-2 bg-white rounded-[4rem] p-12 shadow-sm border border-slate-100">
+              <div className="flex justify-between items-center mb-12">
+                <h2 className="font-black text-slate-300 text-[11px] tracking-[0.4em] uppercase italic">Detalle de Mercancía</h2>
+                <button onClick={handlePrint} className="no-print p-3 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><Printer size={20}/></button>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-4 scrollbar-hide">
-                {itemsEnPaquete.map((item) => (
-                  <div key={item.id} className="p-5 bg-white rounded-3xl border border-slate-200 flex justify-between items-center shadow-sm relative">
-                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600"></div>
-                    <div>
-                      <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{item.producto}</p>
-                      <p className="text-3xl font-black text-[#1B2656]">{item.peso} KG</p>
-                      <p className="text-[8px] font-bold text-slate-400">TARA: {item.tara} KG</p>
-                    </div>
-                    <button onClick={() => setItemsEnPaquete(itemsEnPaquete.filter(i => i.id !== item.id))} className="p-3 text-slate-300 hover:text-red-500">
-                      <Trash2 size={20} />
-                    </button>
+
+              {pacasSeleccionadas.map(paca => (
+                <div key={paca.IdCaja} className="mb-10 last:mb-0 border-l-[10px] border-slate-900 pl-8">
+                  <div className="flex justify-between items-end mb-4">
+                    <h3 className="font-black text-3xl italic uppercase text-slate-900">{paca.FolioCaja}</h3>
+                    <span className="font-black text-xl italic text-blue-600">{parseFloat(paca.KilosTotales).toFixed(2)} KG</span>
                   </div>
-                ))}
-              </div>
-              <div className="mt-8 pt-6 border-t border-slate-200">
-                <div className="flex justify-between items-end mb-6">
-                  <span className="text-slate-400 font-black uppercase text-[10px]">Total Neto</span>
-                  <span className="text-5xl font-black text-blue-600 italic">
-                    {itemsEnPaquete.reduce((a, b) => a + parseFloat(b.peso), 0).toFixed(2)}
-                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {parsearProductos(paca.ContenidoDetallado).map((prod, idx) => (
+                      <div key={idx} className="flex justify-between text-xs font-bold text-slate-500 uppercase italic bg-slate-50 p-3 rounded-xl">
+                        <span>{prod.nombre}</span><span>{prod.peso} KG</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <button 
-                  onClick={() => { alert("Guardando pesajes..."); setView('grid'); setItemsEnPaquete([]); }} 
-                  disabled={itemsEnPaquete.length === 0} 
-                  className="w-full bg-[#1B2656] text-white py-6 rounded-[2rem] font-black uppercase italic shadow-xl disabled:opacity-20 flex items-center justify-center gap-3"
-                >
-                  <Save size={24} /> Guardar Todo
-                </button>
+              ))}
+
+              <div className="mt-16 pt-12 border-t-8 border-double border-slate-100 flex justify-between items-center">
+                <span className="text-7xl font-black italic tracking-tighter text-slate-900">{totalKilos} <small className="text-2xl text-slate-400">KG</small></span>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* --- MODALES DE BÁSCULA (SISTEMA EXTERNO) --- */}
-      <BasculaModal
-        isOpen={showTaraModal}
-        title="PESAR TARA"
-        subtitle="Coloque recipiente vacío"
-        currentReading={currentWeight}
-        buttonText="GUARDAR TARA"
-        colorClass="bg-red-600 border-red-900 hover:bg-red-500"
-        onClose={() => setShowTaraModal(false)}
-        basculaId={idBasculaConfigurada}
-        onConfirm={(b, t) => { 
-          setTara(t); 
-          setShowTaraModal(false); 
-          setShowGuardarModal(true); 
-        }}
-      />
+            <div className="space-y-8">
+              <div className="bg-white rounded-[3.5rem] p-10 shadow-sm border border-slate-100 sticky top-10">
+                <select onChange={(e) => setClienteSel(clientes.find(cli => cli.IdCliente == e.target.value))} className="w-full p-6 bg-slate-100 border-none rounded-[2rem] font-black italic mb-8 no-print">
+                  <option value="">Buscar Cliente...</option>
+                  {clientes.map(c => <option key={c.IdCliente} value={c.IdCliente}>{c.RazonSocial}</option>)}
+                </select>
 
-      <BasculaModal
-        isOpen={showGuardarModal}
-        title="PESAR PRODUCTO"
-        subtitle={selectedProducto}
-        currentReading={currentWeight}
-        tara={tara}
-        buttonText="CONFIRMAR Y GUARDAR"
-        colorClass="bg-emerald-600 border-emerald-900 hover:bg-emerald-500"
-        destinationName={selectedCamara?.Nombre}
-        onClose={() => setShowGuardarModal(false)}
-        basculaId={idBasculaConfigurada}
-        onConfirm={(b, t) => registrarPesaje(b, t)}
-      />
-
-      <style>{` .scrollbar-hide::-webkit-scrollbar { display: none; } body { background: #020617; } `}</style>
+                {clienteSel && (
+                  <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl">
+                    <p className="text-blue-500 font-black text-[10px] tracking-widest uppercase mb-4 italic">Destino Confirmado</p>
+                    <h4 className="text-3xl font-black uppercase leading-tight mb-4 tracking-tighter">{clienteSel.RazonSocial}</h4>
+                    <p className="text-xs font-bold text-slate-400">RFC: {clienteSel.RFC || '---'}</p>
+                    <p className="text-xs font-bold text-slate-400">FECHA: {new Date().toLocaleDateString()}</p>
+                  </div>
+                )}
+                
+                <div className="mt-10 pt-10 border-t border-slate-100 text-center">
+                  <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Despachado por</p>
+                  <p className="font-black italic text-slate-900">{despachador.nombre}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };
 
-export default SistemaRomaneoSanGabriel;
+export default PanelSalidaPacas;

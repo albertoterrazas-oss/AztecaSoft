@@ -529,9 +529,16 @@ export default function WeighingDashboard() {
             <div className="min-h-screen bg-[#f8fafc] p-4 md:p-10 flex flex-col items-center font-sans tracking-tight text-slate-900 font-black uppercase">
                 <div className="max-w-5xl w-full space-y-8">
                     <header className="flex flex-col items-center mb-4">
-                        <div className="bg-blue-600 text-white px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] mb-2 shadow-lg shadow-blue-200">Sistema de Control</div>
-                        <h1 className="text-5xl font-black italic tracking-tighter text-slate-800 uppercase leading-none">Panel de <span className="text-blue-600">Congelación</span></h1>
-                        <div className="h-1.5 w-24 bg-red-600 mt-4 rounded-full"></div>
+                        {/* <div className="bg-blue-600 text-white px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] mb-2 shadow-lg shadow-blue-200">Sistema de Control</div> */}
+                        {/* <h1 className="text-5xl font-black italic tracking-tighter text-slate-800 uppercase leading-none">Panel de <span className="text-blue-600">Congelación</span></h1> */}
+
+                        <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
+                            Panel de Pesaje:
+                            <span style={{ color: '#A61A18' }}>
+                                Congelación
+                            </span>
+                        </h1>
+                        {/* <div className="h-1.5 w-24 bg-red-600 mt-4 rounded-full"></div> */}
                     </header>
 
                     <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 flex gap-2 overflow-x-auto no-scrollbar">
@@ -565,7 +572,7 @@ export default function WeighingDashboard() {
                         ) : (
                             <div className="col-span-full bg-white p-20 rounded-[3rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center space-y-4">
                                 <span className="text-8xl">🧊</span>
-                                <h2 className="text-2xl font-black text-slate-800 uppercase italic">{selectedAreaFiltro ? "Sin lotes en esta área" : "Elija un almacén"}</h2>
+                                <h2 className="text-2xl font-black text-slate-800 uppercase italic">{selectedAreaFiltro ? "Sin lotes en esta área" : "No tienes lotes para pesar, filtra por congelador"}</h2>
                             </div>
                         )}
                     </div>
@@ -702,7 +709,7 @@ export default function WeighingDashboard() {
                     </div>
 
                     <button onClick={() => { setCurrentWeight("0.00"); setShowGuardarModal(true); }} disabled={!isReadyToOpenGuardar} className={`w-full py-5 rounded-[1.5rem] text-lg border-b-[8px] transition-all font-black ${!isReadyToOpenGuardar ? "bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed" : "bg-emerald-600 text-white border-emerald-900 hover:bg-emerald-500 active:translate-y-1 active:border-b-0"}`}>
-                        {!selectedProduct ? "ELIJA PRODUCTO"  : !selectedAreaDestino ? "ELIJA DESTINO" : "Pesar y Guardar"}
+                        {!selectedProduct ? "ELIJA PRODUCTO" : !selectedAreaDestino ? "ELIJA DESTINO" : "Pesar y Guardar"}
                     </button>
                 </div>
             </aside>
