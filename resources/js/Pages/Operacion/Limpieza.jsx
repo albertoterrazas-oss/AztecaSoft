@@ -4,19 +4,16 @@ import LoadingDiv from "@/Components/LoadingDiv";
 import axios from "axios";
 import BasculaModal from '../../Components/BasculaPesa.jsx';
 
-// --- RUTAS ---
 const route = (name) => {
     const routeMap = {
         "LotesLimpieza": "/api/LotesLimpieza",
         "pesaje.guardar-traspaso": "/api/pesaje/guardar-traspaso",
         "AlmacenesListar": "/api/almacenes",
         "ProductosLotesHistorial": "/api/ProductosLotesHistorial",
-        "ProductosLotes": "/api/ProductosLotes",
     };
     return routeMap[name] || `/${name}`;
 };
 
-// --- MODAL DE ÉXITO ---
 const SuccessModal = ({ isOpen, onClose, message, registeredWeight }) => {
     if (!isOpen) return null;
     return (
@@ -69,14 +66,6 @@ export default function WeighingDashboardLimpieza() {
 
     const canOpenGuardar = !isProcessing && selectedProduct && parseFloat(tara) > 0;
 
-    // Función para obtener el peso total acumulado de un producto desde el historial
-    const getPesoAcumulado = (idProducto) => {
-        return historial
-            .filter(reg => String(reg.idProducto) === String(idProducto))
-            .reduce((acc, reg) => acc + parseFloat(reg.KG || 0), 0)
-            .toFixed(2);
-    };
-
     const fetchHistorial = useCallback(async (loteId) => {
         const id = loteId || selectedLote?.Lote;
         if (!id) return;
@@ -90,9 +79,10 @@ export default function WeighingDashboardLimpieza() {
         try {
             const res = await axios.post(route("ProductosLotesHistorial"), { opcion: 'A', idLote: idLote, idAlmacen: 2 });
             setDbProducts((res.data || []).map(p => ({
-                IdProducto: String(p.idProducto),
+                IdProducto: String(p.IdProducto),
                 Nombre: p.Producto,
                 PiezasTeoricas: parseInt(p.Piezas) || 0,
+                KG: parseFloat(p.KG || 0).toFixed(2) // <--- RE-AGREGADO AQUÍ
             })));
         } catch (e) { toast.error("Error al cargar productos"); }
     };
@@ -112,7 +102,6 @@ export default function WeighingDashboardLimpieza() {
                 const resAlmacenes = await axios.get(route("AlmacenesListar"));
                 const limp = resAlmacenes.data.find(a => a.Nombre?.toUpperCase() === "LIMPIEZA");
                 if (limp?.bascula?.puerto) setIdBasculaConfigurada(limp.bascula.puerto);
-
                 const validAlmacenes = resAlmacenes.data.filter(a => !["ENTRADA", "VENTA", "DESHUESE", "RECEPCION"].includes(a.Nombre?.toUpperCase()));
                 setAlmacenes(validAlmacenes);
                 await fetchLotes();
@@ -129,10 +118,8 @@ export default function WeighingDashboardLimpieza() {
         setSelectedProduct(null);
         fetchProductosLote(lote.Lote);
         fetchHistorial(lote.Lote);
-
         const cong = almacenes.find(a => a.Nombre.toUpperCase().includes("CONGELACION"));
         if (cong) setSelectedArea(cong.IdAlmacen || cong.id);
-
         setTimeout(() => setShowTaraModal(true), 400);
     };
 
@@ -140,7 +127,6 @@ export default function WeighingDashboardLimpieza() {
         if (isProcessing) return;
         setIsProcessing(true);
         const pesoNetoFinal = (parseFloat(brutoConfirmado) - parseFloat(taraConfirmada)).toFixed(2);
-
         try {
             const user = JSON.parse(localStorage.getItem('perfil'))?.IdUsuario || 1;
             const payload = {
@@ -152,36 +138,23 @@ export default function WeighingDashboardLimpieza() {
                 id_area_salida: selectedArea,
                 idusuario: user
             };
-
             const res = await axios.post(route("pesaje.guardar-traspaso"), payload);
             setLastRegisteredWeight(pesoNetoFinal);
-
             if (res.data.lote_cerrado) {
-                // --- EL CAMBIO ESTÁ AQUÍ ---
-                setSuccessMsg(`Lote #${selectedLote.Lote} Completado y Cerrado.`);
-
-                // Limpiamos todo para forzar el regreso a la lista
+                setSuccessMsg(`Lote #${selectedLote.Lote} Cerrado.`);
                 setSelectedLote(null);
                 setSelectedProduct(null);
                 setDbProducts([]);
                 setHistorial([]);
-
-                // Recargamos la lista de lotes del servidor
                 await fetchLotes();
             } else {
                 setSuccessMsg(`${selectedProduct.Nombre} guardado.`);
-                await Promise.all([
-                    fetchProductosLote(selectedLote.Lote),
-                    fetchHistorial(selectedLote.Lote)
-                ]);
+                await Promise.all([fetchProductosLote(selectedLote.Lote), fetchHistorial(selectedLote.Lote)]);
                 setSelectedProduct(null);
-                setPiezas(0);
                 setCurrentWeight("0.00");
             }
             setShowSuccessModal(true);
-        } catch (e) {
-            toast.error("Error al guardar el pesaje");
-        } finally {
+        } catch (e) { toast.error("Error al guardar"); } finally {
             setIsProcessing(false);
             setShowGuardarModal(false);
         }
@@ -191,13 +164,35 @@ export default function WeighingDashboardLimpieza() {
 
     if (!selectedLote) {
         return (
-            <div className="min-h-[100%] bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
+            // <div className="min-h-[100%] bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
+            //     <div className="max-w-4xl w-full">
+            //         <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">Panel de Pesaje: <span style={{ color: '#A61A18' }}>Limpieza</span></h1>
+            //         <div className="grid gap-4">
+            //             {lotes.map((lote) => (
+            //                 <button key={lote.Lote} onClick={() => handleSelectLote(lote)} className="bg-white p-6 rounded-[2.5rem] flex items-center justify-between border-4 border-transparent hover:border-red-600 transition-all shadow-xl group">
+            //                     <div className="text-left font-black">
+            //                         <span className="text-xs text-red-600 uppercase">LOTE #{lote.Lote}</span>
+            //                         <h3 className="text-2xl leading-none text-slate-700">{lote.Proveedor}</h3>
+            //                     </div>
+            //                     <div className="bg-slate-100 group-hover:bg-red-600 group-hover:text-white p-5 rounded-3xl transition-all">
+            //                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+            //                     </div>
+            //                 </button>
+            //             ))}
+            //         </div>
+            //     </div>
+            // </div>
+
+
+              <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
                 <div className="max-w-4xl w-full">
 
-                      <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
+
+                    {/* <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">Panel de Pesaje:  backgroundColor: '#A61A18' Entrada y salida</h1> */}
+                    <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
                         Panel de Pesaje:
                         <span style={{ color: '#A61A18'  }}>
-                           Limpieza
+                          Limpieza
                         </span>
                     </h1>
                     <div className="grid gap-4">
@@ -216,7 +211,7 @@ export default function WeighingDashboardLimpieza() {
                         ) : (
                             <div className="bg-white p-12 rounded-[2.5rem] shadow-xl border-4 border-dashed border-slate-300 flex flex-col items-center">
                                 <span className="text-6xl mb-4 text-slate-300">📦</span>
-                                <h2 className="text-2xl text-slate-400 text-center">No hay lotes en limpieza activos</h2>
+                                <h2 className="text-2xl text-slate-400 text-center">No hay lotes en Limpieza</h2>
                             </div>
                         )}
                     </div>
@@ -227,41 +222,11 @@ export default function WeighingDashboardLimpieza() {
 
     return (
         <div className="flex flex-col lg:flex-row h-[100%] bg-slate-200 p-4 gap-4 overflow-hidden font-black uppercase">
+            <Toaster position="top-center" richColors />
+            <SuccessModal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} message={successMsg} registeredWeight={lastRegisteredWeight} />
+            <BasculaModal isOpen={showTaraModal} title="PESAR TARA" subtitle="Coloque recipiente vacío" currentReading={currentWeight} buttonText="GUARDAR TARA" colorClass="bg-red-600 border-red-900 hover:bg-red-500" onClose={() => setShowTaraModal(false)} basculaId={idBasculaConfigurada} onConfirm={(b, t) => { setTara(t); setShowTaraModal(false); }} />
+            <BasculaModal isOpen={showGuardarModal} title="PESAR PRODUCTO" subtitle={selectedProduct?.Nombre} currentReading={currentWeight} tara={tara} buttonText="CONFIRMAR Y GUARDAR" colorClass="bg-emerald-600 border-emerald-900 hover:bg-emerald-500" destinationName={almacenes.find(a => (a.id || a.IdAlmacen) === selectedArea)?.Nombre} onClose={() => setShowGuardarModal(false)} basculaId={idBasculaConfigurada} onConfirm={(b, t) => registrarPesaje(b, t)} />
 
-            <SuccessModal
-                isOpen={showSuccessModal}
-                onClose={() => setShowSuccessModal(false)}
-                message={successMsg}
-                registeredWeight={lastRegisteredWeight}
-            />
-
-            <BasculaModal
-                isOpen={showTaraModal}
-                title="PESAR TARA"
-                subtitle="Coloque recipiente vacío"
-                currentReading={currentWeight}
-                buttonText="GUARDAR TARA"
-                colorClass="bg-red-600 border-red-900 hover:bg-red-500"
-                onClose={() => setShowTaraModal(false)}
-                basculaId={idBasculaConfigurada}
-                onConfirm={(b, t) => { setTara(t); setShowTaraModal(false); }}
-            />
-
-            <BasculaModal
-                isOpen={showGuardarModal}
-                title="PESAR PRODUCTO"
-                subtitle={selectedProduct?.Nombre}
-                currentReading={currentWeight}
-                tara={tara}
-                buttonText="CONFIRMAR Y GUARDAR"
-                colorClass="bg-emerald-600 border-emerald-900 hover:bg-emerald-500"
-                destinationName={almacenes.find(a => (a.id || a.IdAlmacen) === selectedArea)?.Nombre}
-                onClose={() => setShowGuardarModal(false)}
-                basculaId={idBasculaConfigurada}
-                onConfirm={(b, t) => registrarPesaje(b, t)}
-            />
-
-            {/* PANEL IZQUIERDO */}
             <div className="flex-1 flex flex-col min-h-0 gap-3">
                 <header className="flex justify-between items-center bg-white p-5 rounded-[2.5rem] shadow-sm border border-slate-300">
                     <div>
@@ -270,12 +235,8 @@ export default function WeighingDashboardLimpieza() {
                         <p className="text-[10px] text-red-600 font-bold tracking-widest">LOTE: {selectedLote.Lote} | TARA: {tara} KG</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-[9px] text-slate-400">ALMACÉN DESTINO</p>
-                        <select
-                            value={selectedArea}
-                            onChange={(e) => setSelectedArea(e.target.value)}
-                            className="text-sm font-black bg-blue-50 text-blue-700 px-3 py-1 rounded-xl border-none outline-none focus:ring-2 ring-blue-500"
-                        >
+                        <p className="text-[9px] text-slate-400">DESTINO</p>
+                        <select value={selectedArea} onChange={(e) => setSelectedArea(e.target.value)} className="text-sm font-black bg-blue-50 text-blue-700 px-3 py-1 rounded-xl border-none">
                             {almacenes.map(a => <option key={a.IdAlmacen || a.id} value={a.IdAlmacen || a.id}>{a.Nombre}</option>)}
                         </select>
                     </div>
@@ -284,16 +245,16 @@ export default function WeighingDashboardLimpieza() {
                 <div className="flex-1 overflow-y-auto custom-scroll pr-2">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {dbProducts.map((p) => {
-                            const pesoTotal = getPesoAcumulado(p.IdProducto);
+                            const isSelected = selectedProduct && String(selectedProduct.IdProducto) === String(p.IdProducto);
                             return (
                                 <button
                                     key={p.IdProducto}
                                     onClick={() => { setSelectedProduct(p); setPiezas(p.PiezasTeoricas || 0); }}
                                     className={`p-4 rounded-[2rem] text-left border-b-[10px] h-32 flex flex-col justify-between transition-all shadow-md active:translate-y-2 active:border-b-0
-                                        ${selectedProduct?.IdProducto === p.IdProducto ? "border-red-600 bg-red-50 scale-[0.98]" : "border-slate-300 bg-white"}`}
+                                        ${isSelected ? "border-red-600 bg-red-50" : "border-slate-300 bg-white"}`}
                                 >
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-lg w-fit font-black ${selectedProduct?.IdProducto === p.IdProducto ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}`}>
-                                        {pesoTotal} KG TOTAL
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-lg w-fit font-black ${isSelected ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}`}>
+                                        {p.KG} KG TOTAL
                                     </span>
                                     <span className="text-[12px] leading-tight line-clamp-2 text-slate-800 font-black">{p.Nombre}</span>
                                 </button>
@@ -320,7 +281,6 @@ export default function WeighingDashboardLimpieza() {
                 </div>
             </div>
 
-            {/* PANEL DERECHO */}
             <aside className="w-full md:w-1/3 lg:w-[350px] flex flex-col gap-3">
                 <div className="bg-slate-900 rounded-[2rem] p-4 shadow-xl border-4 border-slate-800">
                     <div className="bg-[#0f1713] rounded-[1.5rem] p-4 border-4 border-black shadow-inner mb-3 text-center">
@@ -338,40 +298,10 @@ export default function WeighingDashboardLimpieza() {
                         </div>
                     </div>
                 </div>
-
                 <div className="bg-white p-4 rounded-[2rem] border-4 border-slate-200 shadow-sm flex flex-col gap-3">
-                    <button
-                        onClick={() => {
-                            setCurrentWeight("0.00");
-                            setShowTaraModal(true);
-                        }}
-                        className="bg-slate-800 text-white py-3 rounded-xl text-[10px] border-b-4 border-black active:translate-y-1 active:border-b-0 transition-all font-black uppercase"
-                    >
-                        Cambiar Tara
-                    </button>
-
-                    {/* <div className="w-full px-4">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-3 block text-center">Cantidad de Piezas</label>
-                        <div className="flex gap-4 h-20 text-4xl font-black">
-                            <button onClick={() => setPiezas(Math.max(0, Number(piezas || 0) - 1))} className="flex-1 rounded-2xl border-b-[8px] border-slate-300 bg-slate-100 active:border-b-0 active:translate-y-1 transition-all hover:bg-red-500 hover:text-white">-</button>
-                            <input type="number" value={piezas} onChange={e => setPiezas(e.target.value)} className="w-[40%] bg-slate-50 border-b-[8px] border-slate-200 rounded-2xl text-center outline-none focus:bg-white" />
-                            <button onClick={() => setPiezas(Number(piezas || 0) + 1)} className="flex-1 rounded-2xl border-b-[8px] border-slate-300 bg-slate-100 active:border-b-0 active:translate-y-1 transition-all hover:bg-green-500 hover:text-white">+</button>
-                        </div>
-                    </div> */}
-
-                    <button
-                        onClick={() => { setCurrentWeight("0.00"); setShowGuardarModal(true); }}
-                        disabled={!canOpenGuardar}
-                        className={`w-full py-5 rounded-[1.5rem] text-lg border-b-[8px] transition-all font-black 
-                        ${!canOpenGuardar
-                                ? "bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed"
-                                : "bg-emerald-600 text-white border-emerald-900 hover:bg-emerald-500 active:translate-y-1 active:border-b-0"}`}
-                    >
-                        {!selectedProduct
-                            ? "ELIJA PRODUCTO"
-                            : parseFloat(tara) <= 0
-                                ? "FALTA TARA"
-                                : "Pesar y Guardar KG"}
+                    <button onClick={() => { setCurrentWeight("0.00"); setShowTaraModal(true); }} className="bg-slate-800 text-white py-3 rounded-xl text-[10px] border-b-4 border-black font-black uppercase">Cambiar Tara</button>
+                    <button onClick={() => { setCurrentWeight("0.00"); setShowGuardarModal(true); }} disabled={!canOpenGuardar} className={`w-full py-5 rounded-[1.5rem] text-lg border-b-[8px] transition-all font-black ${!canOpenGuardar ? "bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed" : "bg-emerald-600 text-white border-emerald-900 hover:bg-emerald-500 active:translate-y-1 active:border-b-0"}`}>
+                        {!selectedProduct ? "ELIJA PRODUCTO" : parseFloat(tara) <= 0 ? "FALTA TARA" : "Pesar y Guardar KG"}
                     </button>
                 </div>
             </aside>

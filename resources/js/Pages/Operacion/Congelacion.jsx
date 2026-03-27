@@ -442,7 +442,8 @@ export default function WeighingDashboard() {
             });
             const data = Array.isArray(res.data) ? res.data : [];
             setDbProducts(data.map(p => ({
-                IdProducto: String(p.idProducto),
+                IdProducto: String(p.IdProducto),
+
                 Nombre: p.Producto,
                 KG: parseFloat(p.KG || 0),
                 PesoTeorico: parseFloat(p.Piezas || 0).toFixed(2), // Renombrado para claridad
