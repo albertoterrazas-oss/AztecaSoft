@@ -179,6 +179,8 @@ const Empaque = () => {
     const n = b - t;
     if (b <= 0) return;
 
+    console.log("selectedProductoObj",selectedProductoObj)
+
     const nuevoItem = {
       id: Date.now(),
       IdProducto: selectedProductoObj.IdProducto,
@@ -223,7 +225,7 @@ const Empaque = () => {
       const cajasJSON = itemsEnPaquete.map(item => ({
         caja: "1",
         idLote: item.idLote,
-        IdProducto: item.IdProducto,
+        idProducto: item.IdProducto,
         idAlmacenOrigen: item.idAlmacenOrigen,
         peso: parseFloat(item.peso),
         piezas: 0
