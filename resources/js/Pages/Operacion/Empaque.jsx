@@ -72,7 +72,7 @@ const LoteCard = ({ lote, idAlmacen, onSelectProducto, itemsEnPaquete }) => {
 
             return (
               <motion.button
-                key={`${p.idProducto}-${idx}`}
+                key={`${p.IdProducto}-${idx}`}
                 disabled={agotado}
                 whileHover={!agotado ? { y: -5, scale: 1.02 } : {}}
                 onClick={() => onSelectProducto(p, disponible, lote)}
@@ -181,7 +181,7 @@ const Empaque = () => {
 
     const nuevoItem = {
       id: Date.now(),
-      idProducto: selectedProductoObj.IdProducto,
+      IdProducto: selectedProductoObj.IdProducto,
       producto: selectedProductoObj.Producto,
       idLote: loteActivoObj.idLote || loteActivoObj.Lote, // Ajustar según tu API
       lote: loteActivoObj.Lote,
@@ -223,7 +223,7 @@ const Empaque = () => {
       const cajasJSON = itemsEnPaquete.map(item => ({
         caja: "1",
         idLote: item.idLote,
-        idProducto: item.IdProducto,
+        IdProducto: item.IdProducto,
         idAlmacenOrigen: item.idAlmacenOrigen,
         peso: parseFloat(item.peso),
         piezas: 0
