@@ -99,6 +99,14 @@ export default function WeighingDashboard() {
     };
 
     useEffect(() => {
+        if (dbProducts && dbProducts.length === 0) {
+            fetchData();
+            setShowSuccessModal(false);
+            setSelectedLote(null);
+        }
+    }, [dbProducts]); // Se ejecuta cada vez que dbProducts cambie
+
+    useEffect(() => {
         if (hasFetchedInitialData.current) return;
         fetchData().then(() => { setIsLoading(false); hasFetchedInitialData.current = true; });
     }, [fetchData]);
@@ -141,19 +149,19 @@ export default function WeighingDashboard() {
         finally { setIsProcessing(false); setShowGuardarModal(false); }
     };
 
-    if (isLoading) return <div className="h-screen flex items-center justify-center bg-slate-100"><LoadingDiv /></div>;
+    if (isLoading) return <div className="h-[100%] flex items-center justify-center bg-slate-100"><LoadingDiv /></div>;
 
     if (!selectedLote) {
         return (
 
-            <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
+            <div className="h-[100%] bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
                 <div className="max-w-4xl w-full">
 
 
                     {/* <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">Panel de Pesaje:  backgroundColor: '#A61A18' Entrada y salida</h1> */}
                     <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
                         Panel de Pesaje:
-                        <span style={{ color: '#A61A18'  }}>
+                        <span style={{ color: '#A61A18' }}>
                             Entrada y salida
                         </span>
                     </h1>
@@ -183,7 +191,7 @@ export default function WeighingDashboard() {
     }
 
     return (
-        <div className="flex flex-col lg:flex-row h-screen bg-slate-200 p-4 gap-4 overflow-hidden font-black uppercase">
+        <div className="flex flex-col lg:flex-row h-[100%] bg-slate-200 p-4 gap-4 overflow-hidden font-black uppercase">
             <Toaster position="top-center" richColors />
 
             {/* MODALES CON TU LÓGICA DE PESO */}
@@ -223,10 +231,6 @@ export default function WeighingDashboard() {
                         <h1 className="text-2xl text-slate-800">{selectedLote.Proveedor}</h1>
                         <p className="text-[10px] text-red-600 tracking-widest">LOTE: {selectedLote.Lote} | TARA: {tara} KG</p>
                     </div>
-                    <div className="text-right">
-                        <p className="text-[9px] text-slate-400 uppercase">Acumulado Sesión</p>
-                        <p className="text-3xl text-slate-800 font-mono">{totalKilosLote} KG</p>
-                    </div>
                 </header>
 
                 <div className="flex-1 overflow-y-auto custom-scroll pr-2">
@@ -243,20 +247,48 @@ export default function WeighingDashboard() {
                 </div>
 
                 <div className="h-1/3 bg-white rounded-[2.5rem] shadow-inner border border-slate-200 overflow-hidden">
-                    <table className="w-full text-left">
-                        <thead className="bg-slate-50 border-b text-[9px] text-slate-400 sticky top-0">
-                            <tr><th className="p-4">PRODUCTO</th><th className="p-4 text-center">PZS</th><th className="p-4 text-right">PESO NETO</th></tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {movimientos.map((reg, i) => (
-                                <tr key={i} className="text-[11px] font-bold text-slate-700">
-                                    <td className="p-4 truncate">{reg.Nombre}</td>
-                                    <td className="p-4 text-center">{reg.Piezas}</td>
-                                    <td className="p-4 text-right font-black">{parseFloat(reg.Peso || 0).toFixed(3)} KG</td>
+                    {/* Contenedor con scroll personalizado */}
+                    <div className="h-full overflow-y-auto custom-scrollbar">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-slate-50 border-b text-[9px] text-slate-400 sticky top-0 z-10">
+                                <tr>
+                                    <th className="p-4">PRODUCTO</th>
+                                    <th className="p-4 text-center">PZS</th>
+                                    <th className="p-4 text-right">PESO NETO {totalKilosLote}</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {movimientos.map((reg, i) => (
+                                    <tr key={i} className="text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-colors">
+                                        <td className="p-4 truncate max-w-[150px]">{reg.Nombre}</td>
+                                        <td className="p-4 text-center">{reg.Piezas}</td>
+                                        <td className="p-4 text-right font-black">
+                                            {parseFloat(reg.Peso || 0).toFixed(3)} KG
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Estilos para el Scrollbar (Puedes poner esto en tu index.css) */}
+                    <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+            margin: 20px 0; /* Para que no choque con los bordes redondeados del contenedor */
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #3b82f6; /* azul-500 de Tailwind */
+            border-radius: 20px;
+            border: 2px solid white; /* Espaciado interno */
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: #2563eb; /* azul-600 */
+        }
+    `}</style>
                 </div>
             </div>
 

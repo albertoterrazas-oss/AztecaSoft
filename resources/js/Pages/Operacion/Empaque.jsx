@@ -166,7 +166,7 @@ const Empaque = () => {
   };
 
   const registrarPesajeFinal = (brutoRecibido, taraRecibida) => {
-    const b = parseFloat(brutoRecibido) || 0;
+    const b = parseFloat(brutoRecibido-taraRecibida) || 0;
 
     if (b > maxPermitido) {
       toast.error(`Stock insuficiente`, {

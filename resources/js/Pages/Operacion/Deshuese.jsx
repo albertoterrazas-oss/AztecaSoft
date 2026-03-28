@@ -148,7 +148,7 @@ export default function DeshueseDashboard() {
                             Deshuese
                         </span>
                     </h1>
-                    
+
                     <div className="grid gap-4">
                         {lotes.length > 0 ? (
                             lotes.map((lote) => (
@@ -209,13 +209,16 @@ export default function DeshueseDashboard() {
                     <div>
                         <button onClick={() => { setSelectedLote(null); setParentFilter(null); setSelectedParent(null); setCarrito([]); }} className="text-[10px] text-slate-400 mb-1 block">← VOLVER</button>
                         <h1 className="text-2xl text-slate-800 leading-none">{selectedLote.Proveedor}</h1>
+                        <p className="text-[10px] text-red-600 font-bold tracking-widest">LOTE: {selectedLote.Lote} | TARA: {taraGlobal} KG</p>
                     </div>
                     {selectedParent && <div className="bg-emerald-500 text-white px-4 py-2 rounded-xl text-[10px] border-b-4 border-emerald-700 animate-pulse">PADRE: {selectedParent.Nombre}</div>}
                 </header>
 
                 <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white rounded-[2.5rem] border-b-[10px] border-slate-300 shadow-xl">
                     <div className="flex-1 overflow-y-auto p-6 custom-scroll">
-                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                        {/* <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                            <button onClick={() => {  setSelectedParent(null);  }} className="text-[10px] text-slate-400 mb-1 block">← VOLVER</button>
+
                             {productosVisibles.map((p) => {
                                 const isSelected = selectedChild?.IdProducto === p.IdProducto || (parentFilter === p.IdProducto && !selectedChild);
                                 return (
@@ -235,6 +238,48 @@ export default function DeshueseDashboard() {
                                             ${!p.tieneStock ? "opacity-30 grayscale bg-slate-100 border-slate-200" : isSelected ? "border-blue-600 bg-blue-50 ring-4 ring-blue-100" : "border-slate-300 bg-white"}`}
                                     >
                                         <span className={`text-[8px] px-2 py-0.5 rounded-lg text-white w-fit ${p.EsSubproducto === "1" ? 'bg-orange-500' : 'bg-blue-600'}`}>{p.EsSubproducto === "1" ? 'CORTE' : 'PADRE'}</span>
+                                        <span className="text-[10px] leading-tight text-slate-800 font-black">{p.Nombre}</span>
+                                    </button>
+                                );
+                            })}
+                        </div> */}
+
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                            {/* El botón solo se renderiza si parentFilter no es nulo/vacío */}
+                            {parentFilter && (
+                                <button
+                                    onClick={() => {
+                                        setParentFilter(null); // Limpiamos el filtro para volver al inicio
+                                        setSelectedParent(null);
+                                        setSelectedChild(null);
+                                    }}
+                                    className="text-[10px] text-slate-400 mb-1 block col-span-full text-left hover:text-blue-600 transition-colors"
+                                >
+                                    ← VOLVER A PRODUCTOS PADRE
+                                </button>
+                            )}
+
+                            {productosVisibles.map((p) => {
+                                const isSelected = selectedChild?.IdProducto === p.IdProducto || (parentFilter === p.IdProducto && !selectedChild);
+                                return (
+                                    <button
+                                        key={p.IdProducto}
+                                        disabled={!p.tieneStock}
+                                        onClick={() => {
+                                            if (!parentFilter) {
+                                                const r = records.find(rec => String(rec.idProducto || rec.IdProducto) === String(p.IdProducto));
+                                                setParentFilter(p.IdProducto);
+                                                setSelectedParent({ ...p, pesoOriginal: r?.KG || r?.Peso, piezasOriginales: r?.Piezas });
+                                            } else {
+                                                setSelectedChild(p);
+                                            }
+                                        }}
+                                        className={`p-4 rounded-[2rem] text-left border-b-[8px] h-28 flex flex-col justify-between transition-all shadow-md active:translate-y-1 active:border-b-0
+          ${!p.tieneStock ? "opacity-30 grayscale bg-slate-100 border-slate-200" : isSelected ? "border-blue-600 bg-blue-50 ring-4 ring-blue-100" : "border-slate-300 bg-white"}`}
+                                    >
+                                        <span className={`text-[8px] px-2 py-0.5 rounded-lg text-white w-fit ${p.EsSubproducto === "1" ? 'bg-orange-500' : 'bg-blue-600'}`}>
+                                            {p.EsSubproducto === "1" ? 'CORTE' : 'PADRE'}
+                                        </span>
                                         <span className="text-[10px] leading-tight text-slate-800 font-black">{p.Nombre}</span>
                                     </button>
                                 );
@@ -288,14 +333,8 @@ export default function DeshueseDashboard() {
                 </div>
 
                 <div className="bg-white p-6 rounded-[2.5rem] border-b-[10px] border-slate-300 flex flex-col gap-5 shadow-xl">
-                    {/* <div>
-                        <label className="text-[9px] block text-center mb-2 font-black text-slate-400">PIEZAS</label>
-                        <div className="flex gap-2 h-14">
-                            <button onClick={() => setPiezas(Math.max(0, Number(piezas) - 1))} className="flex-1 rounded-xl bg-slate-100 border-b-4 border-slate-300 font-black hover:bg-red-50">-</button>
-                            <input type="number" value={piezas} onChange={e => setPiezas(e.target.value)} className="w-20 text-center font-black bg-slate-50 border-b-4 border-slate-200 rounded-xl outline-none" placeholder="0" />
-                            <button onClick={() => setPiezas(Number(piezas) + 1)} className="flex-1 rounded-xl bg-slate-100 border-b-4 border-slate-300 font-black hover:bg-green-50">+</button>
-                        </div>
-                    </div> */}
+
+                    <button onClick={() => { setCurrentWeight("0.00"); setShowTaraModal(true); }} className="bg-slate-800 text-white py-3 rounded-xl text-[10px] border-b-4 border-black font-black uppercase">Cambiar Tara</button>
 
                     <div className="space-y-3 pt-2">
                         <button
@@ -317,9 +356,9 @@ export default function DeshueseDashboard() {
                         </button>
                     </div>
 
-                    <button onClick={() => setShowTaraModal(true)} className="text-[10px] text-slate-400 flex items-center justify-center gap-2 hover:text-red-600 transition-colors">
+                    {/* <button onClick={() => setShowTaraModal(true)} className="text-[10px] text-slate-400 flex items-center justify-center gap-2 hover:text-red-600 transition-colors">
                         <RotateCcw size={12} /> RE-PESAR TARA (ACTUAL: {taraGlobal})
-                    </button>
+                    </button> */}
                 </div>
             </aside>
         </div>

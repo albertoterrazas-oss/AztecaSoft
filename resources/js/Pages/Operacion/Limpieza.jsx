@@ -87,6 +87,15 @@ export default function WeighingDashboardLimpieza() {
         } catch (e) { toast.error("Error al cargar productos"); }
     };
 
+
+    useEffect(() => {
+        if (dbProducts && dbProducts.length === 0) {
+            fetchLotes();
+            setShowSuccessModal(false);
+            setSelectedLote(null);
+        }
+    }, [dbProducts]); // Se ejecuta cada vez que dbProducts cambie
+
     const fetchLotes = useCallback(async () => {
         try {
             const res = await axios.get(route("LotesLimpieza"));
@@ -164,35 +173,13 @@ export default function WeighingDashboardLimpieza() {
 
     if (!selectedLote) {
         return (
-            // <div className="min-h-[100%] bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
-            //     <div className="max-w-4xl w-full">
-            //         <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">Panel de Pesaje: <span style={{ color: '#A61A18' }}>Limpieza</span></h1>
-            //         <div className="grid gap-4">
-            //             {lotes.map((lote) => (
-            //                 <button key={lote.Lote} onClick={() => handleSelectLote(lote)} className="bg-white p-6 rounded-[2.5rem] flex items-center justify-between border-4 border-transparent hover:border-red-600 transition-all shadow-xl group">
-            //                     <div className="text-left font-black">
-            //                         <span className="text-xs text-red-600 uppercase">LOTE #{lote.Lote}</span>
-            //                         <h3 className="text-2xl leading-none text-slate-700">{lote.Proveedor}</h3>
-            //                     </div>
-            //                     <div className="bg-slate-100 group-hover:bg-red-600 group-hover:text-white p-5 rounded-3xl transition-all">
-            //                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-            //                     </div>
-            //                 </button>
-            //             ))}
-            //         </div>
-            //     </div>
-            // </div>
-
-
-              <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
+           
+            <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
                 <div className="max-w-4xl w-full">
-
-
-                    {/* <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">Panel de Pesaje:  backgroundColor: '#A61A18' Entrada y salida</h1> */}
                     <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
                         Panel de Pesaje:
-                        <span style={{ color: '#A61A18'  }}>
-                          Limpieza
+                        <span style={{ color: '#A61A18' }}>
+                            Limpieza
                         </span>
                     </h1>
                     <div className="grid gap-4">
@@ -222,7 +209,7 @@ export default function WeighingDashboardLimpieza() {
 
     return (
         <div className="flex flex-col lg:flex-row h-[100%] bg-slate-200 p-4 gap-4 overflow-hidden font-black uppercase">
-            <Toaster position="top-center" richColors />
+            {/* <Toaster position="top-center" richColors /> */}
             <SuccessModal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} message={successMsg} registeredWeight={lastRegisteredWeight} />
             <BasculaModal isOpen={showTaraModal} title="PESAR TARA" subtitle="Coloque recipiente vacío" currentReading={currentWeight} buttonText="GUARDAR TARA" colorClass="bg-red-600 border-red-900 hover:bg-red-500" onClose={() => setShowTaraModal(false)} basculaId={idBasculaConfigurada} onConfirm={(b, t) => { setTara(t); setShowTaraModal(false); }} />
             <BasculaModal isOpen={showGuardarModal} title="PESAR PRODUCTO" subtitle={selectedProduct?.Nombre} currentReading={currentWeight} tara={tara} buttonText="CONFIRMAR Y GUARDAR" colorClass="bg-emerald-600 border-emerald-900 hover:bg-emerald-500" destinationName={almacenes.find(a => (a.id || a.IdAlmacen) === selectedArea)?.Nombre} onClose={() => setShowGuardarModal(false)} basculaId={idBasculaConfigurada} onConfirm={(b, t) => registrarPesaje(b, t)} />
