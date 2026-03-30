@@ -4,7 +4,20 @@ import LoadingDiv from "@/Components/LoadingDiv";
 import axios from "axios";
 import BasculaModal from '../../Components/BasculaPesa.jsx';
 import logo from './img/logo1.png';
-
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Thermometer,
+    ChevronLeft,
+    CircleDot,
+    Package,
+    Trash2,
+    Save,
+    Scale,
+    X,
+    Loader2,
+    Pencil,
+    Inbox, RefreshCcw
+} from 'lucide-react';
 const route = (name) => {
     const routeMap = {
         "LotesEntrada": "/api/LotesEntrada",
@@ -15,7 +28,7 @@ const route = (name) => {
     };
     return routeMap[name] || `/${name}`;
 };
-
+import HeaderPanel from '../../Components/HeaderPanel.jsx';
 // --- MODAL DE ÉXITO (Mantenemos tu diseño de 3rem y bordes) ---
 const SuccessModal = ({ isOpen, onClose, message, registeredWeight }) => {
     if (!isOpen) return null;
@@ -155,16 +168,15 @@ export default function WeighingDashboard() {
         return (
 
             <div className="h-[100%] bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
-                <div className="max-w-4xl w-full">
+                <div className="max-w-7xl w-full">
 
+                    <HeaderPanel
+                        badgeText="Azteca AVT"
+                        title="Panel de Pesaje:"
+                        subtitle="Entrada y salida"
+                        onRefresh={fetchData}
+                    />
 
-                    {/* <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">Panel de Pesaje:  backgroundColor: '#A61A18' Entrada y salida</h1> */}
-                    <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
-                        Panel de Pesaje:
-                        <span style={{ color: '#A61A18' }}>
-                            Entrada y salida
-                        </span>
-                    </h1>
                     <div className="grid gap-4">
                         {lotes.length > 0 ? (
                             lotes.map((lote) => (

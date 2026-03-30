@@ -2,7 +2,7 @@ import React from 'react';
 
 const LoadingDiv = () => {
   // Color principal: Cámbialo aquí para todo el componente
-  const mainColor = '#3a7bd5'; 
+  const mainColor = '#1B2654'; 
 
   return (
     <div className="loading-container">

@@ -4,6 +4,7 @@ import LoadingDiv from "@/Components/LoadingDiv";
 import BasculaModal from "@/Components/BasculaPesa";
 import axios from "axios";
 import { Package, ChevronRight, Scale, RotateCcw, Trash2, Save, Blend, ShoppingCart } from 'lucide-react';
+import HeaderPanel from '../../Components/HeaderPanel.jsx';
 
 export default function DeshueseDashboard() {
     const [lotes, setLotes] = useState([]);
@@ -134,20 +135,20 @@ export default function DeshueseDashboard() {
         return padre ? (padre.hijos || []).map(h => ({ ...h, tieneStock: true })) : [];
     }, [dbProducts, parentFilter, records]);
 
-    if (isLoading) return <div className="h-screen flex items-center justify-center bg-slate-100"><LoadingDiv /></div>;
+    if (isLoading) return <div className="h-[100%] flex items-center justify-center bg-slate-100"><LoadingDiv /></div>;
 
     if (!selectedLote) {
         return (
 
-            <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
-                <div className="max-w-4xl w-full">
+            <div className="h-[100%] bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
+                <div className="max-w-7xl w-full">
 
-                    <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
-                        Panel de Pesaje:
-                        <span style={{ color: '#A61A18' }}>
-                            Deshuese
-                        </span>
-                    </h1>
+                    <HeaderPanel
+                        badgeText="Azteca AVT"
+                        title="Panel de Pesaje:"
+                        subtitle="Deshuese"
+                        onRefresh={fetchData}
+                    />
 
                     <div className="grid gap-4">
                         {lotes.length > 0 ? (

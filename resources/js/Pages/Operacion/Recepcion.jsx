@@ -10,6 +10,7 @@ import {
     Plus, Minus
 } from 'lucide-react';
 import logo from './img/logo1.png';
+import HeaderPanel from '../../Components/HeaderPanel.jsx';
 
 export default function CombinedDashboard() {
     const [isLoading, setIsLoading] = useState(true);
@@ -130,44 +131,75 @@ export default function CombinedDashboard() {
             </AnimatePresence>
 
             {step === 1 ? (
-                <div className="flex h-screen items-center justify-center p-4">
-                    <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-md bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-200">
-                        {/* <div className="bg-red-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto"> */}
-                        {/* <Truck className="text-red-600 w-8 h-8" /> */}
+                // <div className="flex h-screen items-center justify-center p-4">
+                //     <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-md bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-200">
 
-                        <img
-                            src={logo}
-                            alt="Logotipo"
-                            style={{
-                                maxWidth: '45%', // Mantienes el ancho máximo que querías
-                                height: 'auto',  // Mantenemos auto por seguridad, aunque aspectRatio manda
-                                display: 'block', // Necesario para que el margin auto funcione
 
-                                // --- NUEVOS ESTILOS PARA REDONDA Y CENTRADA ---
-                                borderRadius: '50%', // Hace los bordes redondos (50% crea un círculo)
-                                aspectRatio: '1/1',  // Fuerza a que sea un cuadrado perfecto (importante para el círculo)
-                                objectFit: 'cover',   // Corta la imagen para que rellene el círculo sin estirarse
-                                margin: '0 auto'      // Centra horizontalmente el elemento block
-                            }}
+                //         <img
+                //             src={logo}
+                //             alt="Logotipo"
+                //             style={{
+                //                 maxWidth: '45%',
+                //                 height: 'auto',  
+                //                 display: 'block', 
+
+
+                //                 borderRadius: '50%', 
+                //                 aspectRatio: '1/1',  
+                //                 objectFit: 'cover',   
+                //                 margin: '0 auto'     
+                //             }}
+                //         />
+                //         <h2 className="text-center text-2xl font-black uppercase tracking-tight mb-2">Nueva Recepción</h2>
+                //         <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-4">
+                //             <select
+                //                 className="w-full rounded-2xl bg-slate-50 p-4 font-bold border-2 border-transparent focus:border-red-500 focus:bg-white transition-all text-sm appearance-none"
+                //                 value={sessionData.IdProveedor}
+                //                 onChange={(e) => {
+                //                     const p = dbProviders.find(x => x.IdProveedor == e.target.value);
+                //                     setSessionData({ IdProveedor: p?.IdProveedor || "", RazonSocial: p?.RazonSocial || "" });
+                //                 }}
+                //                 required
+                //             >
+                //                 <option value="">--- Seleccionar Proveedor ---</option>
+                //                 {dbProviders.map(p => (<option key={p.IdProveedor} value={p.IdProveedor}>{p.RazonSocial}</option>))}
+                //             </select>
+                //             <button className="w-full bg-[#1B2654] text-white font-black py-4 rounded-2xl uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">Comenzar Registro</button>
+                //         </form>
+                //     </motion.div>
+                // </div>
+
+
+                <div className="h-[100%] bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
+                    <div className="max-w-4xl w-full">
+
+                        <HeaderPanel
+                            badgeText="Azteca AVT"
+                            title="Panel DE"
+                            subtitle="RECEPCION"
+                            onRefresh={() => { }} // <--- No hace nada
                         />
-                        {/* </div> */}
-                        <h2 className="text-center text-2xl font-black uppercase tracking-tight mb-2">Nueva Recepción</h2>
-                        <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-4">
-                            <select
-                                className="w-full rounded-2xl bg-slate-50 p-4 font-bold border-2 border-transparent focus:border-red-500 focus:bg-white transition-all text-sm appearance-none"
-                                value={sessionData.IdProveedor}
-                                onChange={(e) => {
-                                    const p = dbProviders.find(x => x.IdProveedor == e.target.value);
-                                    setSessionData({ IdProveedor: p?.IdProveedor || "", RazonSocial: p?.RazonSocial || "" });
-                                }}
-                                required
-                            >
-                                <option value="">--- Seleccionar Proveedor ---</option>
-                                {dbProviders.map(p => (<option key={p.IdProveedor} value={p.IdProveedor}>{p.RazonSocial}</option>))}
-                            </select>
-                            <button className="w-full bg-[#1B2654] text-white font-black py-4 rounded-2xl uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">Comenzar Registro</button>
-                        </form>
-                    </motion.div>
+
+                        <div className="grid gap-4">
+
+
+                            <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-4">
+                                <select
+                                    className="w-full rounded-2xl bg-slate-50 p-4 font-bold border-2 border-transparent focus:border-red-500 focus:bg-white transition-all text-sm appearance-none"
+                                    value={sessionData.IdProveedor}
+                                    onChange={(e) => {
+                                        const p = dbProviders.find(x => x.IdProveedor == e.target.value);
+                                        setSessionData({ IdProveedor: p?.IdProveedor || "", RazonSocial: p?.RazonSocial || "" });
+                                    }}
+                                    required
+                                >
+                                    <option value="">--- Seleccionar Proveedor ---</option>
+                                    {dbProviders.map(p => (<option key={p.IdProveedor} value={p.IdProveedor}>{p.RazonSocial}</option>))}
+                                </select>
+                                <button className="w-full bg-[#1B2654] text-white font-black py-4 rounded-2xl uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">Comenzar Registro</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             ) : (
                 <div className="flex flex-col h-screen overflow-hidden">

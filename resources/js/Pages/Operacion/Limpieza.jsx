@@ -3,6 +3,7 @@ import { Toaster, toast } from "sonner";
 import LoadingDiv from "@/Components/LoadingDiv";
 import axios from "axios";
 import BasculaModal from '../../Components/BasculaPesa.jsx';
+import HeaderPanel from '../../Components/HeaderPanel.jsx';
 
 const route = (name) => {
     const routeMap = {
@@ -173,15 +174,16 @@ export default function WeighingDashboardLimpieza() {
 
     if (!selectedLote) {
         return (
-           
+
             <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center justify-center font-black uppercase">
-                <div className="max-w-4xl w-full">
-                    <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
-                        Panel de Pesaje:
-                        <span style={{ color: '#A61A18' }}>
-                            Limpieza
-                        </span>
-                    </h1>
+                <div className="max-w-7xl w-full">
+                    <HeaderPanel
+                        badgeText="Azteca AVT"
+                        title="Panel de Pesaje:"
+                        subtitle="Limpieza"
+                        onRefresh={fetchLotes}
+                    />
+
                     <div className="grid gap-4">
                         {lotes.length > 0 ? (
                             lotes.map((lote) => (

@@ -334,8 +334,9 @@ import { Toaster, toast } from "sonner";
 import LoadingDiv from "@/Components/LoadingDiv";
 import axios from "axios";
 import BasculaModal from '../../Components/BasculaPesa.jsx';
-import { Snowflake, ChevronRight } from 'lucide-react';
-
+import { Snowflake, ChevronRight, LayoutGrid } from 'lucide-react';
+import HeaderPanel from '../../Components/HeaderPanel.jsx';
+// import { LayoutGrid, Snowflake } from 'lucide-react';
 const route = (name) => {
     const routeMap = {
         "LotesCongelacion": "/api/LotesCongelacion",
@@ -533,29 +534,43 @@ export default function WeighingDashboard() {
     if (!selectedLote) {
         return (
             <div className="min-h-screen bg-[#f8fafc] p-4 md:p-10 flex flex-col items-center font-sans tracking-tight text-slate-900 font-black uppercase">
-                <div className="max-w-5xl w-full space-y-8">
-                    <header className="flex flex-col items-center mb-4">
-                        {/* <div className="bg-blue-600 text-white px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] mb-2 shadow-lg shadow-blue-200">Sistema de Control</div> */}
-                        {/* <h1 className="text-5xl font-black italic tracking-tighter text-slate-800 uppercase leading-none">Panel de <span className="text-blue-600">Congelación</span></h1> */}
+                <div className="max-w-7xl w-full">
 
-                        <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800">
-                            Panel de Pesaje:
-                            <span style={{ color: '#A61A18' }}>
-                                Congelación
-                            </span>
-                        </h1>
-                        {/* <div className="h-1.5 w-24 bg-red-600 mt-4 rounded-full"></div> */}
-                    </header>
+                    <HeaderPanel
+                        badgeText="Azteca AVT"
+                        title="Panel de Pesaje:"
+                        subtitle="Congelación"
+                        onRefresh={fetchLotes}
+                    />
 
                     <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 flex gap-2 overflow-x-auto no-scrollbar">
+
+                        <button
+                            onClick={() => setSelectedAreaFiltro(null)}
+                            className={`flex-1 min-w-[120px] py-4 px-3 rounded-xl transition-all duration-500 flex flex-col items-center gap-2 group relative overflow-hidden ${!selectedAreaFiltro ? 'bg-[#1B2654] text-white shadow-2xl scale-[1.05] z-10' : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100 shadow-sm'}`}
+                        >
+                            <div className={`p-2 rounded-lg transition-colors ${!selectedAreaFiltro ? 'bg-red-600' : 'bg-slate-100'}`}>
+                                <LayoutGrid size={18} className={!selectedAreaFiltro ? 'text-white' : 'text-slate-400'} />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest">Todos</span>
+                        </button>
+
+                        {/* Mapeo de almacenes existentes */}
                         {almacenes.map((a) => {
                             const id = a.id || a.IdAlmacen;
                             const isActive = selectedAreaFiltro === id;
                             return (
-                                <button key={id} onClick={() => setSelectedAreaFiltro(isActive ? null : id)}
-                                    className={`flex-1 min-w-[120px] py-4 px-3 rounded-xl transition-all duration-500 flex flex-col items-center gap-2 group relative overflow-hidden ${isActive ? 'bg-[#1B2654] text-white shadow-2xl scale-[1.05] z-10' : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100 shadow-sm'}`}>
-                                    <div className={`p-2 rounded-lg transition-colors ${isActive ? 'bg-red-600' : 'bg-slate-100'}`}><Snowflake size={18} className={isActive ? 'text-white' : 'text-slate-400'} /></div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest">{a.Nombre?.substring(0, 15)}</span>
+                                <button
+                                    key={id}
+                                    onClick={() => setSelectedAreaFiltro(isActive ? null : id)}
+                                    className={`flex-1 min-w-[120px] py-4 px-3 rounded-xl transition-all duration-500 flex flex-col items-center gap-2 group relative overflow-hidden ${isActive ? 'bg-[#1B2654] text-white shadow-2xl scale-[1.05] z-10' : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100 shadow-sm'}`}
+                                >
+                                    <div className={`p-2 rounded-lg transition-colors ${isActive ? 'bg-red-600' : 'bg-slate-100'}`}>
+                                        <Snowflake size={18} className={isActive ? 'text-white' : 'text-slate-400'} />
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">
+                                        {a.Nombre?.substring(0, 15)}
+                                    </span>
                                 </button>
                             );
                         })}
@@ -565,15 +580,18 @@ export default function WeighingDashboard() {
                         {lotes.length > 0 ? (
                             lotes.map((lote) => (
                                 <button key={lote.Lote} onClick={() => handleSelectLote(lote)}
-                                    className="relative bg-white p-1 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-2xl hover:border-blue-500 transition-all duration-300 group overflow-hidden">
-                                    <div className="p-6 flex items-center justify-between">
-                                        <div className="text-left space-y-1">
-                                            <div className="flex items-center gap-2"><span className="bg-red-50 text-red-600 px-3 py-0.5 rounded-full text-[10px] font-black border border-red-100">LOTE #{lote.Lote}</span></div>
-                                            <h3 className="text-3xl font-black text-slate-800 leading-tight uppercase italic tracking-tighter">{lote.Proveedor}</h3>
-                                        </div>
-                                        <div className="bg-slate-50 group-hover:bg-blue-600 group-hover:text-white p-4 rounded-2xl transition-all duration-500 transform group-hover:translate-x-1"><ChevronRight size={28} strokeWidth={3} /></div>
+                                    className="bg-white p-6 rounded-[2.5rem] flex items-center justify-between border-4 border-transparent hover:border-red-600 transition-all shadow-xl group"
+                                >
+
+                                    <div className="text-left font-black">
+                                        <span className="text-xs text-red-600 uppercase">LOTE #{lote.Lote}</span>
+                                        <h3 className="text-2xl leading-none text-slate-700">{lote.Proveedor}</h3>
+                                    </div>
+                                    <div className="bg-slate-100 group-hover:bg-red-600 group-hover:text-white p-5 rounded-3xl transition-all">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
                                     </div>
                                 </button>
+
                             ))
                         ) : (
                             <div className="col-span-full bg-white p-20 rounded-[3rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center space-y-4">
@@ -625,10 +643,6 @@ export default function WeighingDashboard() {
                         <h1 className="text-2xl text-slate-800">{selectedLote.Proveedor}</h1>
                         <p className="text-[10px] text-red-600 tracking-widest">LOTE: {selectedLote.Lote} | ORIGEN: {almacenes.find(a => (a.id || a.IdAlmacen) === selectedAreaFiltro)?.Nombre || 'GENERAL'}</p>
                     </div>
-                    {/* <div className="text-right">
-                        <p className="text-[9px] text-slate-400 uppercase">Acumulado Sesión</p>
-                        <p className="text-3xl text-slate-800 font-mono">{totalKilosLote} KG</p>
-                    </div> */}
                 </header>
 
                 <div className="flex-1 overflow-y-auto custom-scroll pr-2">
@@ -645,11 +659,6 @@ export default function WeighingDashboard() {
 
                 <div className="h-1/3 bg-white rounded-[2.5rem] shadow-inner border border-slate-200 overflow-hidden">
                     <table className="w-full text-left">
-                        {/* CAMBIO AQUÍ: Encabezados de tabla */}
-
-
-                        {/* <th className="p-4 text-right">PESO NETO {totalKilosLote}</th> */}
-
                         <thead className="bg-slate-50 border-b text-[9px] text-slate-400 sticky top-0"><tr><th className="p-4">PRODUCTO</th><th className="p-4 text-center">KG (MANUAL)</th><th className="p-4 text-right">PESO NETO {totalKilosLote} </th></tr></thead>
                         <tbody className="divide-y divide-slate-100 overflow-y-auto">{movimientos.map((reg, i) => (<tr key={i} className="text-[11px] font-bold text-slate-700"><td className="p-4 truncate">{reg.Nombre}</td><td className="p-4 text-center">{reg.Piezas} KG</td><td className="p-4 text-right font-black">{parseFloat(reg.Peso || 0).toFixed(2)} KG</td></tr>))}</tbody>
                     </table>
@@ -668,18 +677,9 @@ export default function WeighingDashboard() {
                 <div className="bg-white p-4 rounded-[2rem] border-4 border-slate-200 flex flex-col gap-3">
                     <button onClick={() => { setCurrentWeight("0.00"); setShowTaraModal(true); }} className="bg-slate-800 text-white py-3 rounded-xl text-[10px] border-b-4 border-black font-black active:translate-y-1 active:border-b-0">CAMBIAR TARA</button>
 
-                    {/* <div className="w-full px-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block text-center">Kilos Manuales</label>
-                        <div className="flex gap-2 h-16">
-                            <button onClick={() => setPesoManual(prev => Math.max(0, parseFloat(prev || 0) - 1).toFixed(2))} className="flex-1 rounded-2xl bg-slate-100 border-b-4 border-slate-300 font-black text-2xl">-</button>
-                            <input type="number" step="0.01" value={pesoManual} onChange={e => setPesoManual(e.target.value)} className="w-[45%] bg-slate-50 border-b-4 border-slate-200 rounded-2xl text-center text-2xl font-black outline-none" />
-                            <button onClick={() => setPesoManual(prev => (parseFloat(prev || 0) + 1).toFixed(2))} className="flex-1 rounded-2xl bg-slate-100 border-b-4 border-slate-300 font-black text-2xl">+</button>
-                        </div>
-                    </div> */}
-
                     <div>
                         <label className={`text-[10px] block mb-2 text-center tracking-widest font-black uppercase ${!selectedAreaDestino ? 'text-red-500 animate-pulse' : 'text-slate-400'}`}>
-                            {!selectedAreaDestino ? "⚠️ Elija Destino" : "Almacen de Salida"}
+                            {!selectedAreaDestino ? "Elija EL CONGELADOR" : "CONGELADOR DE DESTINO"}
                         </label>
                         <div className="flex gap-1">
                             {almacenes.map(a => (

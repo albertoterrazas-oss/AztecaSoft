@@ -76,50 +76,114 @@ const ReportesView = () => {
         setData(null);
         try {
             const response = await axios.get(`/api/reportes/${tipoReporte.replace('_', '-')}`, { params: filtros });
-            if (Array.isArray(response.data) ? response.data.length === 0 : response.data.inventario.length === 0) throw new Error("Sin datos");
+            const hasData = Array.isArray(response.data) ? response.data.length > 0 : response.data.inventario.length > 0;
+            if (!hasData) throw new Error("Sin datos");
             setData(response.data);
             toast.success("AZTECA AVT: Reporte generado");
         } catch (error) { toast.error(error.message); }
         finally { setLoading(false); }
     };
 
+    // FUNCIÓN DE EXPORTACIÓN CON EL ESTILO DE LA IMAGEN
     const exportarExcel = () => {
         const wb = XLSX.utils.book_new();
-        const generateStyledSheet = (jsonData, sheetName) => {
-            const title = [["AZTECA AVT - REPORTE OPERATIVO"], [`FECHA EMISIÓN: ${getFormattedDate()}`], []];
-            const headers = Object.keys(jsonData[0]).map(h => h.toUpperCase().replace(/_/g, ' '));
-            const rows = jsonData.map(obj => Object.values(obj));
-            const ws = XLSX.utils.aoa_to_sheet([...title, headers, ...rows]);
-
-            ws["A1"].s = { font: { bold: true, size: 16, color: { rgb: "001F3F" } }, alignment: { horizontal: "center" } };
-            const range = XLSX.utils.decode_range(ws['!ref']);
-            for (let c = range.s.c; c <= range.e.c; c++) {
-                const cellRef = XLSX.utils.encode_cell({ r: 3, c: c });
-                if (!ws[cellRef]) continue;
-                ws[cellRef].s = {
-                    fill: { fgColor: { rgb: "001F3F" } },
-                    font: { color: { rgb: "FFFFFF" }, bold: true },
-                    alignment: { horizontal: "center" },
-                    border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } }
-                };
-            }
-            ws['!cols'] = headers.map(() => ({ wch: 25 }));
-            ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
-            XLSX.utils.book_append_sheet(wb, ws, sheetName);
-        };
 
         if (tipoReporte === 'inventario_completo') {
-            generateStyledSheet(data.inventario, "INVENTARIO");
-            generateStyledSheet(data.entradas, "ENTRADAS");
-            generateStyledSheet(data.salidas, "SALIDAS");
+            // Creamos una hoja en blanco y añadimos el título general
+            const ws = XLSX.utils.aoa_to_sheet([
+                ["AZTECA AVT - CONTROL DE INVENTARIO Y MOVIMIENTOS"],
+                [`FECHA DE REPORTE: ${getFormattedDate()}`],
+                [] // Espacio en blanco
+            ]);
+
+            // Configuración para las 3 columnas de la imagen
+            const secciones = [
+                { titulo: 'Inventario', datos: data.inventario, colInicio: 0, color: "DBEAFE" }, // Azul (A-B)
+                { titulo: 'Entradas', datos: data.entradas, colInicio: 3, color: "FFEDD5" },    // Naranja (D-E)
+                { titulo: 'Salidas', datos: data.salidas, colInicio: 6, color: "DCFCE7" }      // Verde (G-H)
+            ];
+
+            secciones.forEach((sec) => {
+                const filaInicio = 4; // Fila donde empiezan las cabeceras de tabla
+
+                // 1. Título de la Sección (Inventario / Entradas / Salidas)
+                const titleCell = XLSX.utils.encode_cell({ r: filaInicio - 1, c: sec.colInicio });
+                ws[titleCell] = { 
+                    v: sec.titulo, 
+                    s: { font: { bold: true, size: 14, color: { rgb: "000000" } } } 
+                };
+
+                // 2. Cabeceras de la tabla (Etiquetas de fila | Suma de Kilos)
+                const headers = ["Etiquetas de fila", "Suma de Kilos"];
+                headers.forEach((h, i) => {
+                    const cellRef = XLSX.utils.encode_cell({ r: filaInicio, c: sec.colInicio + i });
+                    ws[cellRef] = {
+                        v: h,
+                        s: {
+                            fill: { fgColor: { rgb: "334155" } }, // Gris pizarra oscuro
+                            font: { color: { rgb: "FFFFFF" }, bold: true },
+                            alignment: { horizontal: "center" },
+                            border: { bottom: { style: "thin" }, top: { style: "thin" } }
+                        }
+                    };
+                });
+
+                // 3. Renderizar Datos
+                sec.datos.forEach((item, idx) => {
+                    const r = filaInicio + 1 + idx;
+                    const valores = Object.values(item); // [Nombre, Kilos]
+
+                    valores.slice(0, 2).forEach((val, i) => {
+                        const cellRef = XLSX.utils.encode_cell({ r: r, c: sec.colInicio + i });
+                        ws[cellRef] = {
+                            v: val,
+                            s: {
+                                fill: { fgColor: { rgb: sec.color } },
+                                font: { size: 10 },
+                                alignment: { horizontal: i === 1 ? "right" : "left" },
+                                numFmt: i === 1 ? "#,##0.00" : "" // Formato decimal para kilos
+                            }
+                        };
+                    });
+                });
+            });
+
+            // Ajustes finales de la hoja
+            ws['!cols'] = [
+                { wch: 25 }, { wch: 15 }, { wch: 5 }, // A, B, C (espacio)
+                { wch: 25 }, { wch: 15 }, { wch: 5 }, // D, E, F (espacio)
+                { wch: 25 }, { wch: 15 }              // G, H
+            ];
+            ws['!ref'] = "A1:H100"; // Rango sugerido
+            XLSX.utils.book_append_sheet(wb, ws, "MOVIMIENTOS_GENERAL");
+
         } else {
-            generateStyledSheet(data, "REPORTE");
+            // Estilo estándar para los demás reportes (Una sola tabla)
+            const headers = Object.keys(data[0]).map(h => h.toUpperCase().replace(/_/g, ' '));
+            const rows = data.map(obj => Object.values(obj));
+            const ws = XLSX.utils.aoa_to_sheet([
+                ["AZTECA AVT - REPORTE DETALLADO"],
+                [`EMISIÓN: ${getFormattedDate()}`],
+                [],
+                headers,
+                ...rows
+            ]);
+
+            // Estilo básico de cabecera
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let c = range.s.c; c <= range.e.c; c++) {
+                const cell = XLSX.utils.encode_cell({ r: 3, c: c });
+                if (ws[cell]) ws[cell].s = { fill: { fgColor: { rgb: "1B2654" } }, font: { color: { rgb: "FFFFFF" }, bold: true } };
+            }
+            ws['!cols'] = headers.map(() => ({ wch: 20 }));
+            XLSX.utils.book_append_sheet(wb, ws, "REPORTE");
         }
+
         XLSX.writeFile(wb, `AZTECA_AVT_${tipoReporte.toUpperCase()}_${getTodayISO()}.xlsx`);
     };
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] p-4 md:p-10 font-sans text-slate-800">
+        <div className="h-[100%] bg-[#f8fafc] p-4 md:p-10 font-sans text-slate-800">
             <Toaster position="top-right" richColors />
 
             <div className="max-w-7xl mx-auto">
@@ -133,9 +197,6 @@ const ReportesView = () => {
                         <h1 className="text-5xl font-black text-slate-900 tracking-tighter italic">CENTRAL <span className="font-bold not-italic" style={{ color: '#A61A18' }}>REPORTES</span></h1>
                     </motion.div>
 
-
-
-
                     {data && (
                         <motion.button
                             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
@@ -147,11 +208,9 @@ const ReportesView = () => {
                     )}
                 </header>
 
-                {/* FILTROS UNIFICADOS (TAMAÑO h-12) */}
+                {/* FILTROS */}
                 <section className="bg-white p-8 rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-100 mb-10">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
-
-                        {/* TIPO DOCUMENTO */}
                         <div className="lg:col-span-4 flex flex-col gap-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Filter size={12} /> Documento</label>
                             <select
@@ -165,7 +224,6 @@ const ReportesView = () => {
                             </select>
                         </div>
 
-                        {/* FILTROS DINÁMICOS */}
                         <div className="lg:col-span-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                             <AnimatePresence mode="wait">
                                 {tipoReporte === 'lotes_proveedor' && (
@@ -177,7 +235,6 @@ const ReportesView = () => {
                                         </select>
                                     </motion.div>
                                 )}
-
                                 {tipoReporte === 'detalle_reparticion' && (
                                     <motion.div key="pr" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-2">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-1"><Package size={12} /> PRODUCTO</label>
@@ -187,14 +244,12 @@ const ReportesView = () => {
                                         </select>
                                     </motion.div>
                                 )}
-
                                 {(tipoReporte === 'productos_lote' || tipoReporte === 'detalle_reparticion') && (
                                     <motion.div key="l" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-2">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-tighter">ID LOTE</label>
                                         <input name="idLote" type="number" onChange={handleInputChange} className="w-full h-12 bg-slate-50 border-none rounded-xl px-4 font-bold shadow-inner outline-none" placeholder="00" />
                                     </motion.div>
                                 )}
-
                                 {(tipoReporte === 'lotes_proveedor' || tipoReporte === 'inventario_completo') && (
                                     <>
                                         <div className="flex flex-col gap-2">
@@ -210,12 +265,11 @@ const ReportesView = () => {
                             </AnimatePresence>
                         </div>
 
-                        {/* BOTÓN GENERAR UNIFICADO */}
                         <div className="lg:col-span-2">
                             <button
                                 onClick={consultarReporte} disabled={loading || !canSubmit()}
                                 className={`w-full h-12 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2
-                  ${!canSubmit() ? 'bg-slate-100 text-slate-300 cursor-not-allowed shadow-none' : 'bg-[#1B2654] text-white shadow-xl hover:bg-blue-900 active:scale-95'}`}
+                                ${!canSubmit() ? 'bg-slate-100 text-slate-300 cursor-not-allowed shadow-none' : 'bg-[#1B2654] text-white shadow-xl hover:bg-blue-900 active:scale-95'}`}
                             >
                                 {loading ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
                                 {loading ? "PROCESANDO" : "GENERAR"}
@@ -224,7 +278,7 @@ const ReportesView = () => {
                     </div>
                 </section>
 
-                {/* VISUALIZADOR DE TABLA */}
+                {/* TABLA VISUAL */}
                 <AnimatePresence mode="wait">
                     {data ? (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -236,11 +290,11 @@ const ReportesView = () => {
                                 </div>
                             )}
 
-                            <div className="bg-white shadow-2xl border border-slate-100 overflow-hidden">
+                            <div className="bg-white shadow-2xl border border-slate-100 overflow-hidden rounded-2xl">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left">
                                         <thead>
-                                            <tr className="  bg-[#1B2654]">
+                                            <tr className="bg-[#1B2654]">
                                                 {sortedData.length > 0 && Object.keys(sortedData[0]).map(key => (
                                                     <th key={key} onClick={() => requestSort(key)} className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-800 transition-colors border-r border-slate-800 last:border-0 group">
                                                         <div className="flex items-center justify-between">

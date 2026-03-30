@@ -3,6 +3,7 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import BasculaModal from '../../Components/BasculaPesa.jsx';
+import HeaderPanel from '../../Components/HeaderPanel.jsx';
 
 import {
   Thermometer,
@@ -166,7 +167,7 @@ const Empaque = () => {
   };
 
   const registrarPesajeFinal = (brutoRecibido, taraRecibida) => {
-    const b = parseFloat(brutoRecibido-taraRecibida) || 0;
+    const b = parseFloat(brutoRecibido - taraRecibida) || 0;
 
     if (b > maxPermitido) {
       toast.error(`Stock insuficiente`, {
@@ -179,7 +180,7 @@ const Empaque = () => {
     const n = b - t;
     if (b <= 0) return;
 
-    console.log("selectedProductoObj",selectedProductoObj)
+    console.log("selectedProductoObj", selectedProductoObj)
 
     const nuevoItem = {
       id: Date.now(),
@@ -253,17 +254,14 @@ const Empaque = () => {
       <AnimatePresence mode="wait">
         {view === 'grid' && (
           <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-8 w-full h-full overflow-y-auto">
-            {/* <header className="mb-12 border-l-8 border-blue-600 pl-6 text-black">
-              <h1 className="text-4xl font-black italic uppercase tracking-tighter">Panel de Empaque</h1>
-              <p className="text-blue-500 font-bold tracking-[0.3em] text-xs uppercase opacity-70">Almacenes refrigerados</p>
-            </header> */}
+            
+            <HeaderPanel
+              badgeText="Azteca AVT"
+              title="Panel de Pesaje:"
+              subtitle="Empaque"
+              onRefresh={fetchLotes}
+            />
 
-            <h1 className="text-4xl text-center mb-10 italic font-black text-slate-800 uppercase">
-              Panel de Pesaje:
-              <span style={{ color: '#A61A18' }}>
-                Empaque
-              </span>
-            </h1>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-white">
               {almacenes.map((c) => (
                 <motion.div key={c.IdAlmacen || c.id} whileHover={{ scale: 1.02, backgroundColor: '#1B2656' }} onClick={() => iniciarApertura(c)} style={{ backgroundColor: '#1B2654' }} className="border-2 border-slate-800 p-10 rounded-[3rem] cursor-pointer text-center group transition-all shadow-2xl relative overflow-hidden">
