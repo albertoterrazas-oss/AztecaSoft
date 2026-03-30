@@ -1,3 +1,6 @@
+
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast, Toaster } from 'sonner';
@@ -30,19 +33,18 @@ const ReportesView = () => {
         fechaInicio: getTodayISO(), fechaFin: getTodayISO()
     });
 
-    // --- CARGA DE DATOS ---
+    // --- CARGA DE CATÁLOGOS ---
     useEffect(() => {
         const fetchCatalogos = async () => {
             try {
                 const [resProv, resProd] = await Promise.all([
-                    axios.get("/api/proveedores"),
+                    axios.get("/api/provedores"),
                     axios.get("/api/productos")
                 ]);
                 setProveedores(resProv.data);
                 setProductos(resProd.data);
             } catch (error) {
                 console.error("Error catálogos:", error);
-                toast.error("Error al cargar catálogos");
             }
         };
         fetchCatalogos();
@@ -82,9 +84,9 @@ const ReportesView = () => {
         try {
             const endpoint = tipoReporte.replace(/_/g, '-');
             const response = await axios.get(`/api/reportes/${endpoint}`, { params: filtros });
-            
-            const hasData = Array.isArray(response.data) 
-                ? response.data.length > 0 
+
+            const hasData = Array.isArray(response.data)
+                ? response.data.length > 0
                 : (response.data.inventario && response.data.inventario.length > 0);
 
             if (!hasData) throw new Error("Sin datos encontrados");
@@ -96,54 +98,101 @@ const ReportesView = () => {
         } finally { setLoading(false); }
     };
 
-    // --- EXPORTACIÓN EXCEL (MÁXIMO NIVEL) ---
     const exportarExcel = () => {
+        // 1. Crear el libro una sola vez al inicio
         const wb = XLSX.utils.book_new();
+        const nombreArchivo = `AZTECA_AVT_${tipoReporte.toUpperCase()}_${getTodayISO()}.xlsx`;
+
+        // console.log("Exportando datos:", data, "Tipo:", tipoReporte);
 
         if (tipoReporte === 'inventario_completo') {
+            // --- REPORTE DE INVENTARIO COMPLETO (3 COLUMNAS LATERALES) ---
+
+            // Crear la hoja con encabezados iniciales
             const ws = XLSX.utils.aoa_to_sheet([
                 ["AZTECA AVT - CONTROL DE INVENTARIO Y MOVIMIENTOS"],
-                [`FECHA DE REPORTE: ${getFormattedDate()}`],
-                []
+                [`FECHA DE REPORTE: ${new Date().toLocaleDateString()}`],
+                [] // Espacio en blanco
             ]);
 
+            // Asegurar que los datos existan para evitar errores de .map o .length
             const secciones = [
-                { titulo: 'Inventario', datos: data.inventario, colInicio: 0, color: "DBEAFE" },
-                { titulo: 'Entradas', datos: data.entradas, colInicio: 3, color: "FFEDD5" },
-                { titulo: 'Salidas', datos: data.salidas, colInicio: 6, color: "DCFCE7" }
+                { titulo: 'Inventario', datos: data.inventario || [], colInicio: 0, color: "DBEAFE" },
+                { titulo: 'Entradas', datos: data.entradas || [], colInicio: 3, color: "FFEDD5" },
+                { titulo: 'Salidas', datos: data.salidas || [], colInicio: 6, color: "DCFCE7" }
             ];
 
             secciones.forEach((sec) => {
                 const filaInicio = 4;
-                const titleRef = XLSX.utils.encode_cell({ r: filaInicio - 1, c: sec.colInicio });
-                ws[titleRef] = { v: sec.titulo, s: { font: { bold: true, size: 14 } } };
 
-                ["Etiquetas de fila", "Suma de Kilos"].forEach((h, i) => {
+                // A. Insertar Título de la Sección
+                const titleRef = XLSX.utils.encode_cell({ r: filaInicio - 1, c: sec.colInicio });
+                ws[titleRef] = {
+                    v: sec.titulo.toUpperCase(),
+                    t: 's',
+                    s: { font: { bold: true, sz: 14 } }
+                };
+
+                // B. Insertar Encabezados de Columna
+                ["PRODUCTO", "SUMA DE KILOS"].forEach((h, i) => {
                     const cellRef = XLSX.utils.encode_cell({ r: filaInicio, c: sec.colInicio + i });
                     ws[cellRef] = {
                         v: h,
-                        s: { fill: { fgColor: { rgb: "334155" } }, font: { color: { rgb: "FFFFFF" }, bold: true }, alignment: { horizontal: "center" } }
+                        t: 's',
+                        s: {
+                            fill: { fgColor: { rgb: "334155" } },
+                            font: { color: { rgb: "FFFFFF" }, bold: true },
+                            alignment: { horizontal: "center" }
+                        }
                     };
                 });
 
+                // C. Insertar Datos
                 sec.datos.forEach((item, idx) => {
                     const r = filaInicio + 1 + idx;
-                    const valores = Object.values(item);
-                    valores.slice(0, 2).forEach((val, i) => {
-                        const cellRef = XLSX.utils.encode_cell({ r: r, c: sec.colInicio + i });
-                        ws[cellRef] = {
-                            v: val,
-                            s: { fill: { fgColor: { rgb: sec.color } }, alignment: { horizontal: i === 1 ? "right" : "left" }, numFmt: i === 1 ? "#,##0.00" : "" }
-                        };
-                    });
+
+                    // Columna Producto
+                    const cellProd = XLSX.utils.encode_cell({ r: r, c: sec.colInicio });
+                    ws[cellProd] = {
+                        v: item.Producto || "N/A",
+                        t: 's',
+                        s: { fill: { fgColor: { rgb: sec.color } } }
+                    };
+
+                    // Columna Kilos
+                    const cellKilos = XLSX.utils.encode_cell({ r: r, c: sec.colInicio + 1 });
+                    const numVal = parseFloat(item.SumaDeKilos);
+                    ws[cellKilos] = {
+                        v: isNaN(numVal) ? 0 : numVal,
+                        t: 'n',
+                        s: {
+                            fill: { fgColor: { rgb: sec.color } },
+                            numFmt: "#,##0.00",
+                            alignment: { horizontal: "right" }
+                        }
+                    };
                 });
             });
 
-            ws['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 5 }, { wch: 25 }, { wch: 15 }, { wch: 5 }, { wch: 25 }, { wch: 15 }];
+            // Configurar anchos y rango
+            ws['!cols'] = [
+                { wch: 30 }, { wch: 15 }, { wch: 5 },
+                { wch: 30 }, { wch: 15 }, { wch: 5 },
+                { wch: 30 }, { wch: 15 }
+            ];
+
+            const maxRows = Math.max(...secciones.map(s => s.datos.length)) + 10;
+            ws['!ref'] = `A1:H${maxRows}`;
+
             XLSX.utils.book_append_sheet(wb, ws, "MOVIMIENTOS");
+
         } else {
-            const headers = Object.keys(sortedData[0]).map(h => h.toUpperCase().replace(/_/g, ' '));
-            const rows = sortedData.map(obj => Object.values(obj));
+            // --- REPORTE ESTÁNDAR (DETALLADO O GENERAL) ---
+
+            // Validar que haya datos para exportar
+            const sourceData = sortedData && sortedData.length > 0 ? sortedData : [{}];
+            const headers = Object.keys(sourceData[0]).map(h => h.toUpperCase().replace(/_/g, ' '));
+            const rows = sourceData.map(obj => Object.values(obj));
             const hColor = tipoReporte === 'reporte_detallado' ? "A61A18" : "1B2654";
 
             const ws = XLSX.utils.aoa_to_sheet([
@@ -154,23 +203,32 @@ const ReportesView = () => {
                 ...rows
             ]);
 
-            const range = XLSX.utils.decode_range(ws['!ref']);
-            for (let c = range.s.c; c <= range.e.c; c++) {
-                const cell = XLSX.utils.encode_cell({ r: 3, c: c });
-                if (ws[cell]) ws[cell].s = { fill: { fgColor: { rgb: hColor } }, font: { color: { rgb: "FFFFFF" }, bold: true } };
+            // Aplicar estilos a encabezados
+            if (ws['!ref']) {
+                const range = XLSX.utils.decode_range(ws['!ref']);
+                for (let c = range.s.c; c <= range.e.c; c++) {
+                    const cell = XLSX.utils.encode_cell({ r: 3, c: c });
+                    if (ws[cell]) {
+                        ws[cell].s = {
+                            fill: { fgColor: { rgb: hColor } },
+                            font: { color: { rgb: "FFFFFF" }, bold: true },
+                            alignment: { horizontal: "center" }
+                        };
+                    }
+                }
             }
+
             ws['!cols'] = headers.map(() => ({ wch: 22 }));
             XLSX.utils.book_append_sheet(wb, ws, "REPORTE");
         }
 
-        XLSX.writeFile(wb, `AZTECA_${tipoReporte.toUpperCase()}_${getTodayISO()}.xlsx`);
+        // 2. Finalizar y descargar
+        XLSX.writeFile(wb, nombreArchivo);
     };
-
     return (
         <div className="h-full bg-[#f8fafc] p-4 md:p-10 font-sans text-slate-800">
             <Toaster position="top-right" richColors />
-            <div className="max-w-7xl mx-auto">
-                {/* HEADER */}
+            <div className="w-full">
                 <header className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
                     <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
                         <div className="flex items-center gap-3 mb-2">
@@ -186,7 +244,6 @@ const ReportesView = () => {
                     )}
                 </header>
 
-                {/* FILTROS */}
                 <section className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 mb-10">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
                         <div className="lg:col-span-4 flex flex-col gap-2">
@@ -228,12 +285,17 @@ const ReportesView = () => {
                                 )}
                                 {tipoReporte === 'reporte_detallado' && (
                                     <motion.div key="clas" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-2">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-1"><Filter size={12}/> CLASIFICACIÓN</label>
-                                        <select name="clasificacion" value={filtros.clasificacion} onChange={handleInputChange} className="w-full h-12 bg-slate-50 border-none rounded-xl px-4 font-bold text-sm shadow-inner outline-none cursor-pointer appearance-none">
-                                            <option value="">TODAS</option>
-                                            <option value="VISCERA">VÍSCERAS</option>
-                                            <option value="CARNE">CARNE</option>
-                                        </select>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-1"><Filter size={12} /> CLASIFICACIÓN</label>
+                                        <div className="relative">
+                                            <select name="clasificacion" value={filtros.clasificacion} onChange={handleInputChange} className="w-full h-12 bg-slate-50 border-none rounded-xl px-4 font-bold text-sm shadow-inner outline-none cursor-pointer appearance-none">
+                                                <option value="">TODAS</option>
+                                                <option value="VISCERAS">VISCERAS</option>
+                                                <option value="CARNE">CARNE</option>
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                <ChevronDown size={16} />
+                                            </div>
+                                        </div>
                                     </motion.div>
                                 )}
                                 {(tipoReporte === 'lotes_proveedor' || tipoReporte === 'inventario_completo' || tipoReporte === 'reporte_detallado') && (
