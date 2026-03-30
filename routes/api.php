@@ -324,7 +324,7 @@ Route::prefix('reportes')->group(function () {
     // 4. Reporte General (Inventario, Entradas y Salidas)
     // Ejemplo: /api/reportes/inventario-completo?fechaInicio=2024-01-01&fechaFin=2024-03-31
     Route::get('/inventario-completo', [ReportesController::class, 'reporteInventarioCompleto']);
-});
+Route::get('/reporte-detallado', [ReportesController::class, 'reporteDetallado']);});
 // });
 
 Route::post('CodigoverificacionEstado', [CodigosController::class, 'CodigoverificacionEstado'])->name('CodigoverificacionEstado');

@@ -115,4 +115,35 @@ class ReportesController extends Controller
             return response()->json(['error' => 'Error al generar el reporte completo'], 500);
         }
     }
+
+    /**
+     * Reporte Detallado con filtro opcional por clasificación
+     */
+    public function reporteDetallado(Request $request)
+    {
+        try {
+            // Validamos las fechas obligatorias
+            $request->validate([
+                'fechaInicio'   => 'required|date',
+                'fechaFin'      => 'required|date',
+                'clasificacion' => 'nullable|string|max:50'
+            ]);
+
+            // Ejecutamos el SP pasando los 3 parámetros
+            // Si clasificacion no viene, Laravel enviará null, lo cual respeta el default del SP
+            $resultado = DB::select('EXEC sp_ReporteDetallado ?, ?, ?', [
+                $request->fechaInicio,
+                $request->fechaFin,
+                $request->clasificacion 
+            ]);
+
+            return response()->json($resultado);
+        } catch (\Exception $e) {
+            Log::error("Error en reporteDetallado: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al obtener el reporte detallado',
+                'detalle' => $e->getMessage() // Opcional: solo para depuración
+            ], 500);
+        }
+    }
 }

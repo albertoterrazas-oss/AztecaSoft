@@ -26,20 +26,25 @@ const ReportesView = () => {
     const [proveedores, setProveedores] = useState([]);
     const [productos, setProductos] = useState([]);
     const [filtros, setFiltros] = useState({
-        idProveedor: '', idLote: '', idProducto: '',
+        idProveedor: '', idLote: '', idProducto: '', clasificacion: '',
         fechaInicio: getTodayISO(), fechaFin: getTodayISO()
     });
 
+    // Carga de catálogos al iniciar
     useEffect(() => {
         const fetchCatalogos = async () => {
             try {
+                // Ajusta estas rutas según tu api.php
                 const [resProv, resProd] = await Promise.all([
-                    fetch(route("provedores.index")).then(res => res.json()),
-                    fetch("/api/productos").then(res => res.json())
+                    axios.get("/api/provedores"),
+                    axios.get("/api/productos")
                 ]);
-                setProveedores(resProv);
-                setProductos(resProd);
-            } catch (error) { console.error("Error catálogos"); }
+                setProveedores(resProv.data);
+                setProductos(resProd.data);
+            } catch (error) { 
+                console.error("Error cargando catálogos:", error);
+                toast.error("Error al cargar proveedores o productos");
+            }
         };
         fetchCatalogos();
     }, []);
@@ -75,152 +80,121 @@ const ReportesView = () => {
         setLoading(true);
         setData(null);
         try {
-            const response = await axios.get(`/api/reportes/${tipoReporte.replace('_', '-')}`, { params: filtros });
-            const hasData = Array.isArray(response.data) ? response.data.length > 0 : response.data.inventario.length > 0;
-            if (!hasData) throw new Error("Sin datos");
+            const endpoint = tipoReporte.replace(/_/g, '-');
+            const response = await axios.get(`/api/reportes/${endpoint}`, { params: filtros });
+            
+            const hasData = Array.isArray(response.data) ? response.data.length > 0 : (response.data.inventario && response.data.inventario.length > 0);
+            
+            if (!hasData) throw new Error("Sin datos encontrados para los filtros seleccionados");
+
             setData(response.data);
             toast.success("AZTECA AVT: Reporte generado");
-        } catch (error) { toast.error(error.message); }
-        finally { setLoading(false); }
+        } catch (error) {
+            toast.error(error.response?.data?.error || error.message);
+        } finally { setLoading(false); }
     };
 
-    // FUNCIÓN DE EXPORTACIÓN CON EL ESTILO DE LA IMAGEN
     const exportarExcel = () => {
         const wb = XLSX.utils.book_new();
 
         if (tipoReporte === 'inventario_completo') {
-            // Creamos una hoja en blanco y añadimos el título general
             const ws = XLSX.utils.aoa_to_sheet([
                 ["AZTECA AVT - CONTROL DE INVENTARIO Y MOVIMIENTOS"],
                 [`FECHA DE REPORTE: ${getFormattedDate()}`],
-                [] // Espacio en blanco
+                []
             ]);
 
-            // Configuración para las 3 columnas de la imagen
             const secciones = [
-                { titulo: 'Inventario', datos: data.inventario, colInicio: 0, color: "DBEAFE" }, // Azul (A-B)
-                { titulo: 'Entradas', datos: data.entradas, colInicio: 3, color: "FFEDD5" },    // Naranja (D-E)
-                { titulo: 'Salidas', datos: data.salidas, colInicio: 6, color: "DCFCE7" }      // Verde (G-H)
+                { titulo: 'Inventario', datos: data.inventario, colInicio: 0, color: "DBEAFE" },
+                { titulo: 'Entradas', datos: data.entradas, colInicio: 3, color: "FFEDD5" },
+                { titulo: 'Salidas', datos: data.salidas, colInicio: 6, color: "DCFCE7" }
             ];
 
             secciones.forEach((sec) => {
-                const filaInicio = 4; // Fila donde empiezan las cabeceras de tabla
-
-                // 1. Título de la Sección (Inventario / Entradas / Salidas)
+                const filaInicio = 4;
                 const titleCell = XLSX.utils.encode_cell({ r: filaInicio - 1, c: sec.colInicio });
-                ws[titleCell] = { 
-                    v: sec.titulo, 
-                    s: { font: { bold: true, size: 14, color: { rgb: "000000" } } } 
-                };
+                ws[titleCell] = { v: sec.titulo, s: { font: { bold: true, size: 14 } } };
 
-                // 2. Cabeceras de la tabla (Etiquetas de fila | Suma de Kilos)
                 const headers = ["Etiquetas de fila", "Suma de Kilos"];
                 headers.forEach((h, i) => {
                     const cellRef = XLSX.utils.encode_cell({ r: filaInicio, c: sec.colInicio + i });
                     ws[cellRef] = {
                         v: h,
-                        s: {
-                            fill: { fgColor: { rgb: "334155" } }, // Gris pizarra oscuro
-                            font: { color: { rgb: "FFFFFF" }, bold: true },
-                            alignment: { horizontal: "center" },
-                            border: { bottom: { style: "thin" }, top: { style: "thin" } }
-                        }
+                        s: { fill: { fgColor: { rgb: "334155" } }, font: { color: { rgb: "FFFFFF" }, bold: true }, alignment: { horizontal: "center" } }
                     };
                 });
 
-                // 3. Renderizar Datos
                 sec.datos.forEach((item, idx) => {
                     const r = filaInicio + 1 + idx;
-                    const valores = Object.values(item); // [Nombre, Kilos]
-
+                    const valores = Object.values(item);
                     valores.slice(0, 2).forEach((val, i) => {
                         const cellRef = XLSX.utils.encode_cell({ r: r, c: sec.colInicio + i });
                         ws[cellRef] = {
                             v: val,
-                            s: {
-                                fill: { fgColor: { rgb: sec.color } },
-                                font: { size: 10 },
-                                alignment: { horizontal: i === 1 ? "right" : "left" },
-                                numFmt: i === 1 ? "#,##0.00" : "" // Formato decimal para kilos
-                            }
+                            s: { fill: { fgColor: { rgb: sec.color } }, alignment: { horizontal: i === 1 ? "right" : "left" }, numFmt: i === 1 ? "#,##0.00" : "" }
                         };
                     });
                 });
             });
 
-            // Ajustes finales de la hoja
-            ws['!cols'] = [
-                { wch: 25 }, { wch: 15 }, { wch: 5 }, // A, B, C (espacio)
-                { wch: 25 }, { wch: 15 }, { wch: 5 }, // D, E, F (espacio)
-                { wch: 25 }, { wch: 15 }              // G, H
-            ];
-            ws['!ref'] = "A1:H100"; // Rango sugerido
-            XLSX.utils.book_append_sheet(wb, ws, "MOVIMIENTOS_GENERAL");
-
+            ws['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 5 }, { wch: 25 }, { wch: 15 }, { wch: 5 }, { wch: 25 }, { wch: 15 }];
+            XLSX.utils.book_append_sheet(wb, ws, "MOVIMIENTOS");
         } else {
-            // Estilo estándar para los demás reportes (Una sola tabla)
-            const headers = Object.keys(data[0]).map(h => h.toUpperCase().replace(/_/g, ' '));
-            const rows = data.map(obj => Object.values(obj));
+            const headers = Object.keys(sortedData[0]).map(h => h.toUpperCase().replace(/_/g, ' '));
+            const rows = sortedData.map(obj => Object.values(obj));
+            const headerColor = tipoReporte === 'reporte_detallado' ? "A61A18" : "1B2654";
+
             const ws = XLSX.utils.aoa_to_sheet([
-                ["AZTECA AVT - REPORTE DETALLADO"],
+                [`AZTECA AVT - ${tipoReporte.replace('_', ' ').toUpperCase()}`],
                 [`EMISIÓN: ${getFormattedDate()}`],
                 [],
                 headers,
                 ...rows
             ]);
 
-            // Estilo básico de cabecera
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let c = range.s.c; c <= range.e.c; c++) {
                 const cell = XLSX.utils.encode_cell({ r: 3, c: c });
-                if (ws[cell]) ws[cell].s = { fill: { fgColor: { rgb: "1B2654" } }, font: { color: { rgb: "FFFFFF" }, bold: true } };
+                if (ws[cell]) ws[cell].s = { fill: { fgColor: { rgb: headerColor } }, font: { color: { rgb: "FFFFFF" }, bold: true } };
             }
             ws['!cols'] = headers.map(() => ({ wch: 20 }));
             XLSX.utils.book_append_sheet(wb, ws, "REPORTE");
         }
 
-        XLSX.writeFile(wb, `AZTECA_AVT_${tipoReporte.toUpperCase()}_${getTodayISO()}.xlsx`);
+        XLSX.writeFile(wb, `AZTECA_${tipoReporte.toUpperCase()}_${getTodayISO()}.xlsx`);
     };
 
     return (
         <div className="h-[100%] bg-[#f8fafc] p-4 md:p-10 font-sans text-slate-800">
             <Toaster position="top-right" richColors />
-
-            <div className="max-w-7xl mx-auto">
+            <div className="w-full">
                 {/* HEADER */}
                 <header className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
                     <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
                         <div className="flex items-center gap-3 mb-2">
-                            <span className=" text-white px-4 py-1.5 rounded-lg text-[10px] font-black tracking-widest shadow-lg shadow-blue-900/20 uppercase bg-[#1B2654]" >Azteca AVT</span>
-                            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{getFormattedDate()}</span>
+                            <span className="text-white px-4 py-1.5 rounded-lg text-[10px] font-black tracking-widest bg-[#1B2654]">AZTECA AVT</span>
+                            <span className="text-slate-400 text-[10px] font-bold uppercase">{getFormattedDate()}</span>
                         </div>
                         <h1 className="text-5xl font-black text-slate-900 tracking-tighter italic">CENTRAL <span className="font-bold not-italic" style={{ color: '#A61A18' }}>REPORTES</span></h1>
                     </motion.div>
-
                     {data && (
-                        <motion.button
-                            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            onClick={exportarExcel}
-                            className="bg-[#10b981] hover:bg-emerald-700 text-white px-8 h-14 rounded-2xl font-black shadow-xl shadow-emerald-200 flex items-center gap-3 uppercase text-[10px] tracking-widest transition-all"
-                        >
-                            <Download size={20} /> Exportar Excel Pro
-                        </motion.button>
+                        <button onClick={exportarExcel} className="bg-[#10b981] hover:bg-emerald-700 text-white px-8 h-14 rounded-2xl font-black shadow-xl flex items-center gap-3 uppercase text-[10px] tracking-widest transition-all active:scale-95">
+                            <Download size={20} /> Exportar Excel
+                        </button>
                     )}
                 </header>
 
                 {/* FILTROS */}
-                <section className="bg-white p-8 rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-100 mb-10">
+                <section className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 mb-10">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
                         <div className="lg:col-span-4 flex flex-col gap-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Filter size={12} /> Documento</label>
-                            <select
-                                value={tipoReporte} onChange={(e) => { setTipoReporte(e.target.value); setData(null); }}
-                                className="w-full h-12 bg-slate-50 border-2 border-slate-50 rounded-xl px-4 font-bold text-slate-700 focus:border-blue-500 outline-none transition-all shadow-inner appearance-none cursor-pointer"
-                            >
+                            <select value={tipoReporte} onChange={(e) => { setTipoReporte(e.target.value); setData(null); }} className="w-full h-12 bg-slate-50 border-2 border-slate-50 rounded-xl px-4 font-bold text-slate-700 outline-none shadow-inner cursor-pointer appearance-none">
                                 <option value="lotes_proveedor">Lotes por Proveedor</option>
                                 <option value="productos_lote">Productos por Lote</option>
                                 <option value="detalle_reparticion">Detalle de Repartición</option>
                                 <option value="inventario_completo">Inventario Completo</option>
+                                <option value="reporte_detallado">Reporte Detallado</option>
                             </select>
                         </div>
 
@@ -229,7 +203,7 @@ const ReportesView = () => {
                                 {tipoReporte === 'lotes_proveedor' && (
                                     <motion.div key="p" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-2">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-1"><UserCheck size={12} /> PROVEEDOR</label>
-                                        <select name="idProveedor" value={filtros.idProveedor} onChange={handleInputChange} className="w-full h-12 bg-slate-50 border-none rounded-xl px-3 font-bold text-sm shadow-inner outline-none cursor-pointer">
+                                        <select name="idProveedor" value={filtros.idProveedor} onChange={handleInputChange} className="w-full h-12 bg-slate-50 border-none rounded-xl px-3 font-bold text-sm shadow-inner outline-none">
                                             <option value="">Seleccionar...</option>
                                             {proveedores.map(p => <option key={p.IdProveedor} value={p.IdProveedor}>{p.RazonSocial}</option>)}
                                         </select>
@@ -238,7 +212,7 @@ const ReportesView = () => {
                                 {tipoReporte === 'detalle_reparticion' && (
                                     <motion.div key="pr" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-2">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-1"><Package size={12} /> PRODUCTO</label>
-                                        <select name="idProducto" value={filtros.idProducto} onChange={handleInputChange} className="w-full h-12 bg-slate-50 border-none rounded-xl px-3 font-bold text-sm shadow-inner outline-none cursor-pointer">
+                                        <select name="idProducto" value={filtros.idProducto} onChange={handleInputChange} className="w-full h-12 bg-slate-50 border-none rounded-xl px-3 font-bold text-sm shadow-inner outline-none">
                                             <option value="">Seleccionar...</option>
                                             {productos.map(p => <option key={p.IdProducto} value={p.IdProducto}>{p.Nombre}</option>)}
                                         </select>
@@ -247,10 +221,20 @@ const ReportesView = () => {
                                 {(tipoReporte === 'productos_lote' || tipoReporte === 'detalle_reparticion') && (
                                     <motion.div key="l" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-2">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-tighter">ID LOTE</label>
-                                        <input name="idLote" type="number" onChange={handleInputChange} className="w-full h-12 bg-slate-50 border-none rounded-xl px-4 font-bold shadow-inner outline-none" placeholder="00" />
+                                        <input name="idLote" type="number" onChange={handleInputChange} value={filtros.idLote} className="w-full h-12 bg-slate-50 border-none rounded-xl px-4 font-bold shadow-inner outline-none" placeholder="00" />
                                     </motion.div>
                                 )}
-                                {(tipoReporte === 'lotes_proveedor' || tipoReporte === 'inventario_completo') && (
+                                {tipoReporte === 'reporte_detallado' && (
+                                    <motion.div key="clas" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-2">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">CLASIFICACIÓN</label>
+                                        <select name="clasificacion" value={filtros.clasificacion || ''} onChange={handleInputChange} className="w-full h-12 bg-slate-50 border-none rounded-xl px-4 font-bold text-sm shadow-inner outline-none cursor-pointer">
+                                            <option value="">TODAS</option>
+                                            <option value="VISCERAS">VISCERAS</option>
+                                            <option value="CARNE">CARNE</option>
+                                        </select>
+                                    </motion.div>
+                                )}
+                                {(tipoReporte === 'lotes_proveedor' || tipoReporte === 'inventario_completo' || tipoReporte === 'reporte_detallado') && (
                                     <>
                                         <div className="flex flex-col gap-2">
                                             <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Inicio</label>
@@ -266,19 +250,14 @@ const ReportesView = () => {
                         </div>
 
                         <div className="lg:col-span-2">
-                            <button
-                                onClick={consultarReporte} disabled={loading || !canSubmit()}
-                                className={`w-full h-12 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2
-                                ${!canSubmit() ? 'bg-slate-100 text-slate-300 cursor-not-allowed shadow-none' : 'bg-[#1B2654] text-white shadow-xl hover:bg-blue-900 active:scale-95'}`}
-                            >
-                                {loading ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
-                                {loading ? "PROCESANDO" : "GENERAR"}
+                            <button onClick={consultarReporte} disabled={loading || !canSubmit()} className={`w-full h-12 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2 ${!canSubmit() ? 'bg-slate-100 text-slate-300' : 'bg-[#1B2654] text-white shadow-xl hover:bg-blue-900 active:scale-95'}`}>
+                                {loading ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />} {loading ? "PROCESANDO" : "GENERAR"}
                             </button>
                         </div>
                     </div>
                 </section>
 
-                {/* TABLA VISUAL */}
+                {/* TABLA DE RESULTADOS */}
                 <AnimatePresence mode="wait">
                     {data ? (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -289,15 +268,14 @@ const ReportesView = () => {
                                     ))}
                                 </div>
                             )}
-
                             <div className="bg-white shadow-2xl border border-slate-100 overflow-hidden rounded-2xl">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left">
                                         <thead>
                                             <tr className="bg-[#1B2654]">
                                                 {sortedData.length > 0 && Object.keys(sortedData[0]).map(key => (
-                                                    <th key={key} onClick={() => requestSort(key)} className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-800 transition-colors border-r border-slate-800 last:border-0 group">
-                                                        <div className="flex items-center justify-between">
+                                                    <th key={key} onClick={() => requestSort(key)} className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-800 transition-colors border-r border-slate-800 last:border-0">
+                                                        <div className="flex items-center justify-between gap-2">
                                                             {key.replace(/_/g, ' ')}
                                                             {sortConfig.key === key && (sortConfig.direction === 'asc' ? <ChevronUp size={12} className="text-blue-400" /> : <ChevronDown size={12} className="text-blue-400" />)}
                                                         </div>
