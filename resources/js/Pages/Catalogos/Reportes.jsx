@@ -15,7 +15,7 @@ const ReportesView = () => {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
-    // Estados
+    // --- ESTADOS ---
     const [tipoReporte, setTipoReporte] = useState('lotes_proveedor');
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState(null);
@@ -30,20 +30,19 @@ const ReportesView = () => {
         fechaInicio: getTodayISO(), fechaFin: getTodayISO()
     });
 
-    // Carga de catálogos al iniciar
+    // --- CARGA DE DATOS ---
     useEffect(() => {
         const fetchCatalogos = async () => {
             try {
-                // Ajusta estas rutas según tu api.php
                 const [resProv, resProd] = await Promise.all([
-                    axios.get("/api/provedores"),
+                    axios.get("/api/proveedores"),
                     axios.get("/api/productos")
                 ]);
                 setProveedores(resProv.data);
                 setProductos(resProd.data);
-            } catch (error) { 
-                console.error("Error cargando catálogos:", error);
-                toast.error("Error al cargar proveedores o productos");
+            } catch (error) {
+                console.error("Error catálogos:", error);
+                toast.error("Error al cargar catálogos");
             }
         };
         fetchCatalogos();
@@ -51,6 +50,7 @@ const ReportesView = () => {
 
     const handleInputChange = (e) => setFiltros({ ...filtros, [e.target.name]: e.target.value });
 
+    // --- LÓGICA DE TABLA ---
     const requestSort = (key) => {
         let direction = 'asc';
         if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
@@ -59,7 +59,7 @@ const ReportesView = () => {
 
     const sortedData = useMemo(() => {
         let items = data ? (tipoReporte === 'inventario_completo' ? [...data[subTab]] : [...data]) : [];
-        if (sortConfig.key !== null) {
+        if (sortConfig.key !== null && items.length > 0) {
             items.sort((a, b) => {
                 if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
                 if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -83,9 +83,11 @@ const ReportesView = () => {
             const endpoint = tipoReporte.replace(/_/g, '-');
             const response = await axios.get(`/api/reportes/${endpoint}`, { params: filtros });
             
-            const hasData = Array.isArray(response.data) ? response.data.length > 0 : (response.data.inventario && response.data.inventario.length > 0);
-            
-            if (!hasData) throw new Error("Sin datos encontrados para los filtros seleccionados");
+            const hasData = Array.isArray(response.data) 
+                ? response.data.length > 0 
+                : (response.data.inventario && response.data.inventario.length > 0);
+
+            if (!hasData) throw new Error("Sin datos encontrados");
 
             setData(response.data);
             toast.success("AZTECA AVT: Reporte generado");
@@ -94,6 +96,7 @@ const ReportesView = () => {
         } finally { setLoading(false); }
     };
 
+    // --- EXPORTACIÓN EXCEL (MÁXIMO NIVEL) ---
     const exportarExcel = () => {
         const wb = XLSX.utils.book_new();
 
@@ -112,11 +115,10 @@ const ReportesView = () => {
 
             secciones.forEach((sec) => {
                 const filaInicio = 4;
-                const titleCell = XLSX.utils.encode_cell({ r: filaInicio - 1, c: sec.colInicio });
-                ws[titleCell] = { v: sec.titulo, s: { font: { bold: true, size: 14 } } };
+                const titleRef = XLSX.utils.encode_cell({ r: filaInicio - 1, c: sec.colInicio });
+                ws[titleRef] = { v: sec.titulo, s: { font: { bold: true, size: 14 } } };
 
-                const headers = ["Etiquetas de fila", "Suma de Kilos"];
-                headers.forEach((h, i) => {
+                ["Etiquetas de fila", "Suma de Kilos"].forEach((h, i) => {
                     const cellRef = XLSX.utils.encode_cell({ r: filaInicio, c: sec.colInicio + i });
                     ws[cellRef] = {
                         v: h,
@@ -142,10 +144,10 @@ const ReportesView = () => {
         } else {
             const headers = Object.keys(sortedData[0]).map(h => h.toUpperCase().replace(/_/g, ' '));
             const rows = sortedData.map(obj => Object.values(obj));
-            const headerColor = tipoReporte === 'reporte_detallado' ? "A61A18" : "1B2654";
+            const hColor = tipoReporte === 'reporte_detallado' ? "A61A18" : "1B2654";
 
             const ws = XLSX.utils.aoa_to_sheet([
-                [`AZTECA AVT - ${tipoReporte.replace('_', ' ').toUpperCase()}`],
+                [`AZTECA AVT - ${tipoReporte.toUpperCase()}`],
                 [`EMISIÓN: ${getFormattedDate()}`],
                 [],
                 headers,
@@ -155,9 +157,9 @@ const ReportesView = () => {
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let c = range.s.c; c <= range.e.c; c++) {
                 const cell = XLSX.utils.encode_cell({ r: 3, c: c });
-                if (ws[cell]) ws[cell].s = { fill: { fgColor: { rgb: headerColor } }, font: { color: { rgb: "FFFFFF" }, bold: true } };
+                if (ws[cell]) ws[cell].s = { fill: { fgColor: { rgb: hColor } }, font: { color: { rgb: "FFFFFF" }, bold: true } };
             }
-            ws['!cols'] = headers.map(() => ({ wch: 20 }));
+            ws['!cols'] = headers.map(() => ({ wch: 22 }));
             XLSX.utils.book_append_sheet(wb, ws, "REPORTE");
         }
 
@@ -165,9 +167,9 @@ const ReportesView = () => {
     };
 
     return (
-        <div className="h-[100%] bg-[#f8fafc] p-4 md:p-10 font-sans text-slate-800">
+        <div className="h-full bg-[#f8fafc] p-4 md:p-10 font-sans text-slate-800">
             <Toaster position="top-right" richColors />
-            <div className="w-full">
+            <div className="max-w-7xl mx-auto">
                 {/* HEADER */}
                 <header className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
                     <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
@@ -179,7 +181,7 @@ const ReportesView = () => {
                     </motion.div>
                     {data && (
                         <button onClick={exportarExcel} className="bg-[#10b981] hover:bg-emerald-700 text-white px-8 h-14 rounded-2xl font-black shadow-xl flex items-center gap-3 uppercase text-[10px] tracking-widest transition-all active:scale-95">
-                            <Download size={20} /> Exportar Excel
+                            <Download size={20} /> Exportar Excel Pro
                         </button>
                     )}
                 </header>
@@ -226,10 +228,10 @@ const ReportesView = () => {
                                 )}
                                 {tipoReporte === 'reporte_detallado' && (
                                     <motion.div key="clas" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-2">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">CLASIFICACIÓN</label>
-                                        <select name="clasificacion" value={filtros.clasificacion || ''} onChange={handleInputChange} className="w-full h-12 bg-slate-50 border-none rounded-xl px-4 font-bold text-sm shadow-inner outline-none cursor-pointer">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-1"><Filter size={12}/> CLASIFICACIÓN</label>
+                                        <select name="clasificacion" value={filtros.clasificacion} onChange={handleInputChange} className="w-full h-12 bg-slate-50 border-none rounded-xl px-4 font-bold text-sm shadow-inner outline-none cursor-pointer appearance-none">
                                             <option value="">TODAS</option>
-                                            <option value="VISCERAS">VISCERAS</option>
+                                            <option value="VISCERA">VÍSCERAS</option>
                                             <option value="CARNE">CARNE</option>
                                         </select>
                                     </motion.div>
@@ -257,7 +259,7 @@ const ReportesView = () => {
                     </div>
                 </section>
 
-                {/* TABLA DE RESULTADOS */}
+                {/* TABLA VISUAL */}
                 <AnimatePresence mode="wait">
                     {data ? (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -274,7 +276,7 @@ const ReportesView = () => {
                                         <thead>
                                             <tr className="bg-[#1B2654]">
                                                 {sortedData.length > 0 && Object.keys(sortedData[0]).map(key => (
-                                                    <th key={key} onClick={() => requestSort(key)} className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-800 transition-colors border-r border-slate-800 last:border-0">
+                                                    <th key={key} onClick={() => requestSort(key)} className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-800 transition-colors border-r border-slate-800 last:border-0 group">
                                                         <div className="flex items-center justify-between gap-2">
                                                             {key.replace(/_/g, ' ')}
                                                             {sortConfig.key === key && (sortConfig.direction === 'asc' ? <ChevronUp size={12} className="text-blue-400" /> : <ChevronDown size={12} className="text-blue-400" />)}
