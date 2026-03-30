@@ -341,6 +341,7 @@ const route = (name) => {
         "LotesCongelacion": "/api/LotesCongelacion",
         "pesaje.store": "/api/pesaje/guardar-lote",
         "AlmacenesRefrigerados": "/api/AlmacenesRefrigerados",
+        "AlmacenesListar": "/api/almacenes",
         "ProductosLotesHistorial": "/api/ProductosLotesHistorial",
         "ProductosLotes": "/api/ProductosLotes",
         "MovimientoPrimerPesaje": "/api/MovimientoPrimerPesaje",
@@ -461,8 +462,12 @@ export default function WeighingDashboard() {
             setIsLoading(true);
             try {
                 const resAlmacenes = await axios.get(route("AlmacenesRefrigerados"));
+                const res = await axios.get(route("AlmacenesListar"));
 
-                const limp = resAlmacenes.data.find(a => a.Nombre?.toUpperCase() === "CONGELACION");
+                // axios.get(route(""))
+
+
+                const limp = res.data.find(a => a.Nombre?.toUpperCase() === "CONGELACION");
                 if (limp?.bascula?.puerto) setIdBasculaConfigurada(limp.bascula.puerto);
                 setAlmacenes(resAlmacenes.data);
                 await getMovimientos();
@@ -548,8 +553,8 @@ export default function WeighingDashboard() {
                             const isActive = selectedAreaFiltro === id;
                             return (
                                 <button key={id} onClick={() => setSelectedAreaFiltro(isActive ? null : id)}
-                                    className={`flex-1 min-w-[120px] py-4 px-3 rounded-xl transition-all duration-500 flex flex-col items-center gap-2 group relative overflow-hidden ${isActive ? 'bg-slate-900 text-white shadow-2xl scale-[1.05] z-10' : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100 shadow-sm'}`}>
-                                    <div className={`p-2 rounded-lg transition-colors ${isActive ? 'bg-blue-500' : 'bg-slate-100'}`}><Snowflake size={18} className={isActive ? 'text-white' : 'text-slate-400'} /></div>
+                                    className={`flex-1 min-w-[120px] py-4 px-3 rounded-xl transition-all duration-500 flex flex-col items-center gap-2 group relative overflow-hidden ${isActive ? 'bg-[#1B2654] text-white shadow-2xl scale-[1.05] z-10' : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100 shadow-sm'}`}>
+                                    <div className={`p-2 rounded-lg transition-colors ${isActive ? 'bg-red-600' : 'bg-slate-100'}`}><Snowflake size={18} className={isActive ? 'text-white' : 'text-slate-400'} /></div>
                                     <span className="text-[10px] font-black uppercase tracking-widest">{a.Nombre?.substring(0, 15)}</span>
                                 </button>
                             );
@@ -584,19 +589,6 @@ export default function WeighingDashboard() {
 
     return (
         <div className="flex flex-col lg:flex-row h-screen bg-slate-200 p-4 gap-4 overflow-hidden font-black uppercase">
-            {/* <Toaster position="top-center" richColors /> */}
-
-            {/* <BasculaModal 
-            isOpen={showTaraModal} 
-            title="PESAR TARA" 
-            currentReading={currentWeight} 
-            buttonText="GUARDAR TARA" 
-            colorClass="bg-red-600 border-red-900 hover:bg-red-500" 
-            disabledConfirm={parseFloat(currentWeight) <= 0} 
-            showSimulate={true} 
-            onSimulate={() => setCurrentWeight((Math.random() * (1.5 - 0.2) + 0.2).toFixed(2))} 
-            onClose={() => { setShowTaraModal(false); setCurrentWeight("0.00"); }} 
-            onConfirm={(brutoEditado) => { setTara(brutoEditado); setCurrentWeight("0.00"); setShowTaraModal(false); }} /> */}
 
             <BasculaModal
                 isOpen={showTaraModal}
@@ -624,20 +616,6 @@ export default function WeighingDashboard() {
                 onConfirm={(b, t) => registrarPesaje(b, t)}
             />
 
-            {/* <BasculaModal
-                isOpen={showGuardarModal}
-                title="PESAR PRODUCTO" subtitle={selectedProduct?.Nombre}
-                currentReading={currentWeight}
-                tara={tara}
-                buttonText="CONFIRMAR Y GUARDAR"
-                colorClass="bg-emerald-600 border-emerald-900 hover:bg-emerald-500"
-                disabledConfirm={parseFloat(currentWeight) - parseFloat(tara) <= 0}
-                showSimulate={true}
-                onSimulate={() => setCurrentWeight((Math.random() * (40 - 5) + 5).toFixed(2))}
-                destinationName={almacenes.find(a => (a.id || a.IdAlmacen) === selectedAreaDestino)?.Nombre}
-                onClose={() => { setShowGuardarModal(false); setCurrentWeight("0.00"); }}
-                onConfirm={(brutoFinal, taraFinal) => registrarPesaje(brutoFinal, taraFinal)} /> */}
-
             <SuccessModal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} registeredWeight={lastRegisteredWeight} message={`Registro guardado para ${selectedProduct?.Nombre}`} />
 
             <div className="flex-1 flex flex-col min-h-0 gap-4">
@@ -647,10 +625,10 @@ export default function WeighingDashboard() {
                         <h1 className="text-2xl text-slate-800">{selectedLote.Proveedor}</h1>
                         <p className="text-[10px] text-red-600 tracking-widest">LOTE: {selectedLote.Lote} | ORIGEN: {almacenes.find(a => (a.id || a.IdAlmacen) === selectedAreaFiltro)?.Nombre || 'GENERAL'}</p>
                     </div>
-                    <div className="text-right">
+                    {/* <div className="text-right">
                         <p className="text-[9px] text-slate-400 uppercase">Acumulado Sesión</p>
                         <p className="text-3xl text-slate-800 font-mono">{totalKilosLote} KG</p>
-                    </div>
+                    </div> */}
                 </header>
 
                 <div className="flex-1 overflow-y-auto custom-scroll pr-2">
@@ -668,7 +646,11 @@ export default function WeighingDashboard() {
                 <div className="h-1/3 bg-white rounded-[2.5rem] shadow-inner border border-slate-200 overflow-hidden">
                     <table className="w-full text-left">
                         {/* CAMBIO AQUÍ: Encabezados de tabla */}
-                        <thead className="bg-slate-50 border-b text-[9px] text-slate-400 sticky top-0"><tr><th className="p-4">PRODUCTO</th><th className="p-4 text-center">KG (MANUAL)</th><th className="p-4 text-right">PESO NETO</th></tr></thead>
+
+
+                        {/* <th className="p-4 text-right">PESO NETO {totalKilosLote}</th> */}
+
+                        <thead className="bg-slate-50 border-b text-[9px] text-slate-400 sticky top-0"><tr><th className="p-4">PRODUCTO</th><th className="p-4 text-center">KG (MANUAL)</th><th className="p-4 text-right">PESO NETO {totalKilosLote} </th></tr></thead>
                         <tbody className="divide-y divide-slate-100 overflow-y-auto">{movimientos.map((reg, i) => (<tr key={i} className="text-[11px] font-bold text-slate-700"><td className="p-4 truncate">{reg.Nombre}</td><td className="p-4 text-center">{reg.Piezas} KG</td><td className="p-4 text-right font-black">{parseFloat(reg.Peso || 0).toFixed(2)} KG</td></tr>))}</tbody>
                     </table>
                 </div>

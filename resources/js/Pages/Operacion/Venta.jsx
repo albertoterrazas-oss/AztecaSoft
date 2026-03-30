@@ -124,7 +124,7 @@ const PanelSalidaPacas = () => {
 
   return (
     <div className="h-full bg-slate-50 p-4 md:p-8 font-sans">
-      <Toaster position="top-center" richColors />
+      {/* <Toaster position="top-center" richColors /> */}
 
       {/* --- ESTILOS DE IMPRESIÓN (OCULTO EN NAVEGADOR) --- */}
       <style dangerouslySetInnerHTML={{ __html: `
@@ -140,7 +140,7 @@ const PanelSalidaPacas = () => {
       {step === 'inicio' && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-center min-h-[80vh]">
           <div className="bg-white rounded-[3rem] p-10 max-w-md w-full text-center shadow-2xl border-b-8 border-slate-900">
-            <div className="w-24 h-24 bg-slate-100 rounded-full mx-auto mb-6 border-4 border-blue-500 overflow-hidden shadow-inner">
+            <div className="w-24 h-24 bg-slate-100 rounded-full mx-auto mb-6 border-4 border-[#1B2654] overflow-hidden shadow-inner">
               <img src={despachador.foto} alt="Perfil" className="w-full h-full object-cover" />
             </div>
             <h2 className="text-2xl font-black italic uppercase tracking-tighter leading-tight">
@@ -148,7 +148,7 @@ const PanelSalidaPacas = () => {
             </h2>
             <p className="text-slate-400 font-bold text-[10px] uppercase mt-2 mb-10 tracking-[0.3em]">Gestión de Salidas</p>
             <div className="space-y-4">
-              <button onClick={fetchCajas} style={{ backgroundColor: '#A61A18' }} className="w-full py-5 text-white rounded-3xl font-black italic transition-all flex justify-between px-8 items-center group">
+              <button onClick={fetchCajas} className="w-full py-5 bg-[#1B2654]   text-white rounded-3xl font-black italic transition-all flex justify-between px-8 items-center group">
                 <span>NUEVA SALIDA DE PACAS</span>
                 {isLoadingCajas ? <Loader2 className="animate-spin" /> : <ChevronRight className="group-hover:translate-x-2 transition-transform" />}
               </button>
@@ -173,12 +173,12 @@ const PanelSalidaPacas = () => {
               </button>
               <h1 className="text-4xl font-black italic uppercase tracking-tighter leading-none">Inventario Disponible</h1>
             </div>
-            <div className="bg-slate-900 text-white p-6 rounded-[2rem] flex items-center gap-8 shadow-xl">
+            <div className=" text-white p-6 rounded-[2rem] flex items-center gap-8 shadow-xl bg-[#1B2654]">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Carga actual</p>
                 <p className="text-xl font-black italic">{pacasSeleccionadas.length} PACAS / {totalKilos} KG</p>
               </div>
-              <button disabled={pacasSeleccionadas.length === 0} onClick={() => setStep('venta')} className="bg-blue-600 px-8 py-4 rounded-2xl font-black uppercase italic text-sm hover:bg-blue-500 disabled:bg-slate-700 transition-all">
+              <button disabled={pacasSeleccionadas.length === 0} onClick={() => setStep('venta')} className="bg-red-800 px-8 py-4 rounded-2xl font-black uppercase italic text-sm hover:bg-red-500 disabled:bg-slate-700 transition-all">
                 Continuar
               </button>
             </div>
@@ -197,12 +197,12 @@ const PanelSalidaPacas = () => {
                   key={paca.IdCaja}
                   whileHover={{ scale: 1.02 }}
                   onClick={() => togglePaca(paca)}
-                  className={`p-6 rounded-[2.5rem] border-4 cursor-pointer transition-all ${pacasSeleccionadas.some(s => s.IdCaja === paca.IdCaja) ? 'border-blue-600 bg-blue-50/50 shadow-lg' : 'border-white bg-white shadow-sm'}`}
+                  className={`p-6 rounded-[2.5rem] border-4 cursor-pointer transition-all ${pacasSeleccionadas.some(s => s.IdCaja === paca.IdCaja) ? 'border-red-800 bg-blue-50/50 shadow-lg' : 'border-white bg-white shadow-sm'}`}
                 >
                    {/* ... contenido de la paca (igual al tuyo) ... */}
                    <div className="flex justify-between items-start mb-4">
-                    <span className="font-black text-blue-600 italic text-lg uppercase tracking-tighter">{paca.FolioCaja}</span>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${pacasSeleccionadas.some(s => s.IdCaja === paca.IdCaja) ? 'bg-blue-600 border-blue-600' : 'border-slate-100'}`}>
+                    <span className="font-black  text-[#1B2654] italic text-lg uppercase tracking-tighter">{paca.FolioCaja}</span>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${pacasSeleccionadas.some(s => s.IdCaja === paca.IdCaja) ? 'bg-red-800 border-red-800' : 'border-slate-100'}`}>
                       {pacasSeleccionadas.some(s => s.IdCaja === paca.IdCaja) && <CheckCircle2 size={14} className="text-white" />}
                     </div>
                   </div>
@@ -224,11 +224,11 @@ const PanelSalidaPacas = () => {
 
       {/* --- VISTA 3: RESUMEN Y DESPACHO --- */}
       {step === 'venta' && (
-        <motion.div id="print-section" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full space-y-10 pb-20 max-w-7xl mx-auto">
+        <motion.div id="print-section" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full space-y-10 pb-20 ">
           <div className="flex flex-col md:flex-row justify-between items-end gap-6 no-print">
-            <h1 className="text-6xl font-black italic tracking-tighter uppercase leading-none">Salida de<br />Almacén</h1>
+            <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none">Salida de Almacén</h1>
             <div className="flex gap-4">
-              <button onClick={() => setStep('inventario')} className="bg-white border-4 border-slate-900 px-8 py-5 rounded-3xl font-black italic uppercase text-sm">Editar Carga</button>
+              <button onClick={() => setStep('inventario')} className="bg-[#1B2654]  px-8 py-5 rounded-3xl text-white italic uppercase text-sm">Editar Carga</button>
               <button onClick={handleGuardarVenta} disabled={isLoading || !clienteSel} className="bg-green-600 text-white px-12 py-5 rounded-3xl font-black italic shadow-2xl flex items-center gap-3 uppercase">
                 {isLoading ? <Loader2 className="animate-spin" /> : <Save />}
                 {isLoading ? 'Procesando...' : 'Confirmar y Salir'}
@@ -272,8 +272,8 @@ const PanelSalidaPacas = () => {
                 </select>
 
                 {clienteSel && (
-                  <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl">
-                    <p className="text-blue-500 font-black text-[10px] tracking-widest uppercase mb-4 italic">Destino Confirmado</p>
+                  <div className="bg-[#1B2654]  rounded-[2.5rem] p-10 text-white shadow-2xl">
+                    <p className="text-red-800 font-black text-[10px] tracking-widest uppercase mb-4 italic">Destino Confirmado</p>
                     <h4 className="text-3xl font-black uppercase leading-tight mb-4 tracking-tighter">{clienteSel.RazonSocial}</h4>
                     <p className="text-xs font-bold text-slate-400">RFC: {clienteSel.RFC || '---'}</p>
                     <p className="text-xs font-bold text-slate-400">FECHA: {new Date().toLocaleDateString()}</p>

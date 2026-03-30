@@ -32,6 +32,7 @@ use App\Http\Controllers\Procesos\DespieceController;
 use App\Http\Controllers\Procesos\EmpaqueController;
 use App\Http\Controllers\Procesos\InventariosController;
 use App\Http\Controllers\Procesos\RecepcionController;
+use App\Http\Controllers\Procesos\ReportesController;
 use App\Http\Controllers\Procesos\SalidaController;
 use App\Http\Controllers\Procesos\VentaController;
 use Illuminate\Http\Request;
@@ -305,6 +306,25 @@ Route::get('MovimientoPrimerPesaje', [RecepcionController::class, 'MovimientoPri
 Route::get('AlmacenesRefrigerados', [AlmacenesController::class, 'AlmacenesRefrigerados'])->name('AlmacenesRefrigerados');
 
 
+
+Route::prefix('reportes')->group(function () {
+
+    // 1. Lotes por proveedor
+    // Ejemplo: /api/reportes/lotes-proveedor?idProveedor=1&fechaInicio=2024-01-01&fechaFin=2024-03-01
+    Route::get('/lotes-proveedor', [ReportesController::class, 'lotesPorProveedor']);
+
+    // 2. Productos en el Lote
+    // Ejemplo: /api/reportes/productos-lote?idLote=105
+    Route::get('/productos-lote', [ReportesController::class, 'productosPorLote']);
+
+    // 3. Detalle de repartición de producto
+    // Ejemplo: /api/reportes/detalle-reparticion?idLote=105&idProducto=50
+    Route::get('/detalle-reparticion', [ReportesController::class, 'detalleProductoEnLote']);
+
+    // 4. Reporte General (Inventario, Entradas y Salidas)
+    // Ejemplo: /api/reportes/inventario-completo?fechaInicio=2024-01-01&fechaFin=2024-03-31
+    Route::get('/inventario-completo', [ReportesController::class, 'reporteInventarioCompleto']);
+});
 // });
 
 Route::post('CodigoverificacionEstado', [CodigosController::class, 'CodigoverificacionEstado'])->name('CodigoverificacionEstado');
