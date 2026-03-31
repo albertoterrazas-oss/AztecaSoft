@@ -575,6 +575,7 @@ export default function WeighingDashboard() {
                             );
                         })}
                     </div>
+                    <br />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {lotes.length > 0 ? (

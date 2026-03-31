@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { QRCodeSVG } from 'qrcode.react';
 import BasculaModal from '../../Components/BasculaPesa.jsx';
 import HeaderPanel from '../../Components/HeaderPanel.jsx';
 
@@ -16,7 +17,9 @@ import {
   X,
   Loader2,
   Pencil,
-  Inbox
+  Inbox,
+  Printer,
+  StickyNote
 } from 'lucide-react';
 
 // --- SUB-COMPONENTE: TARJETA DE LOTE ---
@@ -118,17 +121,21 @@ const Empaque = () => {
 
   const [showTaraModal, setShowTaraModal] = useState(false);
   const [showGuardarModal, setShowGuardarModal] = useState(false);
+  const [showEtiquetasModal, setShowEtiquetasModal] = useState(false);
+  const [cajasFinalizadas, setCajasFinalizadas] = useState([]);
   const [taraCapturada, setTaraCapturada] = useState(0);
 
   const [itemAEditar, setItemAEditar] = useState(null);
   const [editBruto, setEditBruto] = useState("");
   const [editTara, setEditTara] = useState("");
+  
+  // NOTA PARA EL QR
+  const [notaEtiqueta, setNotaEtiqueta] = useState("CALIDAD AZTECA");
 
   useEffect(() => {
     const fetchAlmacenes = async () => {
       try {
         setLoading(true);
-        // Usar la ruta correcta según tu configuración de Ziggy/Laravel
         const resAlmacenes = await axios.get("/api/AlmacenesRefrigerados");
         setAlmacenes(resAlmacenes.data);
       } catch (error) {
@@ -167,26 +174,30 @@ const Empaque = () => {
   };
 
   const registrarPesajeFinal = (brutoRecibido, taraRecibida) => {
-    const b = parseFloat(brutoRecibido - taraRecibida) || 0;
+    const b = parseFloat(brutoRecibido) || 0;
+    const t = parseFloat(taraRecibida) || 0;
+    const n = b - t;
 
-    if (b > maxPermitido) {
+    if (n > maxPermitido) {
       toast.error(`Stock insuficiente`, {
-        description: `Solo quedan ${maxPermitido} KG y se intentó pesar ${b} KG.`,
+        description: `Solo quedan ${maxPermitido} KG y se intentó pesar ${n.toFixed(3)} KG.`,
       });
       return;
     }
 
-    const t = parseFloat(taraRecibida) || 0;
-    const n = b - t;
-    if (b <= 0) return;
+    if (n <= 0) {
+      toast.error("Peso inválido");
+      return;
+    }
 
-    console.log("selectedProductoObj", selectedProductoObj)
+    const numeroCaja = itemsEnPaquete.length + 1;
 
     const nuevoItem = {
       id: Date.now(),
+      numCaja: numeroCaja,
       IdProducto: selectedProductoObj.IdProducto,
       producto: selectedProductoObj.Producto,
-      idLote: loteActivoObj.idLote || loteActivoObj.Lote, // Ajustar según tu API
+      idLote: loteActivoObj.idLote || loteActivoObj.Lote,
       lote: loteActivoObj.Lote,
       idAlmacenOrigen: selectedCamara.IdAlmacen || selectedCamara.id,
       bruto: b.toFixed(3),
@@ -196,7 +207,7 @@ const Empaque = () => {
 
     setItemsEnPaquete(prev => [nuevoItem, ...prev]);
     setShowGuardarModal(false);
-    toast.success("Pesaje agregado");
+    toast.success(`Caja #${numeroCaja} agregada`);
   };
 
   const iniciarEdicion = (item) => {
@@ -224,7 +235,7 @@ const Empaque = () => {
     const toastId = toast.loading("Procesando empaque...");
     try {
       const cajasJSON = itemsEnPaquete.map(item => ({
-        caja: "1",
+        caja: item.numCaja.toString(), 
         idLote: item.idLote,
         idProducto: item.IdProducto,
         idAlmacenOrigen: item.idAlmacenOrigen,
@@ -234,11 +245,13 @@ const Empaque = () => {
 
       await axios.post("/api/armarCajas", {
         idAlmacenDestino: idAlmacenDestino,
-
         user: JSON.parse(localStorage.getItem('perfil'))?.IdUsuario || 1,
-
         cajas: cajasJSON
       });
+
+      const ordenadas = [...itemsEnPaquete].sort((a, b) => a.numCaja - b.numCaja);
+      setCajasFinalizadas(ordenadas);
+      setShowEtiquetasModal(true);
 
       toast.success("¡Carga guardada con éxito!", { id: toastId });
       setView('grid');
@@ -254,14 +267,12 @@ const Empaque = () => {
       <AnimatePresence mode="wait">
         {view === 'grid' && (
           <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-8 w-full h-full overflow-y-auto">
-            
             <HeaderPanel
               badgeText="Azteca AVT"
               title="Panel de Pesaje:"
               subtitle="Empaque"
-              onRefresh={fetchLotes}
+              onRefresh={() => window.location.reload()}
             />
-
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-white">
               {almacenes.map((c) => (
                 <motion.div key={c.IdAlmacen || c.id} whileHover={{ scale: 1.02, backgroundColor: '#1B2656' }} onClick={() => iniciarApertura(c)} style={{ backgroundColor: '#1B2654' }} className="border-2 border-slate-800 p-10 rounded-[3rem] cursor-pointer text-center group transition-all shadow-2xl relative overflow-hidden">
@@ -328,20 +339,25 @@ const Empaque = () => {
                   <h3 className="font-black italic uppercase text-sm tracking-widest">Lote de cajas</h3>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                <div className="flex-1 overflow-y-auto space-y-4 pr-2 text-white">
                   {itemsEnPaquete.map((item) => (
                     <div key={item.id} className="p-5 bg-white rounded-3xl border border-slate-200 flex justify-between items-center shadow-sm relative group">
                       <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600"></div>
-                      <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase">{item.producto} (Lote: {item.lote})</p>
-                        <p className="text-3xl font-black text-[#1B2656]">{item.peso} KG</p>
-                        <p className="text-[8px] font-bold text-slate-400">B: {item.bruto} | T: {item.tara}</p>
+                      <div className="flex items-center gap-4">
+                        <div className="bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-black italic">
+                            {item.numCaja}
+                        </div>
+                        <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase">{item.producto} (Lote: {item.lote})</p>
+                            <p className="text-3xl font-black text-[#1B2656]">{item.peso} KG</p>
+                            <p className="text-[8px] font-bold text-slate-400">B: {item.bruto} | T: {item.tara}</p>
+                        </div>
                       </div>
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => iniciarEdicion(item)} className="p-2 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors"><Pencil size={18} /></button>
                         <button onClick={() => {
                           setItemsEnPaquete(itemsEnPaquete.filter(i => i.id !== item.id));
-                          toast.info("Removido de la carga");
+                          toast.info("Caja removida");
                         }} className="p-2 bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition-colors"><Trash2 size={18} /></button>
                       </div>
                     </div>
@@ -360,7 +376,6 @@ const Empaque = () => {
                     className="w-full rounded-2xl bg-white p-4 font-bold border-2 border-slate-200 focus:border-blue-600 outline-none mb-4 text-sm"
                     value={idAlmacenDestino}
                     onChange={(e) => setIdAlmacenDestino(e.target.value)}
-                    required
                   >
                     <option value="">--- Selecciona el destino ---</option>
                     {almacenes.map(p => (
@@ -374,7 +389,7 @@ const Empaque = () => {
                     className={`w-full py-6 rounded-[2rem] font-black uppercase italic shadow-xl transition-all flex items-center justify-center gap-2
                       ${itemsEnPaquete.length === 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed scale-95' : 'bg-[#1B2656] text-white hover:bg-[#253475] active:scale-95'}`}
                   >
-                    {itemsEnPaquete.length === 0 ? "Sin pesajes" : <><Save size={24} /> Guardar Todo</>}
+                    {itemsEnPaquete.length === 0 ? "Sin pesajes" : <><Save size={24} /> Guardar {itemsEnPaquete.length} Cajas</>}
                   </button>
                 </div>
               </motion.div>
@@ -405,6 +420,80 @@ const Empaque = () => {
         onConfirm={(p, t) => registrarPesajeFinal(p, t)}
       />
 
+      {/* MODAL DE ETIQUETAS TÉRMICAS */}
+      <AnimatePresence>
+        {showEtiquetasModal && (
+          <div className="fixed inset-0 bg-slate-900/95 z-[600] flex items-center justify-center p-4 backdrop-blur-md h-[100%">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-[2rem] p-8 w-full max-w-2xl text-black shadow-2xl my-8">
+              
+              <div className="no-print border-b pb-6 mb-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-3xl font-black italic uppercase leading-none">Impresión Térmica</h2>
+                  <button onClick={() => setShowEtiquetasModal(false)} className="text-slate-400 hover:text-red-500 transition-colors"><X size={32}/></button>
+                </div>
+                
+                {/* CONFIGURACIÓN DE NOTA */}
+                {/* <div className="bg-slate-50 p-4 rounded-2xl flex items-center gap-4 border border-slate-100">
+                   <StickyNote className="text-blue-600" size={24}/>
+                   <div className="flex-1">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nota personalizada en QR</p>
+                      <input 
+                        type="text" 
+                        value={notaEtiqueta} 
+                        onChange={(e) => setNotaEtiqueta(e.target.value.toUpperCase())}
+                        className="w-full bg-transparent border-none p-0 font-black text-slate-800 outline-none focus:ring-0"
+                        placeholder="EJ: CALIDAD AZTECA"
+                      />
+                   </div>
+                </div> */}
+
+                <button onClick={() => window.print()} className="w-full mt-6 bg-blue-600 text-white py-5 rounded-2xl font-black uppercase italic flex items-center justify-center gap-3 hover:bg-blue-700 transition-all shadow-xl shadow-blue-200">
+                  <Printer size={24} /> Imprimir en Etiquetadora
+                </button>
+              </div>
+
+              {/* AREA DE ETIQUETAS (FORMATEADA PARA TÉRMICA) */}
+              <div className="printable-area">
+                {cajasFinalizadas.map((caja, index) => (
+                  <div key={index} className="thermal-label">
+                    {/* Encabezado Etiqueta */}
+                    <div className="label-header">
+                      <span className="label-title">{caja.producto}</span>
+                      <span className="label-box-num">#{caja.numCaja}</span>
+                    </div>
+                    
+                    <div className="label-body">
+                      <div className="label-info">
+                        <div className="info-group">
+                          <span className="info-label">LOTE</span>
+                          <span className="info-value">{caja.lote}</span>
+                        </div>
+                        <div className="info-group">
+                          <span className="info-label">PESO NETO</span>
+                          <span className="info-value-big">{caja.peso} KG</span>
+                        </div>
+                        <div className="info-footer">
+                          <span>{new Date().toLocaleDateString()}</span>
+                          <span>AZTECA AVT</span>
+                        </div>
+                      </div>
+                      
+                      <div className="label-qr">
+                        <QRCodeSVG 
+                          value={`CAJA: ${caja.numCaja}\nPROD: ${caja.producto}\nLOTE: ${caja.lote}\nPESO: ${caja.peso} KG\nNOTA: ${notaEtiqueta}`}
+                          size={90}
+                          level="M"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* MODAL DE EDICIÓN */}
       <AnimatePresence>
         {itemAEditar && (
@@ -434,7 +523,105 @@ const Empaque = () => {
         )}
       </AnimatePresence>
 
-      <style>{` .scrollbar-hide::-webkit-scrollbar { display: none; } `}</style>
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        
+        /* ESTILOS PARA ETIQUETADORA TÉRMICA */
+        @media print {
+          @page {
+            margin: 0;
+            size: 100mm 50mm; /* Tamaño estándar de etiqueta adhesiva */
+          }
+          body * { visibility: hidden; }
+          .printable-area, .printable-area * { visibility: visible; }
+          .printable-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100mm;
+          }
+          .no-print { display: none !important; }
+          
+          .thermal-label {
+            width: 100mm;
+            height: 50mm;
+            padding: 2mm 5mm;
+            page-break-after: always;
+            display: flex !important;
+            flex-direction: column;
+            border: none !important;
+            color: black !important;
+          }
+
+          .label-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid black;
+            padding-bottom: 1mm;
+          }
+
+          .label-title {
+            font-size: 18pt;
+            font-weight: 900;
+            text-transform: uppercase;
+          }
+
+          .label-box-num {
+            font-size: 24pt;
+            font-weight: 900;
+          }
+
+          .label-body {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex: 1;
+          }
+
+          .label-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1mm;
+          }
+
+          .info-group {
+            display: flex;
+            flex-direction: column;
+          }
+
+          .info-label {
+            font-size: 8pt;
+            font-weight: bold;
+          }
+
+          .info-value {
+            font-size: 12pt;
+            font-weight: 900;
+          }
+
+          .info-value-big {
+            font-size: 26pt;
+            font-weight: 900;
+          }
+
+          .info-footer {
+            font-size: 7pt;
+            display: flex;
+            gap: 5mm;
+            margin-top: 1mm;
+          }
+        }
+
+        /* Vista Previa en Pantalla */
+        .thermal-label {
+            border: 2px solid #e2e8f0;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.5rem;
+            background: white;
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, Fragment, memo } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { toast } from 'sonner';
-import { 
+import {
     Camera, X, User, MapPin, Fingerprint, UserPlus, Pencil, Save, Hash, Home
 } from "lucide-react";
 import Datatable from "@/Components/Datatable";
@@ -53,7 +53,7 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
         if (isOpen) {
             setFormData(dataToEdit?.IdPersona ? { ...dataToEdit } : {
                 IdPersona: null, IdEstado: "", IdMunicipio: "", Colonia: "",
-                Nombres: "", ApePat: "", ApeMat: "", Calle: "", CasaNum: "", 
+                Nombres: "", ApePat: "", ApeMat: "", Calle: "", CasaNum: "",
                 Sexo: "M", RFC: "", Curp: "", CodigoPostal: "", PathFotoEmpleado: ""
             });
             setErrors({});
@@ -64,8 +64,8 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
         const { name, value } = e.target;
         const upperVal = value.toUpperCase();
 
-        setFormData(prev => ({ 
-            ...prev, 
+        setFormData(prev => ({
+            ...prev,
             [name]: upperVal,
             // Si cambia estado, limpiamos municipio por lógica
             ...(name === 'IdEstado' ? { IdMunicipio: "" } : {})
@@ -73,7 +73,7 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
 
         if (errors[name]) {
             setErrors(prev => {
-                const n = {...prev};
+                const n = { ...prev };
                 delete n[name];
                 return n;
             });
@@ -82,7 +82,7 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
 
     return (
         <Transition show={isOpen} as={Fragment}>
-            <Dialog onClose={loading ? () => {} : closeModal} className="relative z-[200]">
+            <Dialog onClose={loading ? () => { } : closeModal} className="relative z-[200]">
                 <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
                     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md" />
                 </TransitionChild>
@@ -90,7 +90,7 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
                 <div className="fixed inset-0 flex items-center justify-center p-4">
                     <TransitionChild as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95 translate-y-4" enterTo="opacity-100 scale-100 translate-y-0" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
                         <DialogPanel className="w-full max-w-4xl rounded-[3rem] bg-white p-10 shadow-2xl relative overflow-hidden border-b-[12px] border-[#1B2654]">
-                            
+
                             <div className="flex flex-col items-center mb-8">
                                 <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center text-[#1B2654] mb-4 shadow-inner relative group border-2 border-white overflow-hidden">
                                     {formData.PathFotoEmpleado ? (
@@ -103,7 +103,7 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
                                         const file = e.target.files[0];
                                         if (file) {
                                             const reader = new FileReader();
-                                            reader.onloadend = () => setFormData(p => ({...p, PathFotoEmpleado: reader.result}));
+                                            reader.onloadend = () => setFormData(p => ({ ...p, PathFotoEmpleado: reader.result }));
                                             reader.readAsDataURL(file);
                                         }
                                     }} />
@@ -120,7 +120,7 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
                                 catch (err) { setErrors(err.response?.data?.errors || {}); }
                                 finally { setLoading(false); }
                             }} className="space-y-6 overflow-y-auto max-h-[60vh] px-4 blue-scroll">
-                                
+
                                 {/* DATOS PERSONALES */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <RhinoInput label="Nombres" name="Nombres" value={formData.Nombres || ''} onChange={handleChange} error={errors.Nombres} icon={Fingerprint} />
@@ -128,16 +128,16 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
                                     <RhinoInput label="Materno" name="ApeMat" value={formData.ApeMat || ''} onChange={handleChange} />
                                     <RhinoInput label="RFC" name="RFC" value={formData.RFC || ''} onChange={handleChange} error={errors.RFC} />
                                     <RhinoInput label="CURP" name="Curp" value={formData.Curp || ''} onChange={handleChange} error={errors.Curp} />
-                                    <RhinoSelect label="Género" name="Sexo" value={formData.Sexo || 'M'} onChange={handleChange} options={[{v:'M', d:'MASCULINO'}, {v:'F', d:'FEMENINO'}]} valueKey="v" displayKey="d" />
+                                    <RhinoSelect label="Género" name="Sexo" value={formData.Sexo || 'M'} onChange={handleChange} options={[{ v: 'M', d: 'MASCULINO' }, { v: 'F', d: 'FEMENINO' }]} valueKey="v" displayKey="d" />
                                 </div>
 
                                 {/* UBICACIÓN MANUAL (SIN TRABAS) */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-6 rounded-[2.5rem] border-2 border-white shadow-inner">
                                     <RhinoSelect label="Estado" name="IdEstado" value={formData.IdEstado || ''} onChange={handleChange} options={estados} valueKey="idEstado" displayKey="descripcionEstado" icon={MapPin} />
-                                    <RhinoSelect label="Municipio" name="IdMunicipio" value={formData.IdMunicipio || ''} onChange={handleChange} 
-                                        options={municipios.filter(m => String(m.idestado) === String(formData.IdEstado))} 
+                                    <RhinoSelect label="Municipio" name="IdMunicipio" value={formData.IdMunicipio || ''} onChange={handleChange}
+                                        options={municipios.filter(m => String(m.idestado) === String(formData.IdEstado))}
                                         valueKey="idMunicipio" displayKey="descripcionMunicipio" disabled={!formData.IdEstado} />
-                                    
+
                                     <RhinoInput label="Colonia" name="Colonia" value={formData.Colonia || ''} onChange={handleChange} icon={Home} placeholder="ESCRIBE LA COLONIA" />
 
                                     <div className="md:col-span-2">
@@ -205,22 +205,29 @@ export default function Personas() {
 
             <div className="flex-1  overflow-hidden">
                 {loading ? <div className="h-full flex items-center justify-center"><LoadingDiv /></div> : (
-                    <Datatable 
+                    <Datatable
                         data={data}
                         virtual={true}
+                        add={() => {
+                            // setAction('create');
+                            // setCurrent(initialProveedorData);
+                            // setIsDialogOpen(true);
+                            setModal({ open: true, action: 'create', item: null })
+                        }}
+
                         columns={[
                             // { header: 'ID', accessor: 'IdPersona', cell: (p) => <span className="font-black text-slate-300">#{p.item.IdPersona}</span> },
                             { header: 'Colaborador', cell: (p) => <span className="font-bold text-slate-700 uppercase tracking-tight">{`${p.item.Nombres} ${p.item.ApePat}`}</span> },
                             { header: 'Identificación', cell: (p) => <span className="text-[11px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg font-mono">{p.item.RFC}</span> },
                             {
-                                header: 'Acciones', 
+                                header: 'Acciones',
                                 cell: (p) => (
                                     <button onClick={() => setModal({ open: true, action: 'edit', item: p.item })} className="p-3 bg-slate-100 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-200">
                                         <Pencil size={16} />
                                     </button>
                                 )
                             }
-                        ]} 
+                        ]}
                     />
                 )}
             </div>
@@ -233,7 +240,7 @@ export default function Personas() {
                 onSubmit={async (val) => {
                     const isEdit = !!val.IdPersona;
                     const res = await request(isEdit ? `/api/personas/${val.IdPersona}` : "/api/personas", isEdit ? 'PUT' : 'POST', val);
-                    if(res) {
+                    if (res) {
                         toast.success("DATOS ACTUALIZADOS");
                         fetchData();
                         setModal({ open: false });

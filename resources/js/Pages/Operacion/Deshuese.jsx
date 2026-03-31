@@ -113,6 +113,11 @@ export default function DeshueseDashboard() {
             setSelectedParent(null);
             setSelectedLote(null); // Regresamos a la lista de lotes
 
+            setCurrentWeight("0.00");
+
+            // setTara("0.000");
+            setTimeout(() => setShowTaraModal(true), 400);
+
             // REFRESCAR LA LISTA DE LA BASE DE DATOS
             await fetchData();
 

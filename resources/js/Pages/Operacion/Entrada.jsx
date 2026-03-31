@@ -157,6 +157,10 @@ export default function WeighingDashboard() {
                 fetchProductosLote(selectedLote.Lote);
                 setSelectedProduct(null);
                 setPiezas(0);
+
+                setTara("0.000");
+                setCurrentWeight("0.000");
+                setTimeout(() => setShowTaraModal(true), 400);
             }
         } catch (e) { toast.error("Error al guardar"); }
         finally { setIsProcessing(false); setShowGuardarModal(false); }
@@ -266,11 +270,14 @@ export default function WeighingDashboard() {
                                 <tr>
                                     <th className="p-4">PRODUCTO</th>
                                     <th className="p-4 text-center">PZS</th>
-                                    <th className="p-4 text-right">PESO NETO {totalKilosLote}</th>
-                                </tr>
+                                    <th className="p-4 text-right uppercase tracking-tighter">
+                                        PESO NETO: <span className="text-red-600 font-black ml-1">
+                                            {parseFloat(totalKilosLote || 0).toFixed(3)} KG
+                                        </span>
+                                    </th>                                </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {movimientos.map((reg, i) => (
+                                {/* {movimientos.map((reg, i) => (
                                     <tr key={i} className="text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-colors">
                                         <td className="p-4 truncate max-w-[150px]">{reg.Nombre}</td>
                                         <td className="p-4 text-center">{reg.Piezas}</td>
@@ -278,7 +285,19 @@ export default function WeighingDashboard() {
                                             {parseFloat(reg.Peso || 0).toFixed(3)} KG
                                         </td>
                                     </tr>
-                                ))}
+                                ))} */}
+                                {movimientos
+                                    .filter((reg) => reg.TipoMovimiento === "ENTRADA") // Filtramos primero
+                                    .map((reg, i) => (
+                                        <tr key={i} className="text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-colors">
+                                            <td className="p-4 truncate max-w-[150px]">{reg.Nombre}</td>
+                                            <td className="p-4 text-center">{reg.Piezas}</td>
+                                            <td className="p-4 text-right font-black">
+                                                {parseFloat(reg.Peso || 0).toFixed(3)} KG
+                                            </td>
+                                        </tr>
+                                    ))
+                                }
                             </tbody>
                         </table>
                     </div>

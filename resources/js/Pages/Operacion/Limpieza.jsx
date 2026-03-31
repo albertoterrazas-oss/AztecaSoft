@@ -162,6 +162,9 @@ export default function WeighingDashboardLimpieza() {
                 await Promise.all([fetchProductosLote(selectedLote.Lote), fetchHistorial(selectedLote.Lote)]);
                 setSelectedProduct(null);
                 setCurrentWeight("0.00");
+
+                setTara("0.000");
+                setTimeout(() => setShowTaraModal(true), 400);
             }
             setShowSuccessModal(true);
         } catch (e) { toast.error("Error al guardar"); } finally {
@@ -265,6 +268,7 @@ export default function WeighingDashboardLimpieza() {
                                     <td className="p-4 text-right text-base font-black">{parseFloat(reg.KG || 0).toFixed(2)} KG</td>
                                 </tr>
                             ))}
+
                         </tbody>
                     </table>
                 </div>
