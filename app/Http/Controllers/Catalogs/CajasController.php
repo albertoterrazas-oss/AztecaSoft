@@ -24,18 +24,18 @@ class CajasController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            // 'FolioCaja'       => 'required|string|max:50',
-            'NumCaja'         => 'required|integer',
-            'IdUsuario'       => 'required|integer',
-            'IdAlmacenActual' => 'required|integer',
-            'PesoTotal'       => 'required|numeric',
-            'PiezasTotales'   => 'required|integer',
-            'Estatus'         => 'required|integer',
+            'Nombre'         => 'required',
+            'Tara'       => 'required',
+            'Estatus' => 'required',
+         
         ]);
+
+
+
 
         // Agregamos la fecha de creación manualmente ya que no usamos timestamps automáticos
         $data = $request->all();
-        $data['FechaCreacion'] = now();
+        $data['FechaRegistro'] = now();
 
         $caja = Cajas::create($data);
 
@@ -63,12 +63,9 @@ class CajasController extends Controller
 
         $request->validate([
             // 'FolioCaja'       => 'sometimes|string|max:50',
-            'NumCaja'         => 'sometimes|integer',
-            'IdUsuario'       => 'sometimes|integer',
-            'IdAlmacenActual' => 'sometimes|integer',
-            'PesoTotal'       => 'sometimes|numeric',
-            'PiezasTotales'   => 'sometimes|integer',
-            'Estatus'         => 'sometimes|integer',
+            'Nombre'         => 'required',
+            'Tara'       => 'required',
+            'Estatus' => 'required',
         ]);
 
         $caja->update($request->all());
@@ -85,7 +82,7 @@ class CajasController extends Controller
     public function destroy($id)
     {
         $caja = Cajas::findOrFail($id);
-        
+
         // Opción A: Eliminación física
         $caja->delete();
 

@@ -95,7 +95,7 @@ export default function WeighingDashboard() {
             const entrada = resAlm.data.find(a => a.Nombre?.toUpperCase() === "ENTRADA");
 
             setIdBasculaConfigurada(entrada.bascula.puerto); // Puedes dejarla fija o cargarla de un setting
-            setAlmacenes(resAlm.data.filter(a => !["ENTRADA", "RECEPCION", 'CONGELACION'].includes(a.Nombre?.toUpperCase())));
+            setAlmacenes(resAlm.data.filter(a => !["ENTRADA", "RECEPCION"].includes(a.Nombre?.toUpperCase())));
         } catch (e) { console.error("Error inicial", e); }
     }, []);
 

@@ -7,10 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Cajas extends Model
 {
-    protected $table = 'dbo.cajas';
+    protected $table = 'dbo.TiposCaja';
 
     // Definimos la llave primaria si no es el estándar "id"
-    protected $primaryKey = 'IdCaja';
+    protected $primaryKey = 'IdTipoCaja';
 
     // Desactiva timestamps si la tabla no tiene 'created_at' y 'updated_at'
     // Si solo tiene FechaCreacion, lo manejaremos manualmente o vía fillable
@@ -18,12 +18,12 @@ class Cajas extends Model
 
     protected $fillable = [
         // 'FolioCaja',
-        'NumCaja',
-        'FechaCreacion',
-        'IdUsuario',
-        'IdAlmacenActual',
-        'PesoTotal',
-        'PiezasTotales',
+        'Nombre',
+        'Tara',
         'Estatus',
+        'FechaRegistro',
+        // 'PesoTotal',
+        // 'PiezasTotales',
+        // 'Estatus',
     ];
 }

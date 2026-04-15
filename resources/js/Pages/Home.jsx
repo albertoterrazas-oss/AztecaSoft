@@ -198,7 +198,7 @@ const routesConfig = [
 
     { path: "/basculas", component: lazy(() => import('./Catalogos/Basculas')) },
     { path: "/congelacion", component: lazy(() => import('./Operacion/Congelacion')) },
-    { path: "/cajas", component: lazy(() => import('./Catalogos/Cajas')) },
+    { path: "/tipodecajas", component: lazy(() => import('./Catalogos/Cajas')) },
 
 
 

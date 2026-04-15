@@ -4,10 +4,9 @@ import { toast } from 'sonner';
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
 import axios from "axios";
-import { Pencil, Box } from "lucide-react";
+import { Pencil, Box, Plus, X } from "lucide-react";
 import Datatable from "@/Components/Datatable";
 
-// --- Configuración de Rutas ---
 const route = (name, params = {}) => {
     const id = params.id;
     const routeMap = {
@@ -20,40 +19,24 @@ const route = (name, params = {}) => {
 
 export default function CajasCatalogo() {
     const [cajas, setCajas] = useState([]);
-    const [almacenes, setAlmacenes] = useState([]); // Para el selector de almacén
     const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentCaja, setCurrentCaja] = useState(null);
     const [action, setAction] = useState('create');
 
-    // Cargar Cajas
     const getCajas = async () => {
         try {
             setIsLoading(true);
-            const response = await fetch(route("CajasListar"));
-            const data = await response.json();
-            setCajas(data);
+            const response = await axios.get(route("CajasListar"));
+            setCajas(response.data);
         } catch (error) {
-            toast.error("Error al cargar el listado de cajas");
+            toast.error("Error al cargar el listado");
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Cargar Almacenes (para asignar a la caja)
-    const fetchAlmacenes = async () => {
-        try {
-            const response = await axios.get('/api/almacenes');
-            setAlmacenes(response.data);
-        } catch (error) {
-            console.error("Error cargando almacenes");
-        }
-    };
-
-    useEffect(() => {
-        getCajas();
-        fetchAlmacenes();
-    }, []);
+    useEffect(() => { getCajas(); }, []);
 
     const openModal = (item = null) => {
         setCurrentCaja(item);
@@ -64,13 +47,11 @@ export default function CajasCatalogo() {
     const submitCaja = async (formData) => {
         const isEdit = action === 'edit';
         const method = isEdit ? "PUT" : "POST";
-        const ruta = isEdit
-            ? route("cajas.update", { id: formData.IdCaja })
-            : route("cajas.store");
+        const ruta = isEdit ? route("cajas.update", { id: formData.IdCaja }) : route("cajas.store");
 
         try {
             await request(ruta, method, formData);
-            toast.success(`Caja ${isEdit ? 'actualizada' : 'registrada'} con éxito`);
+            toast.success(`Registro ${isEdit ? 'actualizado' : 'guardado'} con éxito`);
             getCajas();
             setIsDialogOpen(false);
         } catch (e) {
@@ -79,49 +60,43 @@ export default function CajasCatalogo() {
     };
 
     return (
-        <div className="w-full p-4 md:p-8">
-            <div className="px-6 pb-12">
-                {isLoading ? (
-                    <div className="h-96 flex items-center justify-center"><LoadingDiv /></div>
-                ) : (
-                    <Datatable
-                        data={cajas}
-                        virtual={true}
-                        add={() => openModal()}
-                        columns={[
-                            {
-                                header: "Estatus",
-                                accessor: "estatus",
-                                width: '10%',
-                                cell: ({ item: { Estatus } }) => {
-                                    const isActivo = String(Estatus) === "1";
-                                    const color = isActivo ? "bg-green-300" : "bg-red-300";
+        <div className="w-full p-4 md:p-8 h-[100%] ">
+            <div className=" bg-white rounded-3xl overflow-hidden">
 
-                                    return (
-                                        <span className={`inline-flex items-center justify-center rounded-full ${color} w-3 h-3`}
-                                            title={isActivo ? "Activo" : "Inactivo"}
-                                        />
-                                    );
+
+                <div className="p-6">
+                    {isLoading ? <LoadingDiv /> : (
+                        <Datatable
+                            data={cajas}
+                            virtual={true}
+
+                            add={() => {
+                                openModal()
+                            }}
+                            columns={[
+                                { header: 'Nombre', accessor: 'Nombre' },
+                                { header: 'Tara', accessor: 'Tara', cell: (p) => `${p.item.Tara} kg` },
+                                {
+                                    header: "Estatus",
+                                    accessor: "Estatus",
+                                    cell: ({ item: { Estatus } }) => (
+                                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${Estatus == 1 ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                                            {Estatus == 1 ? "ACTIVO" : "INACTIVO"}
+                                        </span>
+                                    ),
                                 },
-                            },
-                            { header: 'Folio', accessor: 'FolioCaja' },
-                            { header: 'No. Caja', accessor: 'NumCaja' },
-                            { header: 'Peso', accessor: 'PesoTotal', cell: (p) => `${p.item.PesoTotal} kg` },
-                            { header: 'Piezas', accessor: 'PiezasTotales' },
-                            {
-                                header: "Acciones",
-                                cell: (props) => (
-                                    <button
-                                        onClick={() => openModal(props.item)}
-                                        className="p-3 bg-slate-50 text-[#1B2654] rounded-xl hover:bg-[#1B2654] hover:text-white transition-all border border-slate-100"
-                                    >
-                                        <Pencil size={16} />
-                                    </button>
-                                )
-                            },
-                        ]}
-                    />
-                )}
+                                {
+                                    header: "Acciones",
+                                    cell: (props) => (
+                                        <button onClick={() => openModal(props.item)} className="p-2 bg-slate-100 rounded-lg hover:bg-[#1B2654] hover:text-white transition-all">
+                                            <Pencil size={16} />
+                                        </button>
+                                    )
+                                },
+                            ]}
+                        />
+                    )}
+                </div>
             </div>
 
             <CajaFormDialog
@@ -130,39 +105,39 @@ export default function CajasCatalogo() {
                 onSubmit={submitCaja}
                 dataToEdit={currentCaja}
                 action={action}
-                almacenes={almacenes}
             />
         </div>
     );
 }
 
-// --- Componente del Diálogo ---
-function CajaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, almacenes }) {
+function CajaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action }) {
     const initialState = {
-        FolioCaja: "",
-        NumCaja: "",
-        IdAlmacenActual: "",
-        PesoTotal: 0,
-        PiezasTotales: 0,
-        Estatus: 1,
-        IdUsuario: JSON.parse(localStorage.getItem('perfil'))?.IdUsuario || 1
+        Nombre: "",
+        Tara: "",
+        Estatus: 1
     };
-
 
     const [formData, setFormData] = useState(initialState);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        if (isOpen) {
-            setFormData(dataToEdit ? { ...dataToEdit } : initialState);
-        }
+        if (isOpen) setFormData(dataToEdit ? { ...dataToEdit } : initialState);
     }, [isOpen, dataToEdit]);
 
     const handleSave = async (e) => {
         e.preventDefault();
         setSaving(true);
+        // Mandamos solo lo que pide tu validación
+        const payload = {
+            Nombre: formData.Nombre,
+            Tara: parseFloat(formData.Tara),
+            Estatus: parseInt(formData.Estatus)
+        };
+        // Si es edición, necesitamos el ID para la ruta, pero el payload lleva los datos
+        if (action === 'edit') payload.IdCaja = formData.IdCaja;
+
         try {
-            await onSubmit(formData);
+            await onSubmit(payload);
         } finally {
             setSaving(false);
         }
@@ -171,62 +146,44 @@ function CajaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, alma
     return (
         <Transition show={isOpen}>
             <Dialog onClose={closeModal} className="relative z-[100]">
-                <TransitionChild
-                    enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100"
-                    leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0"
-                >
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-md" />
+                <TransitionChild enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
                 </TransitionChild>
 
                 <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <DialogPanel className="w-full max-w-2xl bg-white rounded-[2rem] p-8 shadow-2xl relative overflow-hidden border-t-8 border-[#1B2654]">
-                        {saving && (
-                            <div className="absolute inset-0 z-10 bg-white/80 flex items-center justify-center">
-                                <LoadingDiv />
-                            </div>
-                        )}
-
-                        <DialogTitle className="text-2xl font-black text-gray-800 mb-6 uppercase tracking-tighter flex items-center gap-2">
-                            <Box className="text-blue-600" />
-                            {action === 'create' ? 'Nueva Caja' : 'Editar Caja'}
+                    <DialogPanel className="w-full max-w-md bg-white rounded-[2rem] p-8 shadow-2xl relative">
+                        <DialogTitle className="text-xl font-black text-gray-800 mb-6 flex items-center gap-2 uppercase">
+                            <Box className="text-blue-600" /> {action === 'create' ? 'Crear' : 'Editar'}
                         </DialogTitle>
 
-                        <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Folio */}
-
-
-                            {/* Numero de Caja */}
+                        <form onSubmit={handleSave} className="space-y-5">
                             <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Número de Caja</label>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nombre</label>
                                 <input
-                                    type="number"
-                                    value={formData.NumCaja}
-                                    onChange={e => setFormData({ ...formData, NumCaja: e.target.value })}
+                                    type="text"
+                                    value={formData.Nombre}
+                                    onChange={e => setFormData({ ...formData, Nombre: e.target.value })}
+                                    className="w-full mt-1 px-5 py-3 rounded-2xl bg-gray-100 border-none font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 transition-all"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tara (kg)</label>
+                                <input
+                                    type="number" step="0.001"
+                                    value={formData.Tara}
+                                    onChange={e => setFormData({ ...formData, Tara: e.target.value })}
                                     className="w-full mt-1 px-5 py-3 rounded-2xl bg-gray-100 border-none font-bold text-gray-700"
                                     required
                                 />
                             </div>
 
-                            {/* Almacén */}
-                            <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Ubicación Actual</label>
-                                <select
-                                    value={formData.IdAlmacenActual}
-                                    onChange={e => setFormData({ ...formData, IdAlmacenActual: e.target.value })}
-                                    className="w-full mt-1 px-5 py-3 rounded-2xl bg-gray-100 border-none font-bold text-gray-700"
-                                    required
-                                >
-                                    <option value="">Seleccione Almacén...</option>
-                                    {almacenes.map(a => <option key={a.IdAlmacen} value={a.IdAlmacen}>{a.Nombre}</option>)}
-                                </select>
-                            </div>
-
-                            {/* Estatus */}
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Estatus</label>
                                 <select
                                     value={formData.Estatus}
-                                    onChange={e => setFormData({ ...formData, Estatus: parseInt(e.target.value) })}
+                                    onChange={e => setFormData({ ...formData, Estatus: e.target.value })}
                                     className="w-full mt-1 px-5 py-3 rounded-2xl bg-gray-100 border-none font-bold text-gray-700"
                                 >
                                     <option value={1}>Activo</option>
@@ -234,37 +191,10 @@ function CajaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, alma
                                 </select>
                             </div>
 
-                            {/* Peso Total */}
-                            <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Peso Total (kg)</label>
-                                <input
-                                    type="number" step="0.01"
-                                    value={formData.PesoTotal}
-                                    onChange={e => setFormData({ ...formData, PesoTotal: e.target.value })}
-                                    className="w-full mt-1 px-5 py-3 rounded-2xl bg-gray-100 border-none font-bold text-gray-700"
-                                    required
-                                />
-                            </div>
-
-                            {/* Piezas Totales */}
-                            <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Piezas Totales</label>
-                                <input
-                                    type="number"
-                                    value={formData.PiezasTotales}
-                                    onChange={e => setFormData({ ...formData, PiezasTotales: e.target.value })}
-                                    className="w-full mt-1 px-5 py-3 rounded-2xl bg-gray-100 border-none font-bold text-gray-700"
-                                    required
-                                />
-                            </div>
-
-                            {/* Botones */}
-                            <div className="md:col-span-2 flex gap-4 pt-4">
-                                <button type="button" onClick={closeModal} className="flex-1 py-4 text-gray-400 font-black text-xs uppercase hover:text-gray-600">
-                                    Cancelar
-                                </button>
-                                <button type="submit" className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg hover:bg-[#1B2654] transition-all">
-                                    Guardar Caja
+                            <div className="flex gap-3 pt-4">
+                                <button type="button" onClick={closeModal} className="flex-1 py-4 text-gray-400 font-bold text-xs uppercase hover:text-gray-600">Cancelar</button>
+                                <button type="submit" disabled={saving} className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg hover:bg-blue-700 transition-all">
+                                    {saving ? 'Guardando...' : 'Confirmar'}
                                 </button>
                             </div>
                         </form>
