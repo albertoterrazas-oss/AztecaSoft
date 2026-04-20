@@ -11,11 +11,35 @@ use Illuminate\Support\Facades\DB;
 
 class PersonasController extends Controller
 {
+    // public function index()
+    // {
+    //     $personas = Persona::with('foto')->orderBy('ApePat', 'ASC')->get();
+
+    //     $personas->transform(function ($persona) {
+    //         if ($persona->foto && $persona->foto->archivo) {
+    //             $binario = $persona->foto->archivo;
+    //             $data = is_resource($binario) ? stream_get_contents($binario) : $binario;
+    //             $persona->PathFotoEmpleado = 'data:image/jpeg;base64,' . base64_encode($data);
+    //         } else {
+    //             $persona->PathFotoEmpleado = null;
+    //         }
+    //         unset($persona->foto);
+    //         return $persona;
+    //     });
+
+    //     return response()->json(['success' => true, 'data' => $personas], 200);
+    // }
+
     public function index()
     {
         $personas = Persona::with('foto')->orderBy('ApePat', 'ASC')->get();
 
         $personas->transform(function ($persona) {
+            // --- Concatenación del Nombre Completo ---
+            // Filtramos espacios extras en caso de que ApeMat esté vacío
+            $persona->NombreCompleto = trim("{$persona->Nombres} {$persona->ApePat} {$persona->ApeMat}");
+
+            // --- Procesamiento de la Imagen ---
             if ($persona->foto && $persona->foto->archivo) {
                 $binario = $persona->foto->archivo;
                 $data = is_resource($binario) ? stream_get_contents($binario) : $binario;
@@ -23,7 +47,10 @@ class PersonasController extends Controller
             } else {
                 $persona->PathFotoEmpleado = null;
             }
+
+            // Limpiamos la relación para que no ensucie el JSON final
             unset($persona->foto);
+
             return $persona;
         });
 
@@ -107,7 +134,7 @@ class PersonasController extends Controller
             // Esto evita que se cree un nuevo archivo si el usuario no cambió la foto
             if ($request->filled('PathFotoEmpleado') && str_contains($request->PathFotoEmpleado, 'base64,')) {
                 $base64Image = $request->PathFotoEmpleado;
-                
+
                 // Extraer info del base64
                 $format = str_contains($base64Image, 'image/png') ? 'png' : 'jpeg';
                 $imageContent = base64_decode(explode(',', $base64Image)[1]);

@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef, Fragment, memo } from "react";
+import { useEffect, useState, useRef, Fragment, memo, useMemo } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { toast } from 'sonner';
 import {
-    Camera, X, User, MapPin, Fingerprint, UserPlus, Pencil, Save, Hash, Home
+    Camera, User, MapPin, Fingerprint, Pencil, Save, Hash, Home, Loader2
 } from "lucide-react";
 import Datatable from "@/Components/Datatable";
 import LoadingDiv from "@/Components/LoadingDiv";
@@ -18,66 +18,111 @@ const RhinoInput = memo(({ label, icon: Icon, error, ...props }) => (
         <input
             {...props}
             className={`w-full px-6 py-4 rounded-2xl bg-slate-100 border-2 transition-all font-bold text-slate-700 outline-none text-sm 
-            ${error ? 'border-red-500 bg-red-50' : 'border-transparent focus:border-[#1B2654] focus:bg-white'}`}
+            ${error ? 'border-red-500 bg-red-50' : 'border-transparent focus:border-[#1B2654] focus:bg-white'} 
+            disabled:opacity-60 disabled:cursor-not-allowed`}
         />
         {error && <p className="text-red-500 text-[9px] font-black uppercase mt-1 ml-4">{error[0] || error}</p>}
     </div>
 ));
 
-const RhinoSelect = memo(({ label, icon: Icon, options, displayKey, valueKey, ...props }) => (
+const RhinoSelect = memo(({ label, icon: Icon, options, displayKey, valueKey, loading, ...props }) => (
     <div className="space-y-1">
         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4 flex items-center gap-2">
             {Icon && <Icon size={12} className="text-[#1B2654]" />}
             {label}
+            {loading && <Loader2 size={12} className="animate-spin" />}
         </label>
         <select
             {...props}
             className="w-full px-6 py-4 rounded-2xl bg-slate-100 border-2 border-transparent transition-all font-bold text-slate-700 outline-none text-sm focus:border-[#1B2654] focus:bg-white appearance-none disabled:opacity-50"
         >
-            <option value="">SELECCIONAR...</option>
-            {options?.map(o => (
-                <option key={o[valueKey]} value={o[valueKey]}>{o[displayKey]}</option>
+            <option value="">{loading ? 'CARGANDO...' : 'SELECCIONAR...'}</option>
+            {options?.map((o, idx) => (
+                <option key={`${idx}-${o[valueKey]}`} value={o[valueKey]}>{o[displayKey]}</option>
             ))}
         </select>
     </div>
 ));
 
-// --- MODAL FORMULARIO PERSONAS (SIN COLONIAS API) ---
-function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, estados, municipios }) {
+// --- MODAL FORMULARIO PERSONAS ---
+function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, estados, municipios }) {
     const [formData, setFormData] = useState({});
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [loadingColonias, setLoadingColonias] = useState(false);
+    const [colonias, setColonias] = useState([]);
     const fileInputRef = useRef(null);
 
+    // 1. Inicialización
     useEffect(() => {
         if (isOpen) {
-            setFormData(dataToEdit?.IdPersona ? { ...dataToEdit } : {
-                IdPersona: null, IdEstado: "", IdMunicipio: "", Colonia: "",
-                Nombres: "", ApePat: "", ApeMat: "", Calle: "", CasaNum: "",
-                Sexo: "M", RFC: "", Curp: "", CodigoPostal: "", PathFotoEmpleado: ""
-            });
+            if (dataToEdit?.IdPersona) {
+                setFormData({
+                    ...dataToEdit,
+                    IdEstado: String(dataToEdit.IdEstado || ""),
+                    IdMunicipio: String(dataToEdit.IdMunicipio || ""),
+                    IdColonia: String(dataToEdit.IdColonia || ""),
+                    CodigoPostal: dataToEdit.CodigoPostal || ""
+                });
+            } else {
+                setFormData({
+                    IdPersona: null, IdEstado: "", IdMunicipio: "", IdColonia: "",
+                    Nombres: "", ApePat: "", ApeMat: "", Calle: "", CasaNum: "",
+                    Sexo: "M", RFC: "", Curp: "", CodigoPostal: "", PathFotoEmpleado: ""
+                });
+            }
             setErrors({});
         }
     }, [isOpen, dataToEdit]);
 
+    // 2. Carga de colonias dinámica
+    useEffect(() => {
+        const fetchColonias = async () => {
+            if (!formData.IdMunicipio) {
+                setColonias([]);
+                return;
+            }
+            setLoadingColonias(true);
+            try {
+                const res = await request(`/api/colonias?Colonia_IdMunicipio=${formData.IdMunicipio}`);
+                setColonias(res.data || res);
+            } catch (e) {
+                console.error("Error colonias", e);
+            } finally {
+                setLoadingColonias(false);
+            }
+        };
+        fetchColonias();
+    }, [formData.IdMunicipio]);
+
+    // 3. Filtrado local de municipios
+    const municipiosFiltrados = useMemo(() => {
+        if (!formData.IdEstado) return [];
+        return municipios.filter(m => String(m.idestado) === String(formData.IdEstado));
+    }, [formData.IdEstado, municipios]);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
-        const upperVal = value.toUpperCase();
+
+        // Lógica especial para Colonia -> Setea C.P. automáticamente
+        if (name === "IdColonia") {
+            const coloniaSeleccionada = colonias.find(c => String(c.Colonia_Id) === String(value));
+            setFormData(prev => ({
+                ...prev,
+                IdColonia: value,
+                CodigoPostal: coloniaSeleccionada ? coloniaSeleccionada.c_CodigoPostal : ""
+            }));
+            return;
+        }
+
+        const upperVal = (name !== 'PathFotoEmpleado') ? value.toUpperCase() : value;
 
         setFormData(prev => ({
             ...prev,
             [name]: upperVal,
-            // Si cambia estado, limpiamos municipio por lógica
-            ...(name === 'IdEstado' ? { IdMunicipio: "" } : {})
+            ...(name === 'IdEstado' ? { IdMunicipio: "", IdColonia: "", CodigoPostal: "" } : {}),
+            ...(name === 'IdMunicipio' ? { IdColonia: "", CodigoPostal: "" } : {})
         }));
-
-        if (errors[name]) {
-            setErrors(prev => {
-                const n = { ...prev };
-                delete n[name];
-                return n;
-            });
-        }
     };
 
     return (
@@ -109,7 +154,7 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
                                     }} />
                                 </div>
                                 <DialogTitle className="text-2xl font-black text-slate-800 uppercase tracking-tighter text-center italic leading-none">
-                                    Registro de <span className="text-[#1B2654]">Personal</span>
+                                    Ficha de <span className="text-[#1B2654]">Personal</span>
                                 </DialogTitle>
                             </div>
 
@@ -121,7 +166,6 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
                                 finally { setLoading(false); }
                             }} className="space-y-6 overflow-y-auto max-h-[60vh] px-4 blue-scroll">
 
-                                {/* DATOS PERSONALES */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <RhinoInput label="Nombres" name="Nombres" value={formData.Nombres || ''} onChange={handleChange} error={errors.Nombres} icon={Fingerprint} />
                                     <RhinoInput label="Paterno" name="ApePat" value={formData.ApePat || ''} onChange={handleChange} error={errors.ApePat} />
@@ -131,19 +175,38 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, e
                                     <RhinoSelect label="Género" name="Sexo" value={formData.Sexo || 'M'} onChange={handleChange} options={[{ v: 'M', d: 'MASCULINO' }, { v: 'F', d: 'FEMENINO' }]} valueKey="v" displayKey="d" />
                                 </div>
 
-                                {/* UBICACIÓN MANUAL (SIN TRABAS) */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-6 rounded-[2.5rem] border-2 border-white shadow-inner">
                                     <RhinoSelect label="Estado" name="IdEstado" value={formData.IdEstado || ''} onChange={handleChange} options={estados} valueKey="idEstado" displayKey="descripcionEstado" icon={MapPin} />
-                                    <RhinoSelect label="Municipio" name="IdMunicipio" value={formData.IdMunicipio || ''} onChange={handleChange}
-                                        options={municipios.filter(m => String(m.idestado) === String(formData.IdEstado))}
-                                        valueKey="idMunicipio" displayKey="descripcionMunicipio" disabled={!formData.IdEstado} />
 
-                                    <RhinoInput label="Colonia" name="Colonia" value={formData.Colonia || ''} onChange={handleChange} icon={Home} placeholder="ESCRIBE LA COLONIA" />
+                                    <RhinoSelect label="Municipio" name="IdMunicipio" value={formData.IdMunicipio || ''} onChange={handleChange}
+                                        options={municipiosFiltrados} valueKey="idMunicipio" displayKey="descripcionMunicipio" disabled={!formData.IdEstado} />
+
+                                    <RhinoSelect
+                                        label="Colonia"
+                                        name="IdColonia"
+                                        value={formData.IdColonia || ''}
+                                        onChange={handleChange}
+                                        options={colonias}
+                                        valueKey="Colonia_Id"
+                                        displayKey="Colonia_Nombre"
+                                        disabled={!formData.IdMunicipio || loadingColonias}
+                                        loading={loadingColonias}
+                                        icon={Home}
+                                    />
 
                                     <div className="md:col-span-2">
                                         <RhinoInput label="Calle y Número" name="Calle" value={formData.Calle || ''} onChange={handleChange} />
                                     </div>
-                                    <RhinoInput label="C.P." name="CodigoPostal" value={formData.CodigoPostal || ''} onChange={handleChange} icon={Hash} maxLength={5} />
+
+                                    {/* CP AUTOMÁTICO Y DESHABILITADO */}
+                                    <RhinoInput
+                                        label="C.P."
+                                        name="CodigoPostal"
+                                        value={formData.CodigoPostal || ''}
+                                        icon={Hash}
+                                        disabled={true}
+                                        placeholder="AUTOCONTROL"
+                                    />
                                 </div>
 
                                 <div className="flex gap-4 pt-6 border-t border-slate-100">
@@ -175,10 +238,12 @@ export default function Personas() {
         setLoading(true);
         try {
             const [p, e, m] = await Promise.all([
-                request("/api/personas"), request("/api/estados"), request("/api/municipios")
+                request("/api/personas"),
+                request("/api/estados"),
+                request("/api/municipios")
             ]);
             setData(p.data || p);
-            setCats({ est: e, mun: m.data || m });
+            setCats({ est: e.data || e, mun: m.data || m });
         } catch (e) { toast.error("Error al sincronizar datos"); }
         finally { setLoading(false); }
     };
@@ -187,38 +252,41 @@ export default function Personas() {
 
     return (
         <div className="h-full bg-[#f8fafc] p-8 flex flex-col font-sans">
-            {/* <div className="mb-8 flex justify-between items-center bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
-                <div className="flex items-center gap-4">
-                    <div className="bg-[#1B2654] p-4 rounded-3xl shadow-lg shadow-blue-900/20">
-                        <User size={28} className="text-white" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-black text-[#1B2654] uppercase tracking-tighter italic">Personal</h1>
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Rhino Unit DB</p>
-                    </div>
-                </div>
-                <button onClick={() => setModal({ open: true, action: 'create', item: null })} className="bg-[#1B2654] text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-[#A61A18] transition-all shadow-xl flex items-center gap-3">
-                    <UserPlus size={20} />
-                    Nuevo Registro
-                </button>
-            </div> */}
-
-            <div className="flex-1  overflow-hidden">
+            <div className="flex-1 overflow-hidden">
                 {loading ? <div className="h-full flex items-center justify-center"><LoadingDiv /></div> : (
                     <Datatable
                         data={data}
                         virtual={true}
-                        add={() => {
-                            // setAction('create');
-                            // setCurrent(initialProveedorData);
-                            // setIsDialogOpen(true);
-                            setModal({ open: true, action: 'create', item: null })
-                        }}
-
+                        add={() => setModal({ open: true, action: 'create', item: null })}
                         columns={[
-                            // { header: 'ID', accessor: 'IdPersona', cell: (p) => <span className="font-black text-slate-300">#{p.item.IdPersona}</span> },
-                            { header: 'Colaborador', cell: (p) => <span className="font-bold text-slate-700 uppercase tracking-tight">{`${p.item.Nombres} ${p.item.ApePat}`}</span> },
-                            { header: 'Identificación', cell: (p) => <span className="text-[11px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg font-mono">{p.item.RFC}</span> },
+                            // {
+                            //     header: 'Colaborador',
+                            //     cell: (p) => (
+                            //         <div className="flex items-center gap-3">
+                            //             <div className="w-8 h-8 rounded-lg bg-slate-200 overflow-hidden border border-slate-300">
+                            //                 {p.item.PathFotoEmpleado && <img src={p.item.PathFotoEmpleado} className="w-full h-full object-cover" />}
+                            //             </div>
+                            //             <span className="font-bold text-slate-700 uppercase tracking-tight">
+                            //                 {`${p.item.Nombres} ${p.item.ApePat}`}
+                            //             </span>
+                            //         </div>
+                            //     )
+                            // },
+
+                            {
+                                header: "Estatus",
+                                accessor: "Estatus",
+                                cell: ({ item: { Estatus } }) => (
+                                    <div className="flex justify-center">
+                                        <span className={`inline-flex items-center justify-center rounded-full w-4 h-4 shadow-sm ${Number(Estatus) === 1 ? "bg-green-400" : "bg-red-400"}`} />
+                                    </div>
+                                ),
+                            },
+                            // { header: 'Estatus', accessor: 'Estatus' },
+
+                            { header: 'Nombre', accessor: 'NombreCompleto' },
+                            { header: 'RFC', accessor: 'RFC' },
+                            // { header: 'RFC', cell: (p) => <span className="text-[11px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg font-mono">{p.item.RFC}</span> },
                             {
                                 header: 'Acciones',
                                 cell: (p) => (
@@ -246,8 +314,8 @@ export default function Personas() {
                         setModal({ open: false });
                     }
                 }}
-                estados={[]}
-                municipios={[]}
+                estados={cats.est}
+                municipios={cats.mun}
             />
         </div>
     );

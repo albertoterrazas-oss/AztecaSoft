@@ -31,4 +31,17 @@ class Productos extends Model
     {
         return $this->hasMany(Productos::class, 'ProductoPadre', 'IdProducto');
     }
+
+
+    // App\Models\Catalogos\Productos.php
+    public function almacenes()
+    {
+        // IdProductoAlmacen es la PK de la tabla pivot, IdProducto e IdAlmacen son las FK
+        return $this->belongsToMany(
+           Almacenes::class, // Cambia esto por tu modelo de Almacen
+            'ProductoAlmacen',
+            'IdProducto',
+            'IdAlmacen'
+        )->withPivot('Estatus', 'FechaAsignacion');
+    }
 }

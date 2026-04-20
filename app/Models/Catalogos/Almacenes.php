@@ -15,7 +15,8 @@ class Almacenes extends Model
     protected $fillable = [
         'Nombre',
         'Tipo',
-        'IdBascula'
+        'IdBascula',
+        'CapacidadKilos'
     ];
 
 

@@ -21,18 +21,22 @@ const route = (name, params = {}) => {
 // --- Componente Principal ---
 export default function AlmacenesRefrigerador() {
     const [almacenes, setAlmacenes] = useState([]);
-    const [basculas, setBasculas] = useState([]); // Catálogo de básculas
+    const [basculas, setBasculas] = useState([]); 
     const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [currentAlmacen, setCurrentAlmacen] = useState({
+    
+    // 1. Agregamos CapacidadKilos al estado inicial
+    const initialFormState = {
         IdAlmacen: null,
         Nombre: "",
         Tipo: "ALMACEN",
-        IdBascula: ""
-    });
+        IdBascula: "",
+        CapacidadKilos: 0
+    };
+
+    const [currentAlmacen, setCurrentAlmacen] = useState(initialFormState);
     const [action, setAction] = useState('create');
 
-    // Cargar Almacenes
     const getAlmacenes = async () => {
         try {
             setIsLoading(true);
@@ -46,7 +50,6 @@ export default function AlmacenesRefrigerador() {
         }
     };
 
-    // Cargar Catálogo de Básculas
     const fetchBasculas = async () => {
         try {
             const response = await axios.get('/api/basculas');
@@ -61,7 +64,7 @@ export default function AlmacenesRefrigerador() {
         fetchBasculas();
     }, []);
 
-    const openModal = (item = { IdAlmacen: null, Nombre: "", Tipo: "ALMACEN", IdBascula: "" }) => {
+    const openModal = (item = initialFormState) => {
         setCurrentAlmacen(item);
         setAction(item.IdAlmacen ? 'edit' : 'create');
         setIsDialogOpen(true);
@@ -97,6 +100,8 @@ export default function AlmacenesRefrigerador() {
                         columns={[
                             { header: 'Nombre', accessor: 'Nombre' },
                             { header: 'Tipo', accessor: 'Tipo' },
+                            // 2. Columna visual para la capacidad
+                            // { header: 'Capacidad (Kg)', accessor: 'CapacidadKilos' },
                             { header: 'Bascula', accessor: 'bascula.Nombre' },
                             {
                                 header: "Acciones",
@@ -126,9 +131,10 @@ export default function AlmacenesRefrigerador() {
     );
 }
 
-// --- Componente del Diálogo (Formulario) ---
+// --- Componente del Diálogo ---
 function AlmacenFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, basculas }) {
-    const [formData, setFormData] = useState({ Nombre: "", Tipo: "ALMACEN", IdBascula: "" });
+    // 3. Agregamos la propiedad al estado local del form
+    const [formData, setFormData] = useState({ Nombre: "", Tipo: "ALMACEN", IdBascula: "", CapacidadKilos: "" });
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -137,7 +143,8 @@ function AlmacenFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, b
                 IdAlmacen: dataToEdit?.IdAlmacen || null,
                 Nombre: dataToEdit?.Nombre || "",
                 Tipo: dataToEdit?.Tipo || "ALMACEN",
-                IdBascula: dataToEdit?.IdBascula || ""
+                IdBascula: dataToEdit?.IdBascula || "",
+                CapacidadKilos: 0
             });
         }
     }, [isOpen, dataToEdit]);
@@ -179,7 +186,6 @@ function AlmacenFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, b
                         </DialogTitle>
 
                         <form onSubmit={handleSave} className="space-y-6">
-                            {/* Nombre del Almacén */}
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
                                     Nombre del almacén
@@ -194,7 +200,22 @@ function AlmacenFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, b
                                 />
                             </div>
 
-                            {/* Selección de Báscula */}
+                            {/* 4. Nuevo Input para CapacidadKilos */}
+                            {/* <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                                    Capacidad Máxima (Kg)
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={formData.CapacidadKilos}
+                                    onChange={e => setFormData({ ...formData, CapacidadKilos: e.target.value })}
+                                    className="w-full mt-1 px-5 py-4 rounded-2xl bg-gray-100 border-none focus:ring-2 focus:ring-blue-500 font-bold text-gray-700"
+                                    placeholder="Ej: 500.00"
+                                    required
+                                />
+                            </div> */}
+
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
                                     Báscula Asignada
@@ -214,7 +235,6 @@ function AlmacenFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action, b
                                 </select>
                             </div>
 
-                            {/* Botones de Acción */}
                             <div className="flex gap-4 pt-4">
                                 <button
                                     type="button"

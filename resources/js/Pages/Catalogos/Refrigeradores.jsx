@@ -4,8 +4,7 @@ import { toast } from 'sonner';
 import LoadingDiv from "@/Components/LoadingDiv";
 import request from "@/utils";
 
-// --- ICONOS SVG (Declarados manualmente para evitar errores de importación) ---
-
+// --- ICONOS SVG ---
 const IconPlus = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -41,13 +40,20 @@ const route = (name, params = {}) => {
     return routeMap[name] || `/${name}`;
 };
 
-// --- Componente Principal ---
 export default function AlmacenesRefrigerador() {
     const [almacenes, setAlmacenes] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [currentAlmacen, setCurrentAlmacen] = useState({ IdAlmacen: null, Nombre: "", Tipo: "" });
     const [action, setAction] = useState('create');
+    
+    // Estado inicial con CapacidadKilos
+    const initialFormState = { 
+        IdAlmacen: null, 
+        Nombre: "", 
+        Tipo: "REFRIGERADO", 
+        CapacidadKilos: "" 
+    };
+    const [currentAlmacen, setCurrentAlmacen] = useState(initialFormState);
 
     const getAlmacenes = async () => {
         try {
@@ -64,7 +70,7 @@ export default function AlmacenesRefrigerador() {
 
     useEffect(() => { getAlmacenes(); }, []);
 
-    const openModal = (item = { IdAlmacen: null, Nombre: "", Tipo: "" }) => {
+    const openModal = (item = initialFormState) => {
         setCurrentAlmacen(item);
         setAction(item.IdAlmacen ? 'edit' : 'create');
         setIsDialogOpen(true);
@@ -86,10 +92,8 @@ export default function AlmacenesRefrigerador() {
     };
 
     return (
-        <div className="w-full  h-[100%]p-4 md:p-8">
-            
-            {/* ESTRUCTURA DEL REFRIGERADOR */}
-            <div className="w-full mx-auto  h-[100%] rounded-t-[4rem] rounded-b-2xl border-x-[16px] border-t-[16px]  shadow-2xl overflow-hidden">
+        <div className="w-full h-full p-4 md:p-8">
+            <div className="w-full mx-auto h-full rounded-t-[4rem] rounded-b-2xl border-x-[16px] border-t-[16px] border-gray-300 shadow-2xl overflow-hidden bg-gray-50">
                 
                 {/* Termostato Digital */}
                 <div className="flex flex-col items-center pt-8 pb-6 border-b-4 border-gray-400/30 mb-6 bg-gray-300">
@@ -115,31 +119,33 @@ export default function AlmacenesRefrigerador() {
                                 <span className="font-black uppercase text-xs mt-2">Nuevo Estante</span>
                             </button>
 
-                            {/* Listado de Almacenes */}
+                            {/* Listado */}
                             {almacenes.map((almacen) => (
                                 <div key={almacen.IdAlmacen} className="h-52 bg-white rounded-2xl shadow-lg flex flex-col border-b-8 border-gray-400 overflow-hidden">
                                     <div className="p-5 flex-1">
                                         <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-xl ${almacen.Tipo === 'Congelado' ? 'bg-cyan-100 text-cyan-600' : 'bg-blue-100 text-[#1B2654]'}`}>
+                                            <div className="p-2 rounded-xl bg-blue-100 text-[#1B2654]">
                                                 <IconCube />
                                             </div>
                                             <div className="flex-1 overflow-hidden">
                                                 <h3 className="font-black text-gray-800 truncate uppercase text-sm leading-tight">{almacen.Nombre}</h3>
-                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{almacen.Tipo || 'General'}</span>
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                    Capacidad: {almacen.CapacidadKilos || 0} Kg
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Barra decorativa */}
-                                    <div className="px-5 mb-4 text-[9px] font-bold text-gray-400 uppercase">
-                                        Capacidad
+                                    {/* Barra de Capacidad */}
+                                    {/* <div className="px-5 mb-4 text-[9px] font-bold text-gray-400 uppercase">
+                                        Estado de carga ({almacen.CapacidadKilos || 0} Kg)
                                         <div className="h-2 w-full bg-gray-100 rounded-full mt-1 overflow-hidden">
-                                            <div className="h-full bg-[#1B2654]" style={{ width: '45%' }}></div>
+                                            <div className="h-full bg-blue-600" style={{ width: '0%' }}></div>
                                         </div>
-                                    </div>
+                                    </div> */}
 
-                                    {/* Botones de acción */}
-                                    <div className="grid grid-cols-2 border-t border-gray-100">
+                                    {/* Botones */}
+                                    <div className="grid grid-cols-1 border-t border-gray-100">
                                         <button 
                                             onClick={() => openModal(almacen)}
                                             className="flex items-center justify-center gap-2 py-3 hover:bg-yellow-50 text-yellow-600 border-r border-gray-100 transition-colors"
@@ -147,13 +153,13 @@ export default function AlmacenesRefrigerador() {
                                             <IconEdit />
                                             <span className="text-[10px] font-black uppercase">Editar</span>
                                         </button>
-                                        <button 
-                                            onClick={() => toast.info(`Abriendo inventario de: ${almacen.Nombre}`)}
+                                        {/* <button 
+                                            onClick={() => toast.info(`Abriendo: ${almacen.Nombre}`)}
                                             className="flex items-center justify-center gap-2 py-3 hover:bg-blue-50 text-blue-600 transition-colors"
                                         >
                                             <IconInventory />
                                             <span className="text-[10px] font-black uppercase">Inventario</span>
-                                        </button>
+                                        </button> */}
                                     </div>
                                 </div>
                             ))}
@@ -162,7 +168,6 @@ export default function AlmacenesRefrigerador() {
                 </div>
             </div>
 
-            {/* Modal de Formulario */}
             <AlmacenFormDialog 
                 isOpen={isDialogOpen} 
                 closeModal={() => setIsDialogOpen(false)} 
@@ -174,16 +179,20 @@ export default function AlmacenesRefrigerador() {
     );
 }
 
+// --- Componente Modal ---
 function AlmacenFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action }) {
-    const [formData, setFormData] = useState({ Nombre: "", Tipo: "REFRIGERADO" });
+    const [formData, setFormData] = useState({ Nombre: "", Tipo: "REFRIGERADO", CapacidadKilos: "" });
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        if (isOpen) setFormData({ 
-            IdAlmacen: dataToEdit?.IdAlmacen || null, 
-            Nombre: dataToEdit?.Nombre || "", 
-            Tipo: "REFRIGERADO"
-        });
+        if (isOpen) {
+            setFormData({ 
+                IdAlmacen: dataToEdit?.IdAlmacen || null, 
+                Nombre: dataToEdit?.Nombre || "", 
+                Tipo: "REFRIGERADO",
+                CapacidadKilos: dataToEdit?.CapacidadKilos || ""
+            });
+        }
     }, [isOpen, dataToEdit]);
 
     const handleSave = async (e) => {
@@ -198,12 +207,15 @@ function AlmacenFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action })
                 <TransitionChild enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-md" />
                 </TransitionChild>
+
                 <div className="fixed inset-0 flex items-center justify-center p-4">
                     <DialogPanel className="w-full max-w-md bg-white rounded-[2rem] p-8 shadow-2xl relative overflow-hidden border-t-8 border-[#1B2654]">
                         {saving && <div className="absolute inset-0 z-10 bg-white/80 flex items-center justify-center"><LoadingDiv /></div>}
+                        
                         <DialogTitle className="text-2xl font-black text-gray-800 mb-6 uppercase tracking-tighter">
                             {action === 'create' ? 'Nuevo Estante' : 'Ajustar Estante'}
                         </DialogTitle>
+
                         <form onSubmit={handleSave} className="space-y-6">
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Etiqueta del Almacén</label>
@@ -216,19 +228,20 @@ function AlmacenFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, action })
                                     required
                                 />
                             </div>
-                            {/* <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Clasificación</label>
-                                <select 
-                                    value={formData.Tipo} 
-                                    onChange={e => setFormData({...formData, Tipo: e.target.value})}
+
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Capacidad Máxima (Kg)</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01"
+                                    value={formData.CapacidadKilos} 
+                                    onChange={e => setFormData({...formData, CapacidadKilos: e.target.value})}
                                     className="w-full mt-1 px-5 py-4 rounded-2xl bg-gray-100 border-none focus:ring-2 focus:ring-blue-500 font-bold text-gray-700"
-                                >
-                                    <option value="">Seleccionar...</option>
-                                    <option value="Congelado">❄️ Congelado</option>
-                                    <option value="Refrigerado">🌡️ Refrigerado</option>
-                                    <option value="Seco">📦 Seco</option>
-                                </select>
-                            </div> */}
+                                    placeholder="Ej: 500.00"
+                                    required
+                                />
+                            </div>
+
                             <div className="flex gap-4 pt-4">
                                 <button type="button" onClick={closeModal} className="flex-1 py-4 text-gray-400 font-black text-xs uppercase hover:text-gray-600 transition-colors">Cancelar</button>
                                 <button type="submit" className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-blue-200 hover:bg-[#1B2654] transition-all">Confirmar</button>

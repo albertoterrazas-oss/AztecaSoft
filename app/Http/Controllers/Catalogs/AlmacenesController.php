@@ -15,13 +15,11 @@ class AlmacenesController extends Controller
         return response()->json($asuntos);
     }
 
-
     public function AlmacenesRefrigerados()
     {
         $asuntos = Almacenes::orderBy('Nombre', 'asc')->where('Tipo', 'REFRIGERADO')->get();
         return response()->json($asuntos);
     }
-
 
     /**
      * Almacena un nuevo almacén.
@@ -29,9 +27,11 @@ class AlmacenesController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'Nombre' => 'required|string|max:255',
-            'Tipo'   => 'nullable|string|max:50', // Ajusta el max según tu DB
-            'IdBascula' => 'nullable|integer' // Asegura que el ID de báscula exista
+            'Nombre'         => 'required|string|max:255',
+            'Tipo'           => 'nullable|string|max:50',
+            'IdBascula'      => 'nullable|integer',
+            // Agregamos validación para CapacidadKilos (numérico o decimal)
+            'CapacidadKilos' => 'nullable|numeric|min:0' 
         ]);
 
         if ($validator->fails()) {
@@ -40,10 +40,7 @@ class AlmacenesController extends Controller
 
         $almacen = Almacenes::create($request->all());
 
-        return response()->json(
-            $almacen,
-            201
-        );
+        return response()->json($almacen, 201);
     }
 
     /**
@@ -72,10 +69,11 @@ class AlmacenesController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'Nombre' => 'sometimes|required|string|max:255',
-            'Tipo'   => 'nullable|string|max:50',
-            'IdBascula' => 'nullable|integer' // Asegura que el ID de báscula exista
-
+            'Nombre'         => 'sometimes|required|string|max:255',
+            'Tipo'           => 'nullable|string|max:50',
+            'IdBascula'      => 'nullable|integer',
+            // Validación para actualización
+            'CapacidadKilos' => 'nullable|numeric|min:0'
         ]);
 
         if ($validator->fails()) {
