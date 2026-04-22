@@ -27,7 +27,7 @@ class CajasController extends Controller
             'Nombre'         => 'required',
             'Tara'       => 'required',
             'Estatus' => 'required',
-         
+            'Color' => 'nullable|string|max:20'
         ]);
 
 
@@ -66,6 +66,7 @@ class CajasController extends Controller
             'Nombre'         => 'required',
             'Tara'       => 'required',
             'Estatus' => 'required',
+            'Color' => 'nullable|string|max:20'
         ]);
 
         $caja->update($request->all());

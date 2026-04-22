@@ -68,7 +68,7 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, estados, 
                 setFormData({
                     IdPersona: null, IdEstado: "", IdMunicipio: "", IdColonia: "",
                     Nombres: "", ApePat: "", ApeMat: "", Calle: "", CasaNum: "",
-                    Sexo: "M", RFC: "", Curp: "", CodigoPostal: "", PathFotoEmpleado: ""
+                    Sexo: "M", RFC: "", Curp: "", CodigoPostal: "", PathFotoEmpleado: "",NSS: ""
                 });
             }
             setErrors({});
@@ -170,8 +170,31 @@ function PersonaFormDialog({ isOpen, closeModal, onSubmit, dataToEdit, estados, 
                                     <RhinoInput label="Nombres" name="Nombres" value={formData.Nombres || ''} onChange={handleChange} error={errors.Nombres} icon={Fingerprint} />
                                     <RhinoInput label="Paterno" name="ApePat" value={formData.ApePat || ''} onChange={handleChange} error={errors.ApePat} />
                                     <RhinoInput label="Materno" name="ApeMat" value={formData.ApeMat || ''} onChange={handleChange} />
-                                    <RhinoInput label="RFC" name="RFC" value={formData.RFC || ''} onChange={handleChange} error={errors.RFC} />
-                                    <RhinoInput label="CURP" name="Curp" value={formData.Curp || ''} onChange={handleChange} error={errors.Curp} />
+
+                                    <RhinoInput
+                                        label="RFC"
+                                        name="RFC"
+                                        value={formData.RFC || ''}
+                                        onChange={handleChange}
+                                        error={errors.RFC}
+                                        maxLength={15}
+                                    />
+                                    <RhinoInput
+                                        label="NSS"
+                                        name="NSS"
+                                        value={formData.NSS || ''}
+                                        onChange={handleChange}
+                                        error={errors.NSS}
+                                        maxLength={15}
+                                    />
+                                    <RhinoInput
+                                        label="CURP"
+                                        name="Curp"
+                                        value={formData.Curp || ''}
+                                        onChange={handleChange}
+                                        error={errors.Curp}
+                                        maxLength={20} // Esto evita que el usuario escriba más caracteres
+                                    />
                                     <RhinoSelect label="Género" name="Sexo" value={formData.Sexo || 'M'} onChange={handleChange} options={[{ v: 'M', d: 'MASCULINO' }, { v: 'F', d: 'FEMENINO' }]} valueKey="v" displayKey="d" />
                                 </div>
 

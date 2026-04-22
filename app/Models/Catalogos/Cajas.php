@@ -22,6 +22,7 @@ class Cajas extends Model
         'Tara',
         'Estatus',
         'FechaRegistro',
+        'Color'
         // 'PesoTotal',
         // 'PiezasTotales',
         // 'Estatus',

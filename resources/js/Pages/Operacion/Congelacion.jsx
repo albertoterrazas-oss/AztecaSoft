@@ -288,12 +288,12 @@ export default function WeighingDashboard() {
                     </div>
                 </div>
 
-                <div className="h-1/3 bg-white rounded-[2.5rem] shadow-inner border border-slate-200 overflow-hidden">
+                {/* <div className="h-1/3 bg-white rounded-[2.5rem] shadow-inner border border-slate-200 overflow-hidden">
                     <table className="w-full text-left">
                         <thead className="bg-slate-50 border-b text-[9px] text-slate-400 sticky top-0"><tr><th className="p-4">PRODUCTO</th><th className="p-4 text-center">KG (MANUAL)</th><th className="p-4 text-right">PESO NETO</th></tr></thead>
                         <tbody className="divide-y divide-slate-100 overflow-y-auto">{movimientos.map((reg, i) => (<tr key={i} className="text-[11px] font-bold text-slate-700"><td className="p-4 truncate">{reg.Nombre}</td><td className="p-4 text-center">{reg.Piezas} KG</td><td className="p-4 text-right font-black">{parseFloat(reg.Peso || 0).toFixed(2)} KG</td></tr>))}</tbody>
                     </table>
-                </div>
+                </div> */}
             </div>
 
             <aside className="w-full md:w-1/3 lg:w-[350px] flex flex-col gap-3">

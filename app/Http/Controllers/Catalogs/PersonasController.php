@@ -67,8 +67,10 @@ class PersonasController extends Controller
             'Nombres'          => 'required|string|max:255',
             'ApePat'           => 'required|string|max:255',
             'FechaNacimiento'  => 'required',
-            'RFC'              => 'required|string|max:13',
-            'Curp'             => 'required|string|max:18',
+            'RFC'              => 'required|string|max:15',
+
+            'NSS'              => 'required|string|max:15',
+            'Curp'             => 'required|string|max:20',
             'SalarioReal'      => 'required|numeric',
             'PathFotoEmpleado' => 'nullable|string',
         ]);
@@ -95,6 +97,9 @@ class PersonasController extends Controller
                 ]);
 
                 // Guardamos el ID del archivo en el campo de la persona
+                $personaData['Estatus'] = 1;
+                $personaData['EsEmpleado'] = 1;
+                $personaData['SalarioReal'] = 0;
                 $personaData['PathFotoEmpleado'] = $archivo->IdArchivo;
             } else {
                 $personaData['PathFotoEmpleado'] = null;
