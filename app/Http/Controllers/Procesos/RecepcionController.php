@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Procesos;
 
 use App\Http\Controllers\Controller;
+use App\Models\Catalogos\Productos;
 use App\Models\Procesos\Bitacora;
 use Illuminate\Http\Request;
 use App\Models\Procesos\Encabezado;
@@ -79,11 +80,94 @@ class RecepcionController extends Controller
 
             // 2. Ejecución del SP
             // Es mejor usar nombres de parámetros si el SP los requiere o asegurar el orden
-            $resultado = DB::select('EXEC sp_ProductosEnAlmacenPorLote ?, ?, ?', [
-                "A",
-                $idLote,
-                $idAlmacen
-            ]);
+            // $resultado = DB::select('EXEC sp_ProductosEnAlmacenPorLote ?, ?, ?', [
+            //     "A",
+            //     $idLote,
+            //     $idAlmacen
+            // ]);
+
+
+            // $producto = Productos::find($resultado[0]->IdProducto ?? null);
+            // // $producto = Productos::find($resultado[0]->IdProducto ?? null);
+
+            //    DB::table('ProductoAlmacen')->insert([
+            //             'IdProducto'      => $producto->IdProducto, // Tu PK Identity
+            //             'IdAlmacen'       => $idAlmacen,
+            //             'Estatus'         => 1,
+            //             'FechaAsignacion' => Carbon::now()
+            //         ]);
+            //     }
+
+
+            // dd($resultado);
+
+
+            // 1. Ejecutas tu SP para obtener los productos del lote
+            // $resultado = DB::select('EXEC sp_ProductosEnAlmacenPorLote ?, ?, ?', [
+            //     "A",
+            //     $idLote,
+            //     $idAlmacen
+            // ]);
+
+            // // 2. Extraemos los IDs de los productos obtenidos del SP para buscarlos en la tabla
+            // // Usamos collect para manejar el array de objetos del SP fácilmente
+            // $idsProductos = collect($resultado)->pluck('IdProducto')->toArray();
+
+            // // 3. Buscamos en la tabla ProductoAlmacen y lo asignamos a tu variable
+            // $refrigeradores = DB::table('ProductoAlmacen')
+            //     ->whereIn('IdProducto', $idsProductos)
+            //     ->where('IdAlmacen', $idAlmacen)
+            //     ->where('Estatus', 1)
+            //     ->get();
+
+            // // Si necesitas debugear para ver qué trajo:
+            // dd($refrigeradores);
+
+            // 1. Obtienes los datos del SP
+            // 1. Ejecutas tu SP normal
+            // $resultado = DB::select('EXEC sp_ProductosEnAlmacenPorLote ?, ?, ?', ["A", $idLote, $idAlmacen]);
+
+            // // 2. Sacamos los IDs para buscar en ProductoAlmacen de un solo golpe
+            // $idsProductos = collect($resultado)->pluck('IdProducto')->filter()->toArray();
+
+            // // 3. Traemos la info de ProductoAlmacen y la indexamos por IdProducto para que sea rápido buscar
+            // $infoAlmacen = DB::table('ProductoAlmacen')
+            //     ->whereIn('IdProducto', $idsProductos)
+            //     // ->where('IdAlmacen', $idAlmacen)
+            //     ->get()
+            //     ->keyBy('IdProducto'); // Esto es el truco para no usar loops anidados lentos
+
+            // // 4. Se lo inyectamos a tu variable $resultado original
+            // foreach ($resultado as $item) {
+            //     // Si existe en la tabla, se lo pegamos en la propiedad "refrigeradores"
+            //     // Si no existe, le ponemos null o un array vacío
+            //     $item->refrigeradores = $infoAlmacen->get($item->IdProducto) ?? null;
+            // }
+
+            // 1. Ejecutas tu SP
+            $resultado = DB::select('EXEC sp_ProductosEnAlmacenPorLote ?, ?, ?', ["A", $idLote, $idAlmacen]);
+
+            // 2. Sacamos los IDs
+            $idsProductos = collect($resultado)->pluck('IdProducto')->filter()->toArray();
+
+            // 3. CAMBIO CLAVE: Usamos groupBy en lugar de keyBy
+            $infoAlmacen = DB::table('ProductoAlmacen')
+                ->whereIn('IdProducto', $idsProductos)
+                // ->where('IdAlmacen', $idAlmacen)
+                ->get()
+                ->groupBy('IdProducto'); // Agrupa todos los registros que compartan el mismo IdProducto
+
+            // 4. Inyectamos la colección de registros
+            foreach ($resultado as $item) {
+                // Ahora 'refrigeradores' será un array/colección con todos los registros encontrados
+                // Si no hay ninguno, devolvemos una colección vacía para que no te truene el JS en el front
+                $item->refrigeradores = $infoAlmacen->get($item->IdProducto) ?? collect([]);
+            }
+
+            // dd($resultado);
+
+            // Aquí ya llevas todo junto
+            // dd($resultado);
 
             // 3. Retornar respuesta
             // Si el SP no devuelve nada, DB::select retorna un array vacío [].

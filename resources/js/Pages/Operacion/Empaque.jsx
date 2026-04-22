@@ -33,7 +33,7 @@ const LoteCard = ({ lote, idAlmacen, onSelectProducto, itemsEnPaquete }) => {
         setLoading(true);
         const res = await axios.post("/api/ProductosLotesHistorial", {
           opcion: 'A',
-          Lote: lote.Lote,
+          idLote: lote.Lote,
           idAlmacen: idAlmacen
         });
         setProductos(Array.isArray(res.data) ? res.data : []);
