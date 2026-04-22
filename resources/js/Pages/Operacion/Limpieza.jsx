@@ -51,7 +51,7 @@ export default function WeighingDashboardLimpieza() {
     const [currentWeight, setCurrentWeight] = useState("0.00");
     const [tara, setTara] = useState("0.00");
     const [piezas, setPiezas] = useState(0);
-
+    const [finDelLote, setFinDelLote] = useState(false);
     const [showTaraModal, setShowTaraModal] = useState(false);
     const [showGuardarModal, setShowGuardarModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -146,7 +146,8 @@ export default function WeighingDashboardLimpieza() {
                 piezas: 0,
                 id_area_entrada: 2,
                 id_area_salida: selectedArea,
-                idusuario: user
+                idusuario: user,
+                finDelLote: finDelLote ? 1 : 0,
             };
             const res = await axios.post(route("pesaje.guardar-traspaso"), payload);
             setLastRegisteredWeight(pesoNetoFinal);
@@ -291,9 +292,50 @@ export default function WeighingDashboardLimpieza() {
                         </div>
                     </div>
                 </div>
-                <div className="bg-white p-4 rounded-[2rem] border-4 border-slate-200 shadow-sm flex flex-col gap-3">
+                {/* <div className="bg-white p-4 rounded-[2rem] border-4 border-slate-200 shadow-sm flex flex-col gap-3">
+
                     <button onClick={() => { setCurrentWeight("0.00"); setShowTaraModal(true); }} className="bg-slate-800 text-white py-3 rounded-xl text-[10px] border-b-4 border-black font-black uppercase">Cambiar Tara</button>
                     <button onClick={() => { setCurrentWeight("0.00"); setShowGuardarModal(true); }} disabled={!canOpenGuardar} className={`w-full py-5 rounded-[1.5rem] text-lg border-b-[8px] transition-all font-black ${!canOpenGuardar ? "bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed" : "bg-emerald-600 text-white border-emerald-900 hover:bg-emerald-500 active:translate-y-1 active:border-b-0"}`}>
+                        {!selectedProduct ? "ELIJA PRODUCTO" : parseFloat(tara) <= 0 ? "FALTA TARA" : "Pesar y Guardar KG"}
+                    </button>
+                </div> */}
+
+                <div className="bg-white p-4 rounded-[2rem] border-4 border-slate-200 shadow-sm flex flex-col gap-3">
+
+                    {/* Botón Cambiar Tara */}
+                    <button
+                        onClick={() => { setCurrentWeight("0.00"); setShowTaraModal(true); }}
+                        className="bg-slate-800 text-white py-3 rounded-xl text-[10px] border-b-4 border-black font-black uppercase"
+                    >
+                        Cambiar Tara
+                    </button>
+
+                    {/* Checkbox "Fin del lote" */}
+                    <label className="flex items-center gap-3 px-2 cursor-pointer group">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={finDelLote} // Asegúrate de tener este estado en tu componente
+                                onChange={(e) => setFinDelLote(e.target.checked)}
+                                className="peer h-6 w-6 cursor-pointer appearance-none rounded-md border-2 border-slate-300 transition-all checked:bg-emerald-600 checked:border-emerald-700"
+                            />
+                            {/* Ícono de check manual */}
+                            <svg className="absolute w-4 h-4 text-white p-0.5 opacity-0 peer-checked:opacity-100 pointer-events-none left-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <span className="text-slate-700 font-bold text-sm uppercase selection:bg-transparent">
+                            ¿Fin del lote?
+                        </span>
+                    </label>
+
+                    {/* Botón Principal Pesar y Guardar */}
+                    <button
+                        onClick={() => { setCurrentWeight("0.00"); setShowGuardarModal(true); }}
+                        disabled={!canOpenGuardar}
+                        className={`w-full py-5 rounded-[1.5rem] text-lg border-b-[8px] transition-all font-black ${!canOpenGuardar
+                            ? "bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed"
+                            : "bg-emerald-600 text-white border-emerald-900 hover:bg-emerald-500 active:translate-y-1 active:border-b-0"
+                            }`}
+                    >
                         {!selectedProduct ? "ELIJA PRODUCTO" : parseFloat(tara) <= 0 ? "FALTA TARA" : "Pesar y Guardar KG"}
                     </button>
                 </div>

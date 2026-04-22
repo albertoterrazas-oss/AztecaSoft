@@ -19,7 +19,7 @@ class DespieceController extends Controller
                 ? json_encode($request->datos_json)
                 : $request->datos_json;
 
-                // dd($datosJson);
+            // dd($datosJson);
 
             // 2. Registro del Movimiento de Salida (Traspaso)
             // Usamos SET NOCOUNT ON para evitar el error "The active result contains no fields"
@@ -34,7 +34,7 @@ class DespieceController extends Controller
             // ]);
 
             // 3. Procesar el despiece
-            DB::statement("SET NOCOUNT ON; EXEC sp_ProcesarDespiece ?, ?, ?, ?, ?, ?, ?, ?", [
+            DB::statement("SET NOCOUNT ON; EXEC sp_ProcesarDespiece ?, ?, ?, ?, ?, ?, ?, ?, ?", [
                 $request->id_lote,
                 $request->id_producto_origen,
                 $request->id_almacen_origen,
@@ -42,7 +42,8 @@ class DespieceController extends Controller
                 $request->idusuario,
                 $request->peso_entrada,
                 $request->piezas_entrada ?? 0,
-                $datosJson
+                $datosJson,
+                $request->finDelLote ?? 0
             ]);
 
             DB::commit();

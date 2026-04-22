@@ -12,6 +12,7 @@ export default function DeshueseDashboard() {
     const [almacenes, setAlmacenes] = useState([]);
     const [records, setRecords] = useState([]);
     const [carrito, setCarrito] = useState([]);
+    const [finDelLote, setFinDelLote] = useState(false);
 
     const [selectedLote, setSelectedLote] = useState(null);
     const [selectedParent, setSelectedParent] = useState(null);
@@ -101,7 +102,9 @@ export default function DeshueseDashboard() {
                 peso_entrada: parseFloat(selectedParent.pesoOriginal) || 0,
                 piezas_entrada: parseInt(selectedParent.piezasOriginales) || 0,
                 datos_json: JSON.stringify(carrito.map(({ id, nombre, peso, piezas }) => ({ id, nombre, peso, piezas }))),
-                idusuario: user
+                idusuario: user,
+                finDelLote: finDelLote ? 1 : 0,
+
             };
 
             await axios.post("/api/despiece", payload);
@@ -342,6 +345,22 @@ export default function DeshueseDashboard() {
 
                     <button onClick={() => { setCurrentWeight("0.00"); setShowTaraModal(true); }} className="bg-slate-800 text-white py-3 rounded-xl text-[10px] border-b-4 border-black font-black uppercase">Cambiar Tara</button>
 
+
+                    <label className="flex items-center gap-3 px-2 cursor-pointer group">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={finDelLote} // Asegúrate de tener este estado en tu componente
+                                onChange={(e) => setFinDelLote(e.target.checked)}
+                                className="peer h-6 w-6 cursor-pointer appearance-none rounded-md border-2 border-slate-300 transition-all checked:bg-emerald-600 checked:border-emerald-700"
+                            />
+                            {/* Ícono de check manual */}
+                            <svg className="absolute w-4 h-4 text-white p-0.5 opacity-0 peer-checked:opacity-100 pointer-events-none left-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <span className="text-slate-700 font-bold text-sm uppercase selection:bg-transparent">
+                            ¿Fin del lote?
+                        </span>
+                    </label>
                     <div className="space-y-3 pt-2">
                         <button
                             onClick={() => setShowPesarModal(true)}
