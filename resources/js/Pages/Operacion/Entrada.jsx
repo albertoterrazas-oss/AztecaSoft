@@ -184,7 +184,7 @@ export default function WeighingDashboard() {
                     <div className="grid gap-4">
                         {lotes.length > 0 ? (
                             lotes.map((lote) => (
-                                <button key={lote.Lote} onClick={() => handleSelectLote(lote)} className="bg-white p-6 rounded-[2.5rem] flex items-center justify-between border-4 border-transparent hover:border-red-600 transition-all shadow-xl group">
+                                <button key={lote.Lote} onClick={() => handleSelectLote(lote.Lote)} className="bg-white p-6 rounded-[2.5rem] flex items-center justify-between border-4 border-transparent hover:border-red-600 transition-all shadow-xl group">
                                     <div className="text-left font-black">
                                         <span className="text-xs text-red-600 uppercase">LOTE #{lote.Lote}</span>
                                         <h3 className="text-2xl leading-none text-slate-700">{lote.Proveedor}</h3>
