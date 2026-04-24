@@ -132,6 +132,8 @@ export default function WeighingDashboardLimpieza() {
 
     // --- MANEJADORES ---
     const handleSelectLote = (lote) => {
+
+        console.log('lote',lote)
         setSelectedLote(lote);
         setTaraGlobal("0.00");
         setCurrentWeight("0.00");
